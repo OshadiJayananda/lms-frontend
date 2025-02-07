@@ -20,12 +20,10 @@ export default function Home() {
           <h1 className="text-5xl font-bold text-gray-800 mb-6">
             LIBRARY MANAGEMENT SYSTEM
           </h1>
-          
+
           {/* Open hours card */}
           <div className="bg-white shadow-lg rounded-lg p-8 mb-8">
-            <h2 className="text-2xl font-semibold text-blue-800">
-              Open Hoursssss
-            </h2>
+            <h2 className="text-2xl font-semibold text-blue-800">Open Hours</h2>
             <p className="text-gray-600 mt-4">
               Mon-Fri: 8:00 AM to 6:00 PM
               <br />
@@ -35,12 +33,19 @@ export default function Home() {
 
           {/* Buttons */}
           <div className="flex justify-center gap-4">
-            <button className="px-6 py-3 bg-blue-900 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 transition-all">
+            <a
+              href="/login"
+              className="px-6 py-3 bg-blue-900 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 transition-all"
+            >
               Log In
-            </button>
-            <button className="px-6 py-3 bg-blue-700 text-white font-semibold rounded-md shadow-md hover:bg-blue-500 transition-all">
+            </a>
+
+            <a
+              href="/signIn"
+              className="px-6 py-3 bg-blue-700 text-white font-semibold rounded-md shadow-md hover:bg-blue-500 transition-all"
+            >
               Sign Up
-            </button>
+            </a>
           </div>
         </div>
       </div>
