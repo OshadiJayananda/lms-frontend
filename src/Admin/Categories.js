@@ -56,7 +56,7 @@ function Categories() {
   useEffect(() => {
     const fetchParentCategories = async () => {
       try {
-        const response = await api.get("/parent-categories");
+        const response = await api.get("/categories"); // Fetch from /categories
         if (response && response.data && response.data.parent_categories) {
           setParentCategories(response.data.parent_categories);
         } else {
