@@ -22,9 +22,9 @@ function Login() {
   
       // Navigate based on the role
       if (userRole === "admin") {
-        navigate("/dashboard");
+        navigate("/adminDashboard");
       } else if (userRole === "user") {
-        navigate("/addBook");
+        navigate("/dashboard");
       } else {
         alert("Unknown role: " + userRole);
       }
