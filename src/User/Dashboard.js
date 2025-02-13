@@ -35,7 +35,7 @@ function Dashboard() {
             style={{
               fontSize: "40px",
               textAlign: "left", // Align text to the left
-              margin: "20px", // Add some margin for spacing
+              padding: "20px", // Add some margin for spacing
               color: "#000", // Set text color to black
               fontWeight: "bold", // Make text bold
             }}
@@ -43,7 +43,9 @@ function Dashboard() {
             Dashboard
           </h1>
         </div>
-          <div><Header/></div>
+        <div>
+          <Header />
+        </div>
         <div style={{ padding: "20px" }}>
           <h2>Welcome to the Dashboard</h2>
           {/* Add additional dashboard content here */}

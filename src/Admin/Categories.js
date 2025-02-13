@@ -178,7 +178,7 @@ function Categories() {
             style={{
               fontSize: "40px",
               textAlign: "left", // Align text to the left
-              margin: "20px", // Add some margin for spacing
+              padding: "20px", // Add some margin for spacing
               color: "#000", // Set text color to black
               fontWeight: "bold", // Make text bold
             }}
