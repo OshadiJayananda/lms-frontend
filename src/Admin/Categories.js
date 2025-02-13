@@ -16,6 +16,9 @@ function Categories() {
   const [categories, setCategories] = useState([]);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showOnlyParents, setShowOnlyParents] = useState(false);
+  const recordsPerPage = 5;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -136,6 +139,20 @@ function Categories() {
     }
   };
 
+  //edit;
+  // Filter categories if "Show Only Parent Categories" is checked
+  const filteredCategories = showOnlyParents
+    ? categories.filter((category) => !category.parent_id) // Only categories with no parent_id
+    : categories;
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredCategories.length / recordsPerPage);
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredCategories.slice(
+    indexOfFirstRecord,
+    indexOfLastRecord
+  );
   return (
     <div>
       <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
@@ -180,13 +197,6 @@ function Categories() {
             transition: "margin-left 0.3s ease",
           }}
         >
-          <h1
-            style={{
-              fontWeight: "bold",
-            }}
-          >
-            Add a new category
-          </h1>
           <form
             style={{
               backgroundColor: "#f0f4ff",
@@ -195,6 +205,15 @@ function Categories() {
             }}
             onSubmit={handleSubmit}
           >
+            <h1
+              style={{
+                fontWeight: "bold",
+                // textAlign: "center",
+                fontSize: "20px",
+              }}
+            >
+              Add a new category
+            </h1>
             <label>Category Name:</label>
             <input
               type="text"
@@ -266,21 +285,34 @@ function Categories() {
             <div style={{ color: "green" }}>{successMessage}</div>
           )}
         </div>
-        <div
-          style={{
-            marginTop: "20px",
-            marginLeft: isSidebarCollapsed ? "5%" : "0%",
-            padding: "10px",
-            transition: "margin-left 0.3s ease",
-          }}
-        >
+        <div style={{ marginTop: "20px", padding: "10px" }}>
           <h1
             style={{
               fontWeight: "bold",
+              // textAlign: "center",
+              fontSize: "20px",
             }}
           >
             Existing Categories
           </h1>
+
+          {/* Parent Category Filter */}
+          <label
+            style={{
+              marginBottom: "10px",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={showOnlyParents}
+              onChange={() => setShowOnlyParents(!showOnlyParents)}
+              style={{ marginRight: "8px" }} // Space between checkbox and label
+            />
+            <span>Show Only Parent Categories</span>
+          </label>
+
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ backgroundColor: "#001f5b", color: "#fff" }}>
@@ -302,7 +334,7 @@ function Categories() {
               </tr>
             </thead>
             <tbody>
-              {categories.map((category) => (
+              {currentRecords.map((category) => (
                 <tr key={category.id}>
                   <td style={{ padding: "10px", border: "1px solid #ddd" }}>
                     {category.name}
@@ -322,26 +354,14 @@ function Categories() {
                     >
                       <FaEdit
                         onClick={() => handleEditClick(category)}
-                        style={{
-                          color: "green",
-                          // border: "1px solid green",
-                          // borderRadius: "50%",
-                          // padding: "1px",
-                          cursor: "pointer",
-                        }}
+                        style={{ color: "green", cursor: "pointer" }}
                         title="Edit"
                       />
                     </span>
                     <span style={{ display: "inline-block" }}>
                       <FaTrash
                         onClick={() => handleDeleteClick(category.id)}
-                        style={{
-                          color: "red",
-                          // border: "1px solid red",
-                          // borderRadius: "50%",
-                          // padding: "5px",
-                          cursor: "pointer",
-                        }}
+                        style={{ color: "red", cursor: "pointer" }}
                         title="Delete"
                       />
                     </span>
@@ -350,6 +370,30 @@ function Categories() {
               ))}
             </tbody>
           </table>
+
+          {/* Pagination Controls */}
+          <div style={{ marginTop: "10px", textAlign: "center" }}>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              style={{ marginRight: "5px" }}
+            >
+              Previous
+            </button>
+            <span>
+              {" "}
+              Page {currentPage} of {totalPages}{" "}
+            </span>
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+              style={{ marginLeft: "5px" }}
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>
