@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaEdit, FaTrash } from "react-icons/fa";
+import { FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import SideBar from "../../Components/SideBar";
 import heading_pic from "../../images/heading_pic.jpg";
 import Header from "../../Components/Header";
@@ -10,8 +10,10 @@ import HeaderBanner from "../components/HeaderBanner";
 function AdminBooks() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [books, setBooks] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,6 +21,7 @@ function AdminBooks() {
       try {
         const response = await api.get("/books");
         setBooks(response.data);
+        setFilteredBooks(response.data);
       } catch (error) {
         console.error("Error fetching books:", error);
         setError("Failed to fetch books. Please try again later.");
@@ -34,29 +37,53 @@ function AdminBooks() {
     setSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  const handleSearch = (event) => {
+    const query = event.target.value.toLowerCase();
+    setSearchQuery(query);
+    setFilteredBooks(
+      books.filter(
+        (book) =>
+          book.name.toLowerCase().includes(query) ||
+          book.author.toLowerCase().includes(query) ||
+          book.isbn.toLowerCase().includes(query)
+      )
+    );
+  };
+
   return (
     <div className="flex">
       <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
       <div
         className={`transition-all duration-300 ${
           isSidebarCollapsed ? "ml-[5%]" : "ml-[20%]"
-        } w-full p-4`}
+        } w-full`}
       >
         <HeaderBanner book={"Book Section"} heading_pic={heading_pic} />
-        <Header />
 
         <div className="p-6">
+          <div className="flex justify-between items-center mb-2">
+            <div className="flex-1">
+              <Header />
+            </div>
+            <div className="flex items-center space-x-4">
+              <input
+                type="text"
+                placeholder="Search books..."
+                value={searchQuery}
+                onChange={handleSearch}
+                className="border rounded-lg px-5 py-2 w-96"
+              />
+              <button
+                onClick={() => navigate("/addBooks")}
+                className="text-white px-3 py-2 rounded-lg flex items-center"
+                style={{ backgroundColor: "#001f5b" }}
+              >
+                <FaPlus className="text-white" />
+              </button>
+            </div>
+          </div>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold">All Books</h2>
-            <button
-              onClick={() => navigate("/addBooks")}
-              className="text-white px-4 py-2 rounded-lg"
-              style={{
-                backgroundColor: "#001f5b",
-              }}
-            >
-              Add New Book
-            </button>
           </div>
 
           {loading ? (
@@ -65,13 +92,13 @@ function AdminBooks() {
             <p className="text-red-500">{error}</p>
           ) : (
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {books.map((book) => (
+              {filteredBooks.map((book) => (
                 <div
                   key={book.id}
                   className="bg-white p-4 shadow-md rounded-lg flex flex-col items-center"
                 >
                   <img
-                    src={book.image} // Now using the full URL returned from the API
+                    src={book.image}
                     alt={book.name}
                     className="h-40 w-28 object-cover mb-3"
                   />

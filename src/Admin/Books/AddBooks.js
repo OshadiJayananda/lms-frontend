@@ -122,7 +122,7 @@ function AddBooks() {
       <div
         className={`transition-all duration-300 ${
           isSidebarCollapsed ? "ml-[5%]" : "ml-[20%]"
-        } w-full p-4`}
+        } w-full`}
       >
         {/* Header Image */}
         <HeaderBanner book={"Add Book"} heading_pic={heading_pic} />
