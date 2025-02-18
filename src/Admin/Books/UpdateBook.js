@@ -38,7 +38,7 @@ function UpdateBook() {
       try {
         const response = await api.get(`/books/${id}`);
         if (response.data) {
-          setBook(response.data); // Ensure book details are set
+          setBook(response.data);
           setSelectedParent(response.data.category_id);
         }
       } catch (error) {
@@ -69,9 +69,9 @@ function UpdateBook() {
     e.preventDefault();
     setMessage("");
 
-    // Ensure all fields are included in the payload
+    // Ensure all fields are included
     const payload = {
-      name: book.name || "", // Ensure 'name' is included in the payload
+      name: book.name,
       author: book.author,
       isbn: book.isbn,
       description: book.description,
@@ -79,11 +79,9 @@ function UpdateBook() {
       category_id: selectedParent || book.category_id,
     };
 
-    console.log(payload); // Log the payload to see if name is included
-
     try {
       const response = await api.put(`/books/${id}`, payload, {
-        headers: { "Content-Type": "application/json" }, // Ensure it's being sent as JSON
+        headers: { "Content-Type": "application/json" }, // Ensure JSON format
       });
 
       setMessage(response.data.message);
@@ -115,6 +113,7 @@ function UpdateBook() {
         >
           <h1 className="text-4xl font-bold text-black p-6">Update Book</h1>
         </div>
+
         <Header />
 
         <div className="p-6">
@@ -144,7 +143,6 @@ function UpdateBook() {
                 required
               />
             </div>
-
             <div>
               <label className="block text-gray-700">Author:</label>
               <input
@@ -153,6 +151,7 @@ function UpdateBook() {
                 value={book.author}
                 onChange={handleChange}
                 className="w-full border p-2 rounded"
+                required
               />
             </div>
             <div>
@@ -163,6 +162,7 @@ function UpdateBook() {
                 value={book.isbn}
                 onChange={handleChange}
                 className="w-full border p-2 rounded"
+                required
               />
             </div>
             <div>
@@ -182,6 +182,7 @@ function UpdateBook() {
                 value={selectedParent}
                 onChange={handleParentChange}
                 className="w-full border p-2 rounded"
+                required
               >
                 <option value="">Select a category</option>
                 {categories
@@ -201,6 +202,7 @@ function UpdateBook() {
                 value={book.no_of_copies}
                 onChange={handleChange}
                 className="w-full border p-2 rounded"
+                required
                 min="1"
               />
             </div>
