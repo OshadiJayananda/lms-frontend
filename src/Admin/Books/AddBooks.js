@@ -3,6 +3,7 @@ import SideBar from "../../Components/SideBar";
 import heading_pic from "../../images/heading_pic.jpg";
 import Header from "../../Components/Header";
 import api from "../../Components/Api";
+import HeaderBanner from "../components/HeaderBanner";
 
 function AddBooks() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -124,12 +125,7 @@ function AddBooks() {
         } w-full p-4`}
       >
         {/* Header Image */}
-        <div
-          className="h-24 bg-cover bg-center relative brightness-150"
-          style={{ backgroundImage: `url(${heading_pic})` }}
-        >
-          <h1 className="text-4xl font-bold text-black p-6">Books</h1>
-        </div>
+        <HeaderBanner book={"Add Book"} heading_pic={heading_pic} />
         <Header />
 
         <div className="p-6">

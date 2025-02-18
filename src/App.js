@@ -20,13 +20,12 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signIn" element={<SignIn />} />
-          <Route path="/sideBar" element={<SideBar />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/adminDashboard" element={<AdminDashboard />} />
-          <Route path="/adminBooks" element={<AdminBooks />} />
+          <Route path="/admin/books" element={<AdminBooks />} />
           <Route path="/updateBook/:id" element={<UpdateBook />} />
           <Route path="/addBooks" element={<AddBooks />} />
-          <Route path="/categories" element={<Categories />} />
+          <Route path="/admin/categories" element={<Categories />} />
         </Routes>
       </div>
     </Router>
