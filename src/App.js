@@ -4,12 +4,9 @@ import Home from "./Components/Home";
 import Login from "./Components/Login";
 import SignIn from "./Components/SignIn";
 import Dashboard from "./User/Dashboard";
-import SideBar from "./Components/SideBar";
 import Categories from "./Admin/Categories";
 import AdminDashboard from "./Admin/AdminDashboard";
 import AdminBooks from "./Admin/Books/AdminBooks";
-import AddBooks from "./Admin/Books/AddBooks";
-import UpdateBook from "./Admin/Books/UpdateBook";
 
 function App() {
   return (
@@ -23,8 +20,6 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/adminDashboard" element={<AdminDashboard />} />
           <Route path="/admin/books" element={<AdminBooks />} />
-          <Route path="/updateBook/:id" element={<UpdateBook />} />
-          <Route path="/addBooks" element={<AddBooks />} />
           <Route path="/admin/categories" element={<Categories />} />
         </Routes>
       </div>
