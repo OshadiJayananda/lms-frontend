@@ -23,7 +23,7 @@ function Login() {
 
       // Navigate based on the role
       if (userRole === "admin") {
-        navigate("/adminDashboard");
+        navigate("/admin/dashboard");
       } else if (userRole === "user") {
         navigate("/dashboard");
       } else {

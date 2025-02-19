@@ -54,7 +54,7 @@ function SideBar({ isCollapsed, onToggle }) {
         >
           <li style={{ margin: "10px 0" }}>
             <a
-              href="/dashboard"
+              href="/admin/dashboard"
               style={{
                 color: "#fff",
                 textDecoration: "none",
