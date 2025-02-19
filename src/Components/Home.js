@@ -1,7 +1,7 @@
 import React from "react";
-import home_pic from "../images/home_pic.jpg";
 
 export default function Home() {
+  const home_pic = process.env.PUBLIC_URL + "/images/home_pic.jpg";
   return (
     <div className="flex h-screen">
       {/* Left section with bookshelf image */}

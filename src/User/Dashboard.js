@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import SideBar from "../Components/SideBar";
-import heading_pic from "../images/heading_pic.jpg";
 import Header from "../Components/Header";
 import HeaderBanner from "../Admin/components/HeaderBanner";
 
 function Dashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);

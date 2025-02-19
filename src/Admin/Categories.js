@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import SideBar from "../Components/SideBar";
 import api from "../Components/Api";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import heading_pic from "../images/heading_pic.jpg";
 import Header from "../Components/Header";
 
 function Categories() {
@@ -20,6 +19,8 @@ function Categories() {
   const [showOnlyParents, setShowOnlyParents] = useState(false);
   const recordsPerPage = 5;
 
+  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -33,7 +34,7 @@ function Categories() {
     try {
       if (editingCategoryId) {
         // Update category
-        await api.put(`/categories/${editingCategoryId}`, categoryData);
+        await api.put(/categories/`${editingCategoryId}`, categoryData);
         setSuccessMessage("Category updated successfully!");
       } else {
         // Create new category
@@ -126,7 +127,7 @@ function Categories() {
   const handleDeleteClick = async (categoryId) => {
     if (window.confirm("Are you sure you want to delete this category?")) {
       try {
-        await api.delete(`/categories/${categoryId}`);
+        await api.delete(/categories/`${categoryId}`);
         setSuccessMessage("Category deleted successfully!");
         setErrorMessage("");
         fetchCategories(); // Refresh the categories list

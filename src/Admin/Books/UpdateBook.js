@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import SideBar from "../../Components/SideBar";
-import heading_pic from "../../images/heading_pic.jpg";
 import Header from "../../Components/Header";
 import api from "../../Components/Api";
 import HeaderBanner from "../components/HeaderBanner";
@@ -23,6 +22,8 @@ function UpdateBook() {
   });
   const [message, setMessage] = useState("");
 
+  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -37,7 +38,7 @@ function UpdateBook() {
 
     const fetchBookDetails = async () => {
       try {
-        const response = await api.get(`/books/${id}`);
+        const response = await api.get(/books/`${id}`);
         if (response.data) {
           setBook(response.data);
           setSelectedParent(response.data.category_id);
@@ -81,7 +82,7 @@ function UpdateBook() {
     };
 
     try {
-      const response = await api.put(`/books/${id}`, payload, {
+      const response = await api.put(/books/`${id}`, payload, {
         headers: { "Content-Type": "application/json" }, // Ensure JSON format
       });
 

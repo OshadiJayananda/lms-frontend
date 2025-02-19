@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "./Api";
-import login_pg from "../images/login_pg.jpg";
 
 export default function SignIn() {
   const [name, setName] = useState("");
@@ -11,6 +10,8 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const navigate = useNavigate();
+
+  const login_pg = process.env.PUBLIC_URL + "/images/login_pg.jpg";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
