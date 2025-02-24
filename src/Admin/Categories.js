@@ -127,7 +127,7 @@ function Categories() {
   const handleDeleteClick = async (categoryId) => {
     if (window.confirm("Are you sure you want to delete this category?")) {
       try {
-        await api.delete(/categories/`${categoryId}`);
+        await api.delete(`/categories/${categoryId}`);
         setSuccessMessage("Category deleted successfully!");
         setErrorMessage("");
         fetchCategories(); // Refresh the categories list
