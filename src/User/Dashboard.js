@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import SideBar from "../Components/SideBar";
-import Header from "../Components/Header";
 import HeaderBanner from "../Admin/components/HeaderBanner";
+import ClientSidebar from "../Components/ClientSidebar";
 
 function Dashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -14,7 +13,7 @@ function Dashboard() {
 
   return (
     <div>
-      <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
+      <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
       <div
         style={{
           marginLeft: isSidebarCollapsed ? "5%" : "20%",
@@ -23,9 +22,7 @@ function Dashboard() {
         }}
       >
         <HeaderBanner book={"Book Section"} heading_pic={heading_pic} />
-        <div>
-          <Header />
-        </div>
+
         <div style={{ padding: "20px" }}>
           <h2>Welcome to the Dashboard</h2>
           {/* Add additional dashboard content here */}

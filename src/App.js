@@ -7,6 +7,7 @@ import Dashboard from "./User/Dashboard";
 import Categories from "./Admin/Categories";
 import AdminDashboard from "./Admin/AdminDashboard";
 import AdminBooks from "./Admin/Books/AdminBooks";
+import Books from "./User/Books";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/books" element={<AdminBooks />} />
+          <Route path="/books" element={<Books />} />
           <Route path="/admin/categories" element={<Categories />} />
         </Routes>
       </div>
