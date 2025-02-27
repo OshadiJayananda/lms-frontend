@@ -30,7 +30,7 @@ function ClientSidebar({ isCollapsed, onToggle }) {
       localStorage.removeItem("token");
 
       // Redirect to login page
-      navigate("/login");
+      navigate("/login", { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
