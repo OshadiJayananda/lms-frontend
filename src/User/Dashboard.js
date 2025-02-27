@@ -21,7 +21,7 @@ function Dashboard() {
           transition: "margin-left 0.3s ease",
         }}
       >
-        <HeaderBanner book={"Book Section"} heading_pic={heading_pic} />
+        <HeaderBanner book={"Dashboard"} heading_pic={heading_pic} />
 
         <div style={{ padding: "20px" }}>
           <h2>Welcome to the Dashboard</h2>

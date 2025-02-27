@@ -1,6 +1,43 @@
-import React from "react";
+import React, { useState } from "react";
+import { FaUserCircle } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import api from "./Api";
 
 function ClientSidebar({ isCollapsed, onToggle }) {
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+
+      await api.post(
+        "/logout",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Clear token from storage
+      localStorage.removeItem("token");
+
+      // Redirect to login page
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setShowProfileMenu(false);
+    }
+  };
+
   return (
     <div
       style={{
@@ -10,6 +47,9 @@ function ClientSidebar({ isCollapsed, onToggle }) {
         height: "100vh",
         position: "fixed",
         transition: "width 0.3s ease",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
       }}
     >
       <div
@@ -54,7 +94,7 @@ function ClientSidebar({ isCollapsed, onToggle }) {
         >
           <li style={{ margin: "10px 0" }}>
             <a
-              href="/admin/dashboard"
+              href="/dashboard"
               style={{
                 color: "#fff",
                 textDecoration: "none",
@@ -100,19 +140,74 @@ function ClientSidebar({ isCollapsed, onToggle }) {
               Payments
             </a>
           </li>
-          <li style={{ margin: "10px 0" }}>
-            <a
-              href="#"
+        </ul>
+      </div>
+
+      {/* Profile Icon & Dropdown */}
+      <div
+        style={{
+          position: "relative",
+          padding: "20px",
+          display: "flex",
+          justifyContent: isCollapsed ? "center" : "flex-end",
+        }}
+      >
+        <FaUserCircle
+          size={isCollapsed ? 30 : 40}
+          style={{ cursor: "pointer" }}
+          onClick={() => setShowProfileMenu(!showProfileMenu)}
+        />
+
+        {/* Profile Dropdown Menu */}
+        {showProfileMenu && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "60px",
+              right: isCollapsed ? "0px" : "20px",
+              backgroundColor: "#fff",
+              color: "#000",
+              borderRadius: "8px",
+              boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
+              width: "150px",
+              display: "flex",
+              flexDirection: "column",
+              textAlign: "left",
+              zIndex: 10,
+            }}
+          >
+            <button
               style={{
-                color: "#fff",
-                textDecoration: "none",
-                fontSize: isCollapsed ? "10px" : "16px",
+                background: "none",
+                border: "none",
+                padding: "10px",
+                cursor: "pointer",
+                textAlign: "left",
+                fontSize: "14px",
+                borderBottom: "1px solid #ddd",
+              }}
+              onClick={() => {
+                setShowProfileMenu(false);
+                navigate("/profile");
               }}
             >
+              View Profile
+            </button>
+            <button
+              style={{
+                background: "none",
+                border: "none",
+                padding: "10px",
+                cursor: "pointer",
+                textAlign: "left",
+                fontSize: "14px",
+              }}
+              onClick={handleLogout}
+            >
               Log Out
-            </a>
-          </li>
-        </ul>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
