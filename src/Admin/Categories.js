@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 import SideBar from "../Components/SideBar";
 import api from "../Components/Api";
 import { FaEdit, FaTrash } from "react-icons/fa";
@@ -6,10 +8,6 @@ import Header from "../Components/Header";
 import { toast } from "react-toastify";
 
 function Categories() {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [parentId, setParentId] = useState(null);
-  const [status, setStatus] = useState("Active");
   const [parentCategories, setParentCategories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -22,58 +20,16 @@ function Categories() {
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    const categoryData = {
-      name,
-      description,
-      parent_id: parentId,
-      status: status === "Active" ? 1 : 0,
-    };
-
+  const fetchParentCategories = async () => {
     try {
-      if (editingCategoryId) {
-        // Update category
-        await api.put(`/categories/${editingCategoryId}`, categoryData);
-        toast.success("Category updated successfully!");
-      } else {
-        // Create new category
-        await api.post("/categories", categoryData);
-        toast.success("Category created successfully!");
+      const response = await api.get("/categories");
+      if (response && response.data && response.data.parent_categories) {
+        setParentCategories(response.data.parent_categories);
       }
-      setName("");
-      setDescription("");
-      setParentId(null);
-      setStatus("Active");
-      setEditingCategoryId(null); // Reset editing state
-      fetchCategories(); // Refresh the categories list
     } catch (error) {
-      toast.error(
-        error.response?.data?.message ||
-          "Something went wrong, please try again."
-      );
+      console.error("Error fetching categories:", error);
     }
   };
-
-  useEffect(() => {
-    const fetchParentCategories = async () => {
-      try {
-        const response = await api.get("/categories"); // Fetch from /categories
-        if (response && response.data && response.data.parent_categories) {
-          setParentCategories(response.data.parent_categories);
-        } else {
-          console.error(
-            "Error fetching categories: No parent_categories in response"
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      }
-    };
-
-    fetchParentCategories();
-  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -87,6 +43,7 @@ function Categories() {
   };
 
   useEffect(() => {
+    fetchParentCategories();
     fetchCategories();
   }, []);
 
@@ -102,11 +59,7 @@ function Categories() {
   };
 
   const handleReset = () => {
-    // Reset all form fields to initial state
-    setName("");
-    setDescription("");
-    setParentId("");
-    setStatus("Active");
+    formik.resetForm();
   };
 
   const handleEditClick = (category) => {
@@ -116,10 +69,13 @@ function Categories() {
 
     if (confirmEdit) {
       setEditingCategoryId(category.id);
-      setName(category.name);
-      setDescription(category.description || "");
-      setParentId(category.parent_id || null);
-      setStatus(category.status === 1 ? "Active" : "Inactive");
+      formik.setFieldValue("name", category.name);
+      formik.setFieldValue("description", category.description || "");
+      formik.setFieldValue("parentId", category.parent_id || null);
+      formik.setFieldValue(
+        "status",
+        category.status === 1 ? "Active" : "Inactive"
+      );
     }
   };
 
@@ -132,7 +88,7 @@ function Categories() {
     try {
       await api.delete(`/categories/${selectedCategoryId}`);
       toast.success("Category deleted successfully!");
-      fetchCategories(); // Refresh categories
+      fetchCategories();
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Failed to delete category."
@@ -141,10 +97,9 @@ function Categories() {
     setShowModal(false);
   };
 
-  //edit;
-  // Filter categories if "Show Only Parent Categories" is checked
+  // Edit categories logic
   const filteredCategories = showOnlyParents
-    ? categories.filter((category) => !category.parent_id) // Only categories with no parent_id
+    ? categories.filter((category) => !category.parent_id)
     : categories;
 
   // Pagination logic
@@ -155,6 +110,50 @@ function Categories() {
     indexOfFirstRecord,
     indexOfLastRecord
   );
+
+  // Formik setup with validation schema using Yup
+  const formik = useFormik({
+    initialValues: {
+      name: "",
+      description: "",
+      parentId: "",
+      status: "Active",
+    },
+    validationSchema: Yup.object({
+      name: Yup.string()
+        .min(3, "Category name must be at least 3 characters")
+        .required("Category name is required"),
+      description: Yup.string()
+        .min(3, "Description must be at least 3 characters")
+        .required("Description is required"),
+    }),
+    onSubmit: async (values) => {
+      const categoryData = {
+        name: values.name,
+        description: values.description,
+        parent_id: values.parentId,
+        status: values.status === "Active" ? 1 : 0,
+      };
+
+      try {
+        if (editingCategoryId) {
+          // Update category
+          await api.put(`/categories/${editingCategoryId}`, categoryData);
+          toast.success("Category updated successfully!");
+        } else {
+          // Create new category
+          await api.post("/categories", categoryData);
+          toast.success("Category created successfully!");
+        }
+        formik.resetForm();
+        setEditingCategoryId(null); // Reset editing state
+        fetchCategories(); // Refresh categories list
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Something went wrong.");
+      }
+    },
+  });
+
   return (
     <div>
       <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
@@ -172,17 +171,16 @@ function Categories() {
             backgroundSize: "cover",
             backgroundPosition: "center",
             position: "relative",
-            filter: "brightness(150%)", // Increase brightness to lighten the image
+            filter: "brightness(150%)",
           }}
         >
-          {/* Heading on top of the header picture */}
           <h1
             style={{
               fontSize: "40px",
-              textAlign: "left", // Align text to the left
-              padding: "20px", // Add some margin for spacing
-              color: "#000", // Set text color to black
-              fontWeight: "bold", // Make text bold
+              textAlign: "left",
+              padding: "20px",
+              color: "#000",
+              fontWeight: "bold",
             }}
           >
             Categories
@@ -192,6 +190,7 @@ function Categories() {
         <div>
           <Header />
         </div>
+
         <div
           style={{
             marginLeft: isSidebarCollapsed ? "5%" : "0%",
@@ -205,12 +204,11 @@ function Categories() {
               padding: "20px",
               borderRadius: "8px",
             }}
-            onSubmit={handleSubmit}
+            onSubmit={formik.handleSubmit}
           >
             <h1
               style={{
                 fontWeight: "bold",
-                // textAlign: "center",
                 fontSize: "20px",
               }}
             >
@@ -220,22 +218,31 @@ function Categories() {
             <input
               type="text"
               style={{ display: "block", margin: "10px 0", width: "100%" }}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              name="name"
+              value={formik.values.name}
+              onChange={formik.handleChange}
             />
+            {formik.errors.name && formik.touched.name && (
+              <div style={{ color: "red" }}>{formik.errors.name}</div>
+            )}
 
             <label>Description:</label>
             <textarea
               style={{ display: "block", margin: "10px 0", width: "100%" }}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              name="description"
+              value={formik.values.description}
+              onChange={formik.handleChange}
             ></textarea>
+            {formik.errors.description && formik.touched.description && (
+              <div style={{ color: "red" }}>{formik.errors.description}</div>
+            )}
 
             <label>Parent Category:</label>
             <select
               style={{ display: "block", margin: "10px 0", width: "100%" }}
-              value={parentId}
-              onChange={(e) => setParentId(e.target.value)}
+              name="parentId"
+              value={formik.values.parentId}
+              onChange={formik.handleChange}
             >
               <option value="">None</option>
               {parentCategories.map((category) => (
@@ -248,8 +255,9 @@ function Categories() {
             <label>Status:</label>
             <select
               style={{ display: "block", margin: "10px 0", width: "100%" }}
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              name="status"
+              value={formik.values.status}
+              onChange={formik.handleChange}
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -270,7 +278,7 @@ function Categories() {
             </button>
 
             <button
-              type="reset"
+              type="button"
               onClick={handleReset}
               style={{
                 backgroundColor: "#ccc",
@@ -283,18 +291,17 @@ function Categories() {
             </button>
           </form>
         </div>
+
         <div style={{ marginTop: "20px", padding: "10px" }}>
           <h1
             style={{
               fontWeight: "bold",
-              // textAlign: "center",
               fontSize: "20px",
             }}
           >
             Existing Categories
           </h1>
 
-          {/* Parent Category Filter */}
           <label
             style={{
               marginBottom: "10px",
@@ -306,7 +313,7 @@ function Categories() {
               type="checkbox"
               checked={showOnlyParents}
               onChange={() => setShowOnlyParents(!showOnlyParents)}
-              style={{ marginRight: "8px" }} // Space between checkbox and label
+              style={{ marginRight: "8px" }}
             />
             <span>Show Only Parent Categories</span>
           </label>
