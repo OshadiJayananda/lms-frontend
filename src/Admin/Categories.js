@@ -3,6 +3,7 @@ import SideBar from "../Components/SideBar";
 import api from "../Components/Api";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import Header from "../Components/Header";
+import { toast } from "react-toastify";
 
 function Categories() {
   const [name, setName] = useState("");
@@ -10,8 +11,6 @@ function Categories() {
   const [parentId, setParentId] = useState(null);
   const [status, setStatus] = useState("Active");
   const [parentCategories, setParentCategories] = useState([]);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [categories, setCategories] = useState([]);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
@@ -36,14 +35,13 @@ function Categories() {
     try {
       if (editingCategoryId) {
         // Update category
-        await api.put(/categories/`${editingCategoryId}`, categoryData);
-        setSuccessMessage("Category updated successfully!");
+        await api.put(`/categories/${editingCategoryId}`, categoryData);
+        toast.success("Category updated successfully!");
       } else {
         // Create new category
         await api.post("/categories", categoryData);
-        setSuccessMessage("Category created successfully!");
+        toast.success("Category created successfully!");
       }
-      setErrorMessage("");
       setName("");
       setDescription("");
       setParentId(null);
@@ -51,11 +49,10 @@ function Categories() {
       setEditingCategoryId(null); // Reset editing state
       fetchCategories(); // Refresh the categories list
     } catch (error) {
-      if (error.response && error.response.data) {
-        setErrorMessage(error.response.data.message || "Something went wrong");
-      } else {
-        setErrorMessage("Something went wrong, please try again.");
-      }
+      toast.error(
+        error.response?.data?.message ||
+          "Something went wrong, please try again."
+      );
     }
   };
 
@@ -134,11 +131,10 @@ function Categories() {
   const confirmDelete = async () => {
     try {
       await api.delete(`/categories/${selectedCategoryId}`);
-      setSuccessMessage("Category deleted successfully!");
-      setErrorMessage("");
+      toast.success("Category deleted successfully!");
       fetchCategories(); // Refresh categories
     } catch (error) {
-      setErrorMessage(
+      toast.error(
         error.response?.data?.message || "Failed to delete category."
       );
     }
@@ -286,10 +282,6 @@ function Categories() {
               Clear
             </button>
           </form>
-          {errorMessage && <div style={{ color: "red" }}>{errorMessage}</div>}
-          {successMessage && (
-            <div style={{ color: "green" }}>{successMessage}</div>
-          )}
         </div>
         <div style={{ marginTop: "20px", padding: "10px" }}>
           <h1
