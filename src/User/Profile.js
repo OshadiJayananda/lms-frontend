@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
 import api from "../Components/Api";
 import Modal from "react-modal";
 import ClientHeaderBanner from "./components/ClientHeaderBanner";
 import ClientSidebar from "../Components/ClientSidebar";
+import { toast } from "react-toastify";
+import { FaUserCircle, FaTrash } from "react-icons/fa";
 
 Modal.setAppElement("#root"); // Prevents accessibility issues
 
@@ -11,9 +15,7 @@ function Profile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
-
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
@@ -23,13 +25,20 @@ function Profile() {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token found");
 
-        const response = await api.get("/user", {
+        const userResponse = await api.get("/user", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        setUser(response.data);
+        const picResponse = await api.get("/user/get-profile-picture", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setUser({
+          ...userResponse.data,
+          profile_picture: picResponse.data.profile_picture,
+        });
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        toast.error("Error fetching user data:", error);
       } finally {
         setLoading(false);
       }
@@ -54,48 +63,71 @@ function Profile() {
         },
       });
 
-      if (response.data.profile_picture) {
-        alert("Profile picture updated successfully!");
-        setUser((prevUser) => ({
-          ...prevUser,
-          profile_picture: response.data.profile_picture,
-        }));
-      } else {
-        alert("Failed to update profile picture.");
-      }
+      toast.update("Profile picture updated successfully!");
+      setUser((prevUser) => ({
+        ...prevUser,
+        profile_picture: response.data.profile_picture,
+      }));
     } catch (error) {
       console.error("Error uploading profile picture:", error);
-      alert("Error uploading profile picture.");
+      toast.error("Error uploading profile picture.");
     }
   };
 
-  const handlePasswordChange = async (e) => {
-    e.preventDefault();
+  const handleRemoveProfilePicture = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await api.post(
+        "/user/remove-profile-picture",
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    if (newPassword !== confirmPassword) {
-      alert("Passwords do not match!");
-      return;
+      toast.success("Profile picture removed.");
+      setUser((prevUser) => ({ ...prevUser, profile_picture: null }));
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error removing profile picture:", error);
+      toast.error("Error removing profile picture.");
     }
+  };
 
+  // if (loading) return <p>Loading...</p>;
+  // if (!user) return <p>Failed to load user data.</p>;
+
+  const handlePasswordChange = async (values, { setSubmitting, resetForm }) => {
     try {
       const token = localStorage.getItem("token");
       await api.post(
         "/user/change-password",
-        { password: newPassword, password_confirmation: confirmPassword }, // Include confirmation
+        {
+          password: values.newPassword,
+          password_confirmation: values.confirmPassword,
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert("Password updated successfully!");
-      setNewPassword("");
-      setConfirmPassword("");
-      setPasswordModalOpen(false); // Close the modal after success
+      toast.success("Password updated successfully!");
+      resetForm();
+      setPasswordModalOpen(false);
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Error updating password.";
       console.error("Error updating password:", error);
-      alert(errorMessage); // Show more detailed error message
+      toast.error(errorMessage);
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const validationSchema = Yup.object().shape({
+    newPassword: Yup.string()
+      .min(6, "Password must be at least 6 characters")
+      .required("New password is required"),
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref("newPassword"), null], "Passwords must match")
+      .required("Confirm password is required"),
+  });
 
   if (loading) return <p>Loading...</p>;
   if (!user) return <p>Failed to load user data.</p>;
@@ -129,18 +161,33 @@ function Profile() {
             }}
           >
             <div style={{ textAlign: "center", marginBottom: "20px" }}>
-              <img
-                src={user.profile_picture || "default-avatar.png"}
-                alt="Profile"
+              <div
                 style={{
                   width: "150px",
                   height: "150px",
-                  borderRadius: "75px",
+                  borderRadius: "50%",
                   backgroundColor: "grey",
-                  objectFit: "cover",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   border: "3px solid #001f5b",
+                  overflow: "hidden",
                 }}
-              />
+              >
+                {user.profile_picture ? (
+                  <img
+                    src={user.profile_picture}
+                    alt="Profile"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  <FaUserCircle size={100} color="white" />
+                )}
+              </div>
               <br />
               <input
                 type="file"
@@ -148,6 +195,38 @@ function Profile() {
                 onChange={handleProfilePictureChange}
                 style={{ marginTop: "10px", border: "none", cursor: "pointer" }}
               />
+              {user.profile_picture && (
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="mt-2 bg-red-600 text-white border-none py-2 px-3 cursor-pointer rounded flex items-center gap-2"
+                >
+                  <FaTrash /> Remove Picture
+                </button>
+              )}
+
+              {isModalOpen && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                  <div className="bg-white p-5 rounded-lg shadow-lg text-center">
+                    <p className="mb-4">
+                      Are you sure you want to remove your profile picture?
+                    </p>
+                    <div className="flex justify-center gap-4">
+                      <button
+                        onClick={handleRemoveProfilePicture}
+                        className="bg-red-600 text-white py-2 px-4 rounded"
+                      >
+                        Yes, Remove
+                      </button>
+                      <button
+                        onClick={() => setIsModalOpen(false)}
+                        className="bg-gray-300 text-black py-2 px-4 rounded"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ marginBottom: "15px" }}>
@@ -203,54 +282,73 @@ function Profile() {
         }}
       >
         <h2 style={{ marginBottom: "20px" }}>Change Password</h2>
-        <form onSubmit={handlePasswordChange}>
-          <input
-            type="password"
-            placeholder="New Password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            style={{
-              width: "100%",
-              padding: "12px",
-              marginBottom: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "5px",
-              fontSize: "16px",
-            }}
-          />
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            style={{
-              width: "100%",
-              padding: "12px",
-              marginBottom: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "5px",
-              fontSize: "16px",
-            }}
-          />
-          <button
-            type="submit"
-            style={{
-              padding: "12px",
-              width: "100%",
-              backgroundColor: "#001f5b",
-              color: "#fff",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontSize: "16px",
-              transition: "background-color 0.3s",
-            }}
-          >
-            Update Password
-          </button>
-        </form>
+        <Formik
+          initialValues={{ newPassword: "", confirmPassword: "" }}
+          validationSchema={validationSchema}
+          onSubmit={handlePasswordChange}
+        >
+          {({ isSubmitting }) => (
+            <Form>
+              <div>
+                <Field
+                  type="password"
+                  name="newPassword"
+                  placeholder="New Password"
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    marginBottom: "10px",
+                    border: "1px solid #ccc",
+                    borderRadius: "5px",
+                    fontSize: "16px",
+                  }}
+                />
+                <ErrorMessage
+                  name="newPassword"
+                  component="div"
+                  style={{ color: "red" }}
+                />
+              </div>
+              <div>
+                <Field
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm Password"
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    marginBottom: "10px",
+                    border: "1px solid #ccc",
+                    borderRadius: "5px",
+                    fontSize: "16px",
+                  }}
+                />
+                <ErrorMessage
+                  name="confirmPassword"
+                  component="div"
+                  style={{ color: "red" }}
+                />
+              </div>
+              <button
+                type="submit"
+                style={{
+                  padding: "12px",
+                  width: "100%",
+                  backgroundColor: "#001f5b",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  transition: "background-color 0.3s",
+                }}
+                disabled={isSubmitting}
+              >
+                Update Password
+              </button>
+            </Form>
+          )}
+        </Formik>
       </Modal>
     </div>
   );
