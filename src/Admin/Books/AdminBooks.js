@@ -5,6 +5,7 @@ import Header from "../../Components/Header";
 import api from "../../Components/Api";
 import { useNavigate } from "react-router-dom";
 import HeaderBanner from "../components/HeaderBanner";
+import { toast } from "react-toastify";
 
 function AdminBooks() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -81,6 +82,10 @@ function AdminBooks() {
     setSubCategories(children);
   };
 
+  const handleToggle = () => {
+    setSidebarCollapsed(!isSidebarCollapsed);
+  };
+
   useEffect(() => {
     const fetchBooks = async () => {
       try {
@@ -89,7 +94,7 @@ function AdminBooks() {
         setFilteredBooks(response.data);
       } catch (error) {
         console.error("Error fetching books:", error);
-        setError("Failed to fetch books. Please try again later.");
+        toast.error("Failed to fetch books. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -97,10 +102,6 @@ function AdminBooks() {
 
     fetchBooks();
   }, []);
-
-  const handleToggle = () => {
-    setSidebarCollapsed(!isSidebarCollapsed);
-  };
 
   const handleSearch = (event) => {
     const query = event.target.value.toLowerCase();
@@ -131,6 +132,7 @@ function AdminBooks() {
   };
 
   // Handle Form Submission
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -161,7 +163,8 @@ function AdminBooks() {
         no_of_copies: "",
         category_id: "",
       });
-      setShowSuccess(true);
+      // Show success toast
+      toast.success("Book added successfully!");
 
       // Close modal after 1.5 seconds
       setTimeout(() => {
@@ -171,7 +174,7 @@ function AdminBooks() {
       window.location.reload();
     } catch (error) {
       console.error("Error adding book:", error);
-      setMessage("Failed to add book. Please try again.");
+      toast.error("Failed to add book. Please try again.");
     }
   };
 
@@ -186,7 +189,7 @@ function AdminBooks() {
 
     try {
       await api.delete(`/books/${selectedBookToDelete}`);
-      alert("Book deleted successfully!");
+      toast.success("Book deleted successfully!");
 
       // Remove the deleted book from the state
       setBooks((prevBooks) =>
@@ -195,9 +198,10 @@ function AdminBooks() {
 
       // Close the modal
       setIsModalOpenDelete(false);
+      window.location.reload();
     } catch (error) {
       console.error("Error deleting book:", error);
-      alert("Failed to delete the book. Please try again.");
+      toast.error("Failed to delete the book. Please try again.");
     }
   };
 
@@ -238,7 +242,7 @@ function AdminBooks() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      alert(response.data.message || "Book updated successfully!");
+      toast.success(response.data.message || "Book updated successfully!");
 
       // ✅ Fetch latest books from the server to reflect the update
       fetchBooks();
@@ -246,7 +250,7 @@ function AdminBooks() {
       closeUpdateModal();
     } catch (error) {
       console.error("Error updating book:", error);
-      alert("Failed to update book. Please try again.");
+      toast.error("Failed to update book. Please try again.");
     }
   };
 
