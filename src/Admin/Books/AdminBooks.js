@@ -15,12 +15,15 @@ function AdminBooks() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpenDelete, setIsModalOpenDelete] = useState(false);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
   const [updatedBook, setUpdatedBook] = useState({});
   const [selectedParent, setSelectedParent] = useState("");
+  const [selectedBookToDelete, setSelectedBookToDelete] = useState(null);
+
   const [book, setBook] = useState({
     name: "",
     author: "",
@@ -172,16 +175,26 @@ function AdminBooks() {
     }
   };
 
-  const handleDelete = async (bookId) => {
-    if (!window.confirm("Are you sure you want to delete this book?")) return;
+  const handleDelete = (bookId) => {
+    // Set the bookId to be deleted and open the modal
+    setSelectedBookToDelete(bookId);
+    setIsModalOpenDelete(true); // Open the confirmation modal
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedBookToDelete) return;
 
     try {
-      await api.delete(`/books/${bookId}`);
+      await api.delete(`/books/${selectedBookToDelete}`);
       alert("Book deleted successfully!");
 
       // Remove the deleted book from the state
-      setBooks((prevBooks) => prevBooks.filter((book) => book.id !== bookId));
-      window.location.reload();
+      setBooks((prevBooks) =>
+        prevBooks.filter((book) => book.id !== selectedBookToDelete)
+      );
+
+      // Close the modal
+      setIsModalOpenDelete(false);
     } catch (error) {
       console.error("Error deleting book:", error);
       alert("Failed to delete the book. Please try again.");
@@ -323,6 +336,29 @@ function AdminBooks() {
           )}
         </div>
       </div>
+      {isModalOpenDelete && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-xl font-semibold mb-4">
+              Are you sure you want to delete this book?
+            </h2>
+            <div className="flex justify-between">
+              <button
+                className="bg-red-600 text-white px-4 py-2 rounded"
+                onClick={handleConfirmDelete} // Confirm the deletion
+              >
+                Yes, Delete
+              </button>
+              <button
+                className="bg-gray-400 text-white px-4 py-2 rounded"
+                onClick={() => setIsModalOpenDelete(false)} // Close the modal without deleting
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Book Modal */}
       {isModalOpen && (
