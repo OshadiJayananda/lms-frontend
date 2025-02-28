@@ -18,6 +18,8 @@ function Categories() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnlyParents, setShowOnlyParents] = useState(false);
   const recordsPerPage = 5;
+  const [showModal, setShowModal] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
@@ -124,20 +126,23 @@ function Categories() {
     }
   };
 
-  const handleDeleteClick = async (categoryId) => {
-    if (window.confirm("Are you sure you want to delete this category?")) {
-      try {
-        await api.delete(`/categories/${categoryId}`);
-        setSuccessMessage("Category deleted successfully!");
-        setErrorMessage("");
-        fetchCategories(); // Refresh the categories list
-      } catch (error) {
-        setErrorMessage(
-          error.response?.data?.message ||
-            "Failed to delete category. Please try again."
-        );
-      }
+  const handleDeleteClick = (categoryId) => {
+    setSelectedCategoryId(categoryId);
+    setShowModal(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/categories/${selectedCategoryId}`);
+      setSuccessMessage("Category deleted successfully!");
+      setErrorMessage("");
+      fetchCategories(); // Refresh categories
+    } catch (error) {
+      setErrorMessage(
+        error.response?.data?.message || "Failed to delete category."
+      );
     }
+    setShowModal(false);
   };
 
   //edit;
@@ -349,23 +354,50 @@ function Categories() {
                   <td style={{ padding: "10px", border: "1px solid #ddd" }}>
                     {category.status === 1 ? "Active" : "Inactive"}
                   </td>
-                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                    <span
-                      style={{ display: "inline-block", marginRight: "10px" }}
-                    >
+                  <td className="p-2 border border-gray-300">
+                    <div className="flex items-center gap-3">
+                      {/* Edit Button */}
                       <FaEdit
                         onClick={() => handleEditClick(category)}
-                        style={{ color: "green", cursor: "pointer" }}
+                        className="text-green-500 cursor-pointer hover:text-green-700 transition"
                         title="Edit"
                       />
-                    </span>
-                    <span style={{ display: "inline-block" }}>
+
+                      {/* Delete Button */}
                       <FaTrash
                         onClick={() => handleDeleteClick(category.id)}
-                        style={{ color: "red", cursor: "pointer" }}
+                        className="text-red-500 cursor-pointer hover:text-red-700 transition"
                         title="Delete"
                       />
-                    </span>
+                    </div>
+
+                    {/* Confirmation Modal */}
+                    {showModal && (
+                      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Confirm Deletion
+                          </h3>
+                          <p className="text-gray-700 mt-2">
+                            Are you sure you want to delete this category?
+                          </p>
+                          <div className="flex justify-end gap-3 mt-4">
+                            <button
+                              onClick={() => setShowModal(false)}
+                              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={confirmDelete}
+                              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
