@@ -17,6 +17,8 @@ function Categories() {
   const recordsPerPage = 5;
   const [showModal, setShowModal] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [categoryToEdit, setCategoryToEdit] = useState(null);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
@@ -63,19 +65,22 @@ function Categories() {
   };
 
   const handleEditClick = (category) => {
-    const confirmEdit = window.confirm(
-      "Do you want to update the details of this category?"
-    );
+    setCategoryToEdit(category);
+    setShowEditModal(true);
+  };
 
-    if (confirmEdit) {
-      setEditingCategoryId(category.id);
-      formik.setFieldValue("name", category.name);
-      formik.setFieldValue("description", category.description || "");
-      formik.setFieldValue("parentId", category.parent_id || null);
+  const confirmEdit = () => {
+    if (categoryToEdit) {
+      setEditingCategoryId(categoryToEdit.id);
+      formik.setFieldValue("name", categoryToEdit.name);
+      formik.setFieldValue("description", categoryToEdit.description || "");
+      formik.setFieldValue("parentId", categoryToEdit.parent_id || null);
       formik.setFieldValue(
         "status",
-        category.status === 1 ? "Active" : "Inactive"
+        categoryToEdit.status === 1 ? "Active" : "Inactive"
       );
+      setShowEditModal(false);
+      window.scrollTo({ top: 0, behavior: "smooth" }); // Scroll to the top
     }
   };
 
@@ -392,6 +397,34 @@ function Categories() {
                               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
                             >
                               Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Edit Confirmation Modal */}
+                    {showEditModal && (
+                      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Confirm Edit
+                          </h3>
+                          <p className="text-gray-700 mt-2">
+                            Are you sure you want to edit this category?
+                          </p>
+                          <div className="flex justify-end gap-3 mt-4">
+                            <button
+                              onClick={() => setShowEditModal(false)}
+                              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={confirmEdit}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                            >
+                              Edit
                             </button>
                           </div>
                         </div>
