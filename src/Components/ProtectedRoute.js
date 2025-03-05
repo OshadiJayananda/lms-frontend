@@ -1,8 +1,19 @@
-import { Navigate } from "react-router-dom";
+// import React from "react";
+// import { Navigate, Outlet } from "react-router-dom";
 
-const ProtectedRoute = ({ element }) => {
-  const isAuthenticated = localStorage.getItem("token"); // Check if the user is logged in
-  return isAuthenticated ? element : <Navigate to="/login" replace />;
-};
+// const ProtectedRoute = ({ role, redirectPath = "/login" }) => {
+//   const token = localStorage.getItem("token");
+//   const userRole = localStorage.getItem("role"); // Assuming you store the role in localStorage
 
-export default ProtectedRoute;
+//   if (!token) {
+//     return <Navigate to={redirectPath} replace />;
+//   }
+
+//   if (role && userRole !== role) {
+//     return <Navigate to="/unauthorized" replace />;
+//   }
+
+//   return <Outlet />;
+// };
+
+// export default ProtectedRoute;
