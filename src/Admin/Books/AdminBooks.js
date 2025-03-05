@@ -6,38 +6,96 @@ import api from "../../Components/Api";
 import { useNavigate } from "react-router-dom";
 import HeaderBanner from "../components/HeaderBanner";
 import { toast } from "react-toastify";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 function AdminBooks() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [books, setBooks] = useState([]);
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalOpenDelete, setIsModalOpenDelete] = useState(false);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
-  const [updatedBook, setUpdatedBook] = useState({});
   const [selectedParent, setSelectedParent] = useState("");
   const [selectedBookToDelete, setSelectedBookToDelete] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
-  const [book, setBook] = useState({
-    name: "",
-    author: "",
-    isbn: "",
-    image: null,
-    description: "",
-    no_of_copies: "",
-    category_id: "",
-  });
-
-  const [message, setMessage] = useState("");
   const navigate = useNavigate();
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+
+  // Formik validation schema
+  const validationSchema = Yup.object({
+    name: Yup.string()
+      .min(2, "Title must be at least 2 characters")
+      .required("Title is required"),
+    author: Yup.string().required("Author is required"),
+    isbn: Yup.string()
+      .required("ISBN is required")
+      .test("isbn-unique", "ISBN must be unique", async (value) => {
+        if (selectedBook && selectedBook.isbn === value) return true; // Skip check if editing the same book
+        const response = await api.get(`/books/check-isbn?isbn=${value}`);
+        return !response.data.exists; // Return true if ISBN is unique
+      }),
+    description: Yup.string().required("Description is required"),
+    no_of_copies: Yup.number()
+      .min(1, "Number of copies must be at least 1")
+      .required("Number of copies is required"),
+    category_id: Yup.string().required("Category is required"),
+  });
+
+  const formik = useFormik({
+    initialValues: {
+      name: "",
+      author: "",
+      isbn: "",
+      image: null,
+      description: "",
+      no_of_copies: "",
+      category_id: "",
+    },
+    validationSchema,
+    onSubmit: async (values) => {
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("author", values.author);
+      formData.append("isbn", values.isbn);
+      formData.append("description", values.description);
+      formData.append("no_of_copies", values.no_of_copies);
+      formData.append("category_id", values.category_id);
+      if (values.image) {
+        formData.append("image", values.image);
+      }
+
+      try {
+        let response;
+        if (selectedBook) {
+          response = await api.put(`/books/${selectedBook.id}`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          toast.success(response.data.message || "Book updated successfully!");
+        } else {
+          response = await api.post("/books", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          toast.success("Book added successfully!");
+        }
+
+        const booksResponse = await api.get("/books");
+        setBooks(booksResponse.data);
+        setFilteredBooks(booksResponse.data);
+
+        closeModal();
+      } catch (error) {
+        console.error("Error saving book:", error);
+        toast.error("Failed to save book. Please try again.");
+      }
+    },
+  });
 
   // Fetch categories from API
   useEffect(() => {
@@ -55,37 +113,7 @@ function AdminBooks() {
     fetchCategories();
   }, []);
 
-  // Fetch Parent Categories
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await api.get("/categories");
-        if (response.data && response.data.categories) {
-          setCategories(response.data.categories);
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      }
-    };
-
-    fetchCategories();
-  }, []);
-
-  // Handle Parent Category Selection
-  const handleParentChange = (e) => {
-    const parentId = Number(e.target.value); // Convert to number
-    setSelectedParent(parentId);
-    handleChange(e); // Update book.category_id
-
-    // Find subcategories of selected parent
-    const children = categories.filter((cat) => cat.parent_id === parentId);
-    setSubCategories(children);
-  };
-
-  const handleToggle = () => {
-    setSidebarCollapsed(!isSidebarCollapsed);
-  };
-
+  // Fetch books from API
   useEffect(() => {
     const fetchBooks = async () => {
       try {
@@ -103,85 +131,75 @@ function AdminBooks() {
     fetchBooks();
   }, []);
 
-  const handleSearch = (event) => {
+  // Handle search
+  const handleSearch = async (event) => {
     const query = event.target.value.toLowerCase();
     setSearchQuery(query);
-    setFilteredBooks(
-      books.filter(
-        (book) =>
-          book.name.toLowerCase().includes(query) ||
-          book.author.toLowerCase().includes(query) ||
-          book.isbn.toLowerCase().includes(query)
-      )
-    );
-  };
-
-  // Open & Close Modal
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
-
-  // Handle input change
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setBook({ ...book, [name]: value });
-  };
-  // Handle File Upload
-  // Handle file input change
-  const handleFileChange = (e) => {
-    setBook({ ...book, image: e.target.files[0] });
-  };
-
-  // Handle Form Submission
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage("");
-
-    const formData = new FormData();
-    formData.append("name", book.name);
-    formData.append("author", book.author);
-    formData.append("isbn", book.isbn);
-    formData.append("description", book.description);
-    formData.append("no_of_copies", book.no_of_copies);
-    formData.append("category_id", book.category_id);
-    if (book.image) {
-      formData.append("image", book.image);
-    }
 
     try {
-      const response = await api.post("/books", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      setMessage(response.data.message);
-      setBook({
-        name: "",
-        author: "",
-        isbn: "",
-        image: null,
-        description: "",
-        no_of_copies: "",
-        category_id: "",
-      });
-      // Show success toast
-      toast.success("Book added successfully!");
-
-      // Close modal after 1.5 seconds
-      setTimeout(() => {
-        setShowSuccess(false);
-        closeModal();
-      }, 1500);
-      window.location.reload();
+      const response = await api.get(`/books/search?q=${query}`);
+      setFilteredBooks(response.data);
     } catch (error) {
-      console.error("Error adding book:", error);
-      toast.error("Failed to add book. Please try again.");
+      console.error("Error searching books:", error);
+      toast.error("Failed to search books. Please try again later.");
     }
   };
 
+  // Open modal for adding or updating a book
+  const openModal = (book = null) => {
+    if (book) {
+      setSelectedBook(book);
+      formik.setValues({
+        name: book.name,
+        author: book.author,
+        isbn: book.isbn,
+        image: null,
+        description: book.description,
+        no_of_copies: book.no_of_copies,
+        category_id: book.category_id,
+      });
+      setSelectedParent(book.category_id);
+      setImagePreview(book.image);
+    } else {
+      setSelectedBook(null);
+      formik.resetForm();
+      setSelectedParent("");
+      setImagePreview(null);
+    }
+    setIsModalOpen(true);
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedBook(null);
+    formik.resetForm();
+    setSelectedParent("");
+    setImagePreview(null);
+  };
+
+  // Handle file input change
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    formik.setFieldValue("image", file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  // Handle parent category selection
+  const handleParentChange = (e) => {
+    const parentId = Number(e.target.value);
+    setSelectedParent(parentId);
+    formik.setFieldValue("category_id", parentId);
+
+    // Find subcategories of selected parent
+    const children = categories.filter((cat) => cat.parent_id === parentId);
+    setSubCategories(children);
+  };
+
+  // Handle delete
   const handleDelete = (bookId) => {
-    // Set the bookId to be deleted and open the modal
     setSelectedBookToDelete(bookId);
-    setIsModalOpenDelete(true); // Open the confirmation modal
+    setIsModalOpenDelete(true);
   };
 
   const handleConfirmDelete = async () => {
@@ -195,78 +213,23 @@ function AdminBooks() {
       setBooks((prevBooks) =>
         prevBooks.filter((book) => book.id !== selectedBookToDelete)
       );
+      setFilteredBooks((prevBooks) =>
+        prevBooks.filter((book) => book.id !== selectedBookToDelete)
+      );
 
-      // Close the modal
       setIsModalOpenDelete(false);
-      window.location.reload();
     } catch (error) {
       console.error("Error deleting book:", error);
       toast.error("Failed to delete the book. Please try again.");
     }
   };
 
-  // Open the modal and load book data
-  const openUpdateModal = (book) => {
-    setSelectedBook(book);
-    setUpdatedBook(book); // Pre-fill form with existing data
-    setIsUpdateModalOpen(true);
-  };
-
-  // Close modal
-  const closeUpdateModal = () => {
-    setIsUpdateModalOpen(false);
-    setSelectedBook(null);
-  };
-
-  // Handle form input changes
-  const handleUpdateChange = (e) => {
-    const { name, value } = e.target;
-    setUpdatedBook((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Handle image change
-  const handleImageChange = (e) => {
-    setUpdatedBook((prev) => ({ ...prev, image: e.target.files[0] }));
-  };
-
-  // Handle form submission
-  const handleUpdateSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const formData = new FormData();
-      Object.entries(updatedBook).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-
-      const response = await api.put(`/books/${selectedBook.id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      toast.success(response.data.message || "Book updated successfully!");
-
-      // ✅ Fetch latest books from the server to reflect the update
-      fetchBooks();
-
-      closeUpdateModal();
-    } catch (error) {
-      console.error("Error updating book:", error);
-      toast.error("Failed to update book. Please try again.");
-    }
-  };
-
-  // Function to fetch books from the API
-  const fetchBooks = async () => {
-    try {
-      const response = await api.get("/books");
-      setBooks(response.data.books);
-    } catch (error) {
-      console.error("Error fetching books:", error);
-    }
-  };
-
   return (
     <div className="flex">
-      <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
+      <SideBar
+        isCollapsed={isSidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(!isSidebarCollapsed)}
+      />
       <div
         className={`transition-all duration-300 ${
           isSidebarCollapsed ? "ml-[5%]" : "ml-[20%]"
@@ -288,7 +251,7 @@ function AdminBooks() {
                 className="border rounded-lg px-5 py-2 w-96"
               />
               <button
-                onClick={openModal}
+                onClick={() => openModal()}
                 className="text-white px-3 py-2 rounded-lg flex items-center"
                 style={{ backgroundColor: "#001f5b" }}
               >
@@ -316,6 +279,7 @@ function AdminBooks() {
                     alt={book.name}
                     className="h-40 w-28 object-cover mb-3"
                   />
+
                   <h3 className="text-lg font-semibold text-center">
                     {book.name}
                   </h3>
@@ -327,7 +291,7 @@ function AdminBooks() {
                   <div className="flex justify-center space-x-3 mt-2">
                     <FaEdit
                       className="text-blue-600 cursor-pointer"
-                      onClick={() => openUpdateModal(book)}
+                      onClick={() => openModal(book)}
                     />
                     <FaTrash
                       className="text-red-600 cursor-pointer"
@@ -340,6 +304,8 @@ function AdminBooks() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
       {isModalOpenDelete && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
@@ -349,13 +315,13 @@ function AdminBooks() {
             <div className="flex justify-between">
               <button
                 className="bg-red-600 text-white px-4 py-2 rounded"
-                onClick={handleConfirmDelete} // Confirm the deletion
+                onClick={handleConfirmDelete}
               >
                 Yes, Delete
               </button>
               <button
                 className="bg-gray-400 text-white px-4 py-2 rounded"
-                onClick={() => setIsModalOpenDelete(false)} // Close the modal without deleting
+                onClick={() => setIsModalOpenDelete(false)}
               >
                 Cancel
               </button>
@@ -364,237 +330,118 @@ function AdminBooks() {
         </div>
       )}
 
-      {/* Add Book Modal */}
+      {/* Add/Update Book Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Add New Book</h2>
+              <h2 className="text-xl font-semibold">
+                {selectedBook ? "Update Book" : "Add New Book"}
+              </h2>
               <FaTimes
                 className="text-gray-500 cursor-pointer"
                 onClick={closeModal}
               />
             </div>
 
-            {showSuccess ? (
-              <div className="text-green-600 font-semibold text-center mt-4">
-                Book added successfully!
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                {/* Image Upload */}
-                <div>
-                  <label className="block text-gray-700">Image:</label>
-                  <input
-                    type="file"
-                    name="image"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="w-full border p-2 rounded"
-                  />
-                </div>
-
-                {/* Title */}
-                <div>
-                  <label className="block text-gray-700">Title:</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={book.name}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    required
-                  />
-                </div>
-
-                {/* Author */}
-                <div>
-                  <label className="block text-gray-700">Author:</label>
-                  <input
-                    type="text"
-                    name="author"
-                    value={book.author}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    required
-                  />
-                </div>
-
-                {/* ISBN */}
-                <div>
-                  <label className="block text-gray-700">ISBN:</label>
-                  <input
-                    type="text"
-                    name="isbn"
-                    value={book.isbn}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    required
-                  />
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-gray-700">Description:</label>
-                  <textarea
-                    name="description"
-                    value={book.description}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    rows="4"
-                  ></textarea>
-                </div>
-
-                {/* Category Selection */}
-                <div>
-                  <label className="block text-gray-700">Category:</label>
-                  <select
-                    name="category_id"
-                    value={selectedParent}
-                    onChange={handleParentChange}
-                    className="w-full border p-2 rounded"
-                    required
-                  >
-                    <option value="">Select a category</option>
-                    {categories
-                      .filter((cat) => cat.parent_id === null)
-                      .map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                  </select>
-
-                  {subCategories.length > 0 && (
-                    <div className="mt-4">
-                      <label className="block text-gray-700">
-                        Subcategory:
-                      </label>
-                      <select
-                        name="category_id"
-                        value={book.category_id}
-                        onChange={handleChange}
-                        className="w-full border p-2 rounded"
-                        required
-                      >
-                        <option value="">Select a subcategory</option>
-                        {subCategories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                {/* Number of Copies */}
-                <div>
-                  <label className="block text-gray-700">
-                    Number of Copies:
-                  </label>
-                  <input
-                    type="number"
-                    name="no_of_copies"
-                    value={book.no_of_copies}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    required
-                    min="1"
-                  />
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded w-full"
-                >
-                  Add Book
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Update Book Modal */}
-      {isUpdateModalOpen && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Update Book</h2>
-              <FaTimes
-                className="text-gray-500 cursor-pointer"
-                onClick={closeUpdateModal}
-              />
-            </div>
-
-            <form onSubmit={handleUpdateSubmit} className="space-y-4 mt-4">
+            <form onSubmit={formik.handleSubmit} className="space-y-4 mt-4">
+              {/* Image Upload */}
               <div>
                 <label className="block text-gray-700">Image:</label>
                 <input
                   type="file"
                   name="image"
                   accept="image/*"
-                  onChange={handleImageChange}
+                  onChange={handleFileChange}
                   className="w-full border p-2 rounded"
                 />
+                {imagePreview && (
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="h-40 w-28 object-cover mt-3"
+                  />
+                )}
+                {formik.touched.image && formik.errors.image ? (
+                  <div className="text-red-500">{formik.errors.image}</div>
+                ) : null}
               </div>
 
+              {/* Title */}
               <div>
                 <label className="block text-gray-700">Title:</label>
                 <input
                   type="text"
                   name="name"
-                  value={updatedBook.name || ""}
-                  onChange={handleUpdateChange}
+                  value={formik.values.name}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   className="w-full border p-2 rounded"
-                  required
                 />
+                {formik.touched.name && formik.errors.name ? (
+                  <div className="text-red-500">{formik.errors.name}</div>
+                ) : null}
               </div>
 
+              {/* Author */}
               <div>
                 <label className="block text-gray-700">Author:</label>
                 <input
                   type="text"
                   name="author"
-                  value={updatedBook.author || ""}
-                  onChange={handleUpdateChange}
+                  value={formik.values.author}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   className="w-full border p-2 rounded"
-                  required
                 />
+                {formik.touched.author && formik.errors.author ? (
+                  <div className="text-red-500">{formik.errors.author}</div>
+                ) : null}
               </div>
 
+              {/* ISBN */}
               <div>
                 <label className="block text-gray-700">ISBN:</label>
                 <input
                   type="text"
                   name="isbn"
-                  value={updatedBook.isbn || ""}
-                  onChange={handleUpdateChange}
+                  value={formik.values.isbn}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   className="w-full border p-2 rounded"
-                  required
                 />
+                {formik.touched.isbn && formik.errors.isbn ? (
+                  <div className="text-red-500">{formik.errors.isbn}</div>
+                ) : null}
               </div>
 
+              {/* Description */}
               <div>
                 <label className="block text-gray-700">Description:</label>
                 <textarea
                   name="description"
-                  value={updatedBook.description || ""}
-                  onChange={handleUpdateChange}
+                  value={formik.values.description}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   className="w-full border p-2 rounded"
                   rows="4"
                 ></textarea>
+                {formik.touched.description && formik.errors.description ? (
+                  <div className="text-red-500">
+                    {formik.errors.description}
+                  </div>
+                ) : null}
               </div>
+
+              {/* Category Selection */}
               <div>
                 <label className="block text-gray-700">Category:</label>
                 <select
                   name="category_id"
                   value={selectedParent}
                   onChange={handleParentChange}
+                  onBlur={formik.handleBlur}
                   className="w-full border p-2 rounded"
-                  required
                 >
                   <option value="">Select a category</option>
                   {categories
@@ -605,25 +452,58 @@ function AdminBooks() {
                       </option>
                     ))}
                 </select>
+
+                {subCategories.length > 0 && (
+                  <div className="mt-4">
+                    <label className="block text-gray-700">Subcategory:</label>
+                    <select
+                      name="category_id"
+                      value={formik.values.category_id}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      className="w-full border p-2 rounded"
+                    >
+                      <option value="">Select a subcategory</option>
+                      {subCategories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {formik.touched.category_id && formik.errors.category_id ? (
+                  <div className="text-red-500">
+                    {formik.errors.category_id}
+                  </div>
+                ) : null}
               </div>
+
+              {/* Number of Copies */}
               <div>
                 <label className="block text-gray-700">Number of Copies:</label>
                 <input
                   type="number"
                   name="no_of_copies"
-                  value={updatedBook.no_of_copies || ""}
-                  onChange={handleUpdateChange}
+                  value={formik.values.no_of_copies}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   className="w-full border p-2 rounded"
-                  required
                   min="1"
                 />
+                {formik.touched.no_of_copies && formik.errors.no_of_copies ? (
+                  <div className="text-red-500">
+                    {formik.errors.no_of_copies}
+                  </div>
+                ) : null}
               </div>
 
+              {/* Submit Button */}
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded"
+                className="bg-blue-600 text-white px-4 py-2 rounded w-full"
               >
-                Update Book
+                {selectedBook ? "Update Book" : "Add Book"}
               </button>
             </form>
           </div>
