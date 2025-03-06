@@ -118,7 +118,7 @@ function ClientSidebar({ isCollapsed, onToggle }) {
           </li>
           <li style={{ margin: "10px 0" }}>
             <a
-              href="#"
+              href="/borrowedBook"
               style={{
                 color: "#fff",
                 textDecoration: "none",

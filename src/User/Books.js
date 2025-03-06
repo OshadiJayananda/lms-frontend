@@ -4,6 +4,7 @@ import api from "../Components/Api";
 import { useNavigate } from "react-router-dom";
 import ClientSidebar from "../Components/ClientSidebar";
 import ClientHeaderBanner from "./components/ClientHeaderBanner";
+import { toast } from "react-toastify";
 
 function Books() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -75,6 +76,18 @@ function Books() {
     setFilteredBooks(filtered);
   };
 
+  const requestBook = async (bookId) => {
+    try {
+      await api.post(`/books/${bookId}/request`);
+      toast.success("Book requested successfully!");
+      // Optionally, refresh the book list or update the state
+    } catch (error) {
+      toast.error(
+        "Failed to request book: " +
+          (error.response?.data?.message || error.message)
+      );
+    }
+  };
   return (
     <div className="flex">
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
@@ -145,9 +158,8 @@ function Books() {
                     className={`px-4 py-2 mt-2 rounded text-white ${
                       book.no_of_copies > 0 ? "bg-blue-600" : "bg-gray-500"
                     }`}
-                    style={{
-                      backgroundColor: "#001f5b",
-                    }}
+                    style={{ backgroundColor: "#001f5b" }}
+                    onClick={() => requestBook(book.id)}
                   >
                     {book.no_of_copies > 0 ? "Request" : "Reserve"}
                   </button>
