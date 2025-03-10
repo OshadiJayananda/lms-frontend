@@ -17,6 +17,7 @@ import AdminBooks from "./Admin/Books/AdminBooks";
 import Books from "./User/Books";
 import Profile from "./User/Profile";
 import BorrowedBooks from "./User/BorrowedBooks";
+import BookRequests from "./Admin/BookRequests";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
           <Route path="/admin/categories" element={<Categories />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/borrowedBook" element={<BorrowedBooks />} />
+          <Route path="/bookRequests" element={<BookRequests />} />
 
           {/* Catch all - Redirect to dashboard if logged in, else home */}
           {/* <Route path="*" element={<RedirectToDashboard />} /> */}
