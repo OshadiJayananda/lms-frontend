@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
-import api from "../Components/Api";
+import api from "../../Components/Api";
 import { useNavigate } from "react-router-dom";
-import ClientSidebar from "../Components/ClientSidebar";
-import ClientHeaderBanner from "./components/ClientHeaderBanner";
+import ClientSidebar from "../../Components/ClientSidebar";
+import ClientHeaderBanner from "../components/ClientHeaderBanner";
 import { toast } from "react-toastify";
 
 function Books() {

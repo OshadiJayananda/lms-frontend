@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import api from "../Components/Api";
-import ClientSidebar from "../Components/ClientSidebar";
-import ClientHeaderBanner from "./components/ClientHeaderBanner";
+import api from "../../Components/Api";
+import ClientSidebar from "../../Components/ClientSidebar";
+import ClientHeaderBanner from "../components/ClientHeaderBanner";
 import { FaSearch, FaUndo, FaSyncAlt } from "react-icons/fa";
 
 function BorrowedBooks() {

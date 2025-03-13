@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import api from "../Components/Api";
+import api from "../../Components/Api";
 import Modal from "react-modal";
-import ClientHeaderBanner from "./components/ClientHeaderBanner";
-import ClientSidebar from "../Components/ClientSidebar";
+import ClientHeaderBanner from "../components/ClientHeaderBanner";
+import ClientSidebar from "../../Components/ClientSidebar";
 import { toast } from "react-toastify";
 import { FaUserCircle, FaTrash } from "react-icons/fa";
 

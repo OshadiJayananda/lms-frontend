@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import HeaderBanner from "../Admin/components/HeaderBanner";
-import ClientSidebar from "../Components/ClientSidebar";
+import SideBar from "../../Components/SideBar";
+import HeaderBanner from "../components/HeaderBanner";
 
-function Dashboard() {
+function AdminDashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
@@ -13,7 +13,7 @@ function Dashboard() {
 
   return (
     <div>
-      <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
+      <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
       <div
         style={{
           marginLeft: isSidebarCollapsed ? "5%" : "20%",
@@ -21,7 +21,7 @@ function Dashboard() {
           transition: "margin-left 0.3s ease",
         }}
       >
-        <HeaderBanner book={"Dashboard"} heading_pic={heading_pic} />
+        <HeaderBanner book={"Book Section"} heading_pic={heading_pic} />
 
         <div style={{ padding: "20px" }}>
           <h2>Welcome to the Dashboard</h2>
@@ -31,5 +31,4 @@ function Dashboard() {
     </div>
   );
 }
-
-export default Dashboard;
+export default AdminDashboard;

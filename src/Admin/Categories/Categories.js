@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import SideBar from "../Components/SideBar";
-import api from "../Components/Api";
+import SideBar from "../../Components/SideBar";
+import api from "../../Components/Api";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import Header from "../Components/Header";
+import Header from "../../Components/Header";
 import { toast } from "react-toastify";
 
 function Categories() {
