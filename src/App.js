@@ -1,11 +1,4 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  // Navigate,
-  // useNavigate,
-} from "react-router-dom";
-// import { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import Home from "./Components/Home";
 import Login from "./Components/Login";
@@ -18,6 +11,9 @@ import Books from "./User/Books";
 import Profile from "./User/Profile";
 import BorrowedBooks from "./User/BorrowedBooks";
 import BookRequests from "./Admin/BookRequests";
+import AdminAuthMiddleware from "./middleware/AdminAuthMiddleware";
+import UserAuthMiddleware from "./middleware/UserAuthMiddleware";
+// import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
   return (
@@ -25,23 +21,77 @@ function App() {
       <div>
         <ToastContainer />
         <Routes>
-          {/* Prevent access to login, sign in, or home if logged in */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signIn" element={<SignIn />} />
 
-          {/* Protected Routes */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/books" element={<AdminBooks />} />
-          <Route path="/books" element={<Books />} />
-          <Route path="/admin/categories" element={<Categories />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/borrowedBook" element={<BorrowedBooks />} />
-          <Route path="/bookRequests" element={<BookRequests />} />
+          {/* Admin Routes */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <AdminAuthMiddleware>
+                <AdminDashboard />
+              </AdminAuthMiddleware>
+            }
+          />
+          <Route
+            path="/admin/books"
+            element={
+              <AdminAuthMiddleware>
+                <AdminBooks />
+              </AdminAuthMiddleware>
+            }
+          />
+          <Route
+            path="/admin/categories"
+            element={
+              <AdminAuthMiddleware>
+                <Categories />
+              </AdminAuthMiddleware>
+            }
+          />
+          <Route
+            path="/bookRequests"
+            element={
+              <AdminAuthMiddleware>
+                <BookRequests />
+              </AdminAuthMiddleware>
+            }
+          />
 
-          {/* Catch all - Redirect to dashboard if logged in, else home */}
-          {/* <Route path="*" element={<RedirectToDashboard />} /> */}
+          {/* User Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <UserAuthMiddleware>
+                <Dashboard />
+              </UserAuthMiddleware>
+            }
+          />
+          <Route
+            path="/books"
+            element={
+              <UserAuthMiddleware>
+                <Books />
+              </UserAuthMiddleware>
+            }
+          />
+          <Route
+            path="/borrowedBook"
+            element={
+              <UserAuthMiddleware>
+                <BorrowedBooks />
+              </UserAuthMiddleware>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <UserAuthMiddleware>
+                <Profile />
+              </UserAuthMiddleware>
+            }
+          />
         </Routes>
       </div>
     </Router>
