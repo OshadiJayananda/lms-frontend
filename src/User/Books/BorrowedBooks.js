@@ -3,6 +3,7 @@ import api from "../../Components/Api";
 import ClientSidebar from "../../Components/ClientSidebar";
 import ClientHeaderBanner from "../components/ClientHeaderBanner";
 import { FaSearch, FaUndo, FaSyncAlt } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 function BorrowedBooks() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -12,17 +13,19 @@ function BorrowedBooks() {
   const [searchQuery, setSearchQuery] = useState("");
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
+  // Fetch borrowed books
+  const fetchBorrowedBooks = async () => {
+    try {
+      const response = await api.get("/borrowed-books");
+      setBorrowedBooks(response.data);
+    } catch (error) {
+      setError("Failed to fetch borrowed books. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchBorrowedBooks = async () => {
-      try {
-        const response = await api.get("/borrowed-books");
-        setBorrowedBooks(response.data);
-      } catch (error) {
-        setError("Failed to fetch borrowed books. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchBorrowedBooks();
   }, []);
 
@@ -30,16 +33,42 @@ function BorrowedBooks() {
     setSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  // Handle search
   const handleSearch = (e) => {
     setSearchQuery(e.target.value.toLowerCase());
   };
 
+  // Filter borrowed books based on search query
   const filteredBooks = borrowedBooks.filter(
     (borrow) =>
       borrow.book.name.toLowerCase().includes(searchQuery) ||
       borrow.book.isbn.toLowerCase().includes(searchQuery) ||
       borrow.book.id.toString().includes(searchQuery)
   );
+
+  // // Handle returning a book
+  // const handleReturnBook = async (borrowId) => {
+  //   try {
+  //     await api.post(`/borrowed-books/${borrowId}/return`);
+  //     toast.success("Book returned successfully!");
+  //     // Refresh the borrowed books list
+  //     fetchBorrowedBooks();
+  //   } catch (error) {
+  //     toast.error("Failed to return book. Please try again later.");
+  //   }
+  // };
+
+  // // Handle renewing a book
+  // const handleRenewBook = async (borrowId) => {
+  //   try {
+  //     await api.post(`/borrowed-books/${borrowId}/renew`);
+  //     toast.success("Book renewed successfully!");
+  //     // Refresh the borrowed books list
+  //     fetchBorrowedBooks();
+  //   } catch (error) {
+  //     toast.error("Failed to renew book. Please try again later.");
+  //   }
+  // };
 
   return (
     <div className="flex">
@@ -65,10 +94,16 @@ function BorrowedBooks() {
               <FaSearch className="absolute left-3 top-3 text-gray-400" />
             </div>
             <div className="flex gap-2">
-              <button className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+              <button
+                className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                // onClick={() => handleReturnBook(/* pass borrowId here */)}
+              >
                 <FaUndo className="mr-2" /> Return Book
               </button>
-              <button className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+              <button
+                className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                // onClick={() => handleRenewBook(/* pass borrowId here */)}
+              >
                 <FaSyncAlt className="mr-2" /> Renew Book
               </button>
             </div>

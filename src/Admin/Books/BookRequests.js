@@ -60,6 +60,18 @@ function BookRequests() {
     }
   };
 
+  const handleConfirmGiven = async (borrowId) => {
+    try {
+      await api.post(`/admin/book-requests/${borrowId}/confirm`);
+      setPendingRequests(
+        pendingRequests.filter((request) => request.id !== borrowId)
+      );
+      toast.success("Book issued successfully!");
+    } catch (error) {
+      toast.error("Failed to confirm book given. Please try again later.");
+    }
+  };
+
   return (
     <div className="flex">
       <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
@@ -158,6 +170,12 @@ function BookRequests() {
                           className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition ml-2"
                         >
                           Reject
+                        </button>
+                        <button
+                          onClick={() => handleConfirmGiven(request.id)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition ml-2"
+                        >
+                          Confirm Given
                         </button>
                       </td>
                     </tr>
