@@ -37,8 +37,11 @@ function BookRequests() {
   const handleApprove = async (borrowId) => {
     try {
       await api.post(`/admin/book-requests/${borrowId}/approve`);
-      setPendingRequests(
-        pendingRequests.filter((request) => request.id !== borrowId)
+      // Update the status of the request to "Approved" instead of removing it
+      setPendingRequests((prevRequests) =>
+        prevRequests.map((request) =>
+          request.id === borrowId ? { ...request, status: "Approved" } : request
+        )
       );
       toast.success("Request approved successfully!");
     } catch (error) {
@@ -50,8 +53,11 @@ function BookRequests() {
   const handleReject = async (borrowId) => {
     try {
       await api.post(`/admin/book-requests/${borrowId}/reject`);
-      setPendingRequests(
-        pendingRequests.filter((request) => request.id !== borrowId)
+      // Update the status of the request to "Rejected" instead of removing it
+      setPendingRequests((prevRequests) =>
+        prevRequests.map((request) =>
+          request.id === borrowId ? { ...request, status: "Rejected" } : request
+        )
       );
       toast.success("Request rejected successfully!");
     } catch (error) {
@@ -63,8 +69,9 @@ function BookRequests() {
   const handleConfirmGiven = async (borrowId) => {
     try {
       await api.post(`/admin/book-requests/${borrowId}/confirm`);
-      setPendingRequests(
-        pendingRequests.filter((request) => request.id !== borrowId)
+      // Remove the request from the list after confirming the book is given
+      setPendingRequests((prevRequests) =>
+        prevRequests.filter((request) => request.id !== borrowId)
       );
       toast.success("Book issued successfully!");
     } catch (error) {
@@ -159,24 +166,30 @@ function BookRequests() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button
-                          onClick={() => handleApprove(request.id)}
-                          className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 transition"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleReject(request.id)}
-                          className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition ml-2"
-                        >
-                          Reject
-                        </button>
-                        <button
-                          onClick={() => handleConfirmGiven(request.id)}
-                          className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition ml-2"
-                        >
-                          Confirm Given
-                        </button>
+                        {request.status === "Pending" && (
+                          <>
+                            <button
+                              onClick={() => handleApprove(request.id)}
+                              className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 transition"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleReject(request.id)}
+                              className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition ml-2"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {request.status === "Approved" && (
+                          <button
+                            onClick={() => handleConfirmGiven(request.id)}
+                            className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition"
+                          >
+                            Confirm Given
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
