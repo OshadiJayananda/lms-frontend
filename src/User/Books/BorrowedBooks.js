@@ -46,30 +46,6 @@ function BorrowedBooks() {
       borrow.book.id.toString().includes(searchQuery)
   );
 
-  // // Handle returning a book
-  // const handleReturnBook = async (borrowId) => {
-  //   try {
-  //     await api.post(`/borrowed-books/${borrowId}/return`);
-  //     toast.success("Book returned successfully!");
-  //     // Refresh the borrowed books list
-  //     fetchBorrowedBooks();
-  //   } catch (error) {
-  //     toast.error("Failed to return book. Please try again later.");
-  //   }
-  // };
-
-  // // Handle renewing a book
-  // const handleRenewBook = async (borrowId) => {
-  //   try {
-  //     await api.post(`/borrowed-books/${borrowId}/renew`);
-  //     toast.success("Book renewed successfully!");
-  //     // Refresh the borrowed books list
-  //     fetchBorrowedBooks();
-  //   } catch (error) {
-  //     toast.error("Failed to renew book. Please try again later.");
-  //   }
-  // };
-
   return (
     <div className="flex">
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
@@ -81,37 +57,49 @@ function BorrowedBooks() {
         <ClientHeaderBanner book={"Borrowed Books"} heading_pic={heading_pic} />
 
         {/* Search and Action Buttons */}
-        <div className="mb-6 flex flex-row sm:flex-row gap-4 p-6">
+        <div className="mb-4 flex flex-row sm:flex-row gap-4 p-6">
           <div
             style={{
               backgroundColor: "#f0f4ff",
               padding: "20px",
               borderRadius: "8px",
+              width: "500px",
             }}
-            className="ml-auto gap-4"
+            className="ml-auto" // Added this class to push it to the right
           >
-            <div className="relative flex-grow">
+            <div className="relative flex-grow mb-2">
               <input
                 type="text"
-                placeholder="Q Search"
+                placeholder="Search"
                 value={searchQuery}
                 onChange={handleSearch}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <FaSearch className="absolute left-3 top-3 text-gray-400" />
             </div>
-            <div className="relative flex-grow">
+            <div className="relative flex-grow mb-2">
+              <h3 className="relative flex-grow mb-1 font-bold ">Book Id:</h3>
               <input
                 type="text"
                 placeholder="Book ID"
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="flex-col gap-2">
-              <button className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            <div className="flex flex-col gap-2">
+              <button
+                className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                style={{
+                  backgroundColor: "#001f5b",
+                }}
+              >
                 <FaUndo className="mr-2" /> Return Book
               </button>
-              <button className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+              <button
+                className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                style={{
+                  backgroundColor: "#001f5b",
+                }}
+              >
                 <FaSyncAlt className="mr-2" /> Renew Book
               </button>
             </div>
