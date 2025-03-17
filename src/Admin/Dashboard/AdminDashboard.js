@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import SideBar from "../../Components/SideBar";
 import HeaderBanner from "../components/HeaderBanner";
+import Header from "../../Components/Header";
 
 function AdminDashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -24,6 +25,9 @@ function AdminDashboard() {
         <HeaderBanner book={"Book Section"} heading_pic={heading_pic} />
 
         <div style={{ padding: "20px" }}>
+          <div className="flex-1">
+            <Header />
+          </div>
           <h2>Welcome to the Dashboard</h2>
           {/* Add additional dashboard content here */}
         </div>
