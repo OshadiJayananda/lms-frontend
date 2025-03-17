@@ -18,8 +18,10 @@ function Login() {
     try {
       const response = await api.post("/login", { email, password });
 
-      // Save token
+      // Save token and role
       localStorage.setItem("token", response.data.access_token);
+      localStorage.setItem("role", response.data.role); // Store the role
+
       toast.success("Login Successful!");
 
       // Get role from the response
