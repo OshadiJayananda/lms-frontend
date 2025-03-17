@@ -58,6 +58,11 @@ function BorrowedBooks() {
 
         {/* Search and Action Buttons */}
         <div className="mb-4 flex flex-row sm:flex-row gap-4 p-6">
+          <div>
+            <p className="text-gray-600">
+              You can borrow up to 5 books at a time.
+            </p>
+          </div>
           <div
             style={{
               backgroundColor: "#f0f4ff",
@@ -119,9 +124,6 @@ function BorrowedBooks() {
               <h1 className="text-2xl font-bold text-gray-800">
                 Borrow History
               </h1>
-              <p className="text-gray-600">
-                You can borrow up to 5 books at a time.
-              </p>
             </div>
             <table className="min-w-full">
               <thead className="bg-gray-50">
