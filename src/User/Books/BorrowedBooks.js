@@ -46,6 +46,23 @@ function BorrowedBooks() {
       borrow.book.id.toString().includes(searchQuery)
   );
 
+  const handleReturnBook = async () => {
+    const bookId = document.querySelector('input[placeholder="Book ID"]').value;
+    if (!bookId) {
+      toast.error("Please enter a book ID.");
+      return;
+    }
+
+    try {
+      const response = await api.post(`/borrowed-books/${bookId}/return`);
+      toast.success(response.data.message);
+      fetchBorrowedBooks(); // Refresh the list of borrowed books
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to return the book."
+      );
+    }
+  };
   return (
     <div className="flex">
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
@@ -93,9 +110,8 @@ function BorrowedBooks() {
             <div className="flex flex-col gap-2">
               <button
                 className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                style={{
-                  backgroundColor: "#001f5b",
-                }}
+                style={{ backgroundColor: "#001f5b" }}
+                onClick={handleReturnBook}
               >
                 <FaUndo className="mr-2" /> Return Book
               </button>
