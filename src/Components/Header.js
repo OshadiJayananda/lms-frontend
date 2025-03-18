@@ -35,6 +35,17 @@ function Header() {
         Renew Requests
       </a>
       <a
+        href="/returnedBooks"
+        style={{
+          color: "#000",
+          textDecoration: "none",
+          fontSize: "16px",
+          cursor: "pointer",
+        }}
+      >
+        Returned Books
+      </a>
+      <a
         href="#"
         style={{
           color: "#000",
