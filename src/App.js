@@ -14,6 +14,7 @@ import BookRequests from "./Admin/Books/BookRequests";
 import AdminAuthMiddleware from "./middleware/AdminAuthMiddleware";
 import UserAuthMiddleware from "./middleware/UserAuthMiddleware";
 import ReturnedBooks from "./Admin/Books/ReturnedBooks";
+import BorrowedHistory from "./Admin/Books/BorrowedHistory";
 // import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
@@ -64,6 +65,14 @@ function App() {
             element={
               <AdminAuthMiddleware>
                 <ReturnedBooks />
+              </AdminAuthMiddleware>
+            }
+          />
+          <Route
+            path="/borrowedHistory"
+            element={
+              <AdminAuthMiddleware>
+                <BorrowedHistory />
               </AdminAuthMiddleware>
             }
           />

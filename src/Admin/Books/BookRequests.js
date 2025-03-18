@@ -4,6 +4,7 @@ import HeaderBanner from "../components/HeaderBanner";
 import api from "../../Components/Api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Header from "../../Components/Header";
 
 function BookRequests() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -90,6 +91,9 @@ function BookRequests() {
         <HeaderBanner book={"Book Requests"} heading_pic={heading_pic} />
 
         <div className="p-6">
+          <div className="flex-1">
+            <Header />
+          </div>
           <h2 className="text-2xl font-bold mb-4">
             Welcome to the Book Requests
           </h2>

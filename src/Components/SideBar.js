@@ -115,7 +115,7 @@ function SideBar({ isCollapsed, onToggle }) {
           </li>
           <li style={{ margin: "10px 0" }}>
             <a
-              href="#"
+              href="/borrowedHistory"
               style={{
                 color: "#fff",
                 textDecoration: "none",
