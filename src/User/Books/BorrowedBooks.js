@@ -17,6 +17,9 @@ function BorrowedBooks() {
   const [selectedBookId, setSelectedBookId] = useState(null);
   const [exactReturnDate, setExactReturnDate] = useState(null);
   const [renewDate, setRenewDate] = useState(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [bookAvailability, setBookAvailability] = useState(null);
+
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   const fetchBorrowedBooks = async () => {
@@ -86,30 +89,67 @@ function BorrowedBooks() {
     }
   };
 
+  const checkBookAvailability = async (bookId) => {
+    try {
+      const response = await api.get(`/books/${bookId}/availability`);
+      return response.data.available;
+    } catch (error) {
+      console.error("Error checking book availability:", error);
+      return false;
+    }
+  };
+
   const handleRenewSubmit = async () => {
     if (!renewDate) {
       toast.error("Please select a renewal date.");
       return;
     }
 
-    const formattedDate = renewDate.toISOString().split("T")[0]; // YYYY-MM-DD
-    console.log("Submitting:", {
-      bookId: selectedBookId,
-      renewDate: formattedDate,
-    });
+    const formattedDate = renewDate.toISOString().split("T")[0];
 
+    // First check book availability
+    const isAvailable = await checkBookAvailability(selectedBookId);
+
+    if (!isAvailable) {
+      setIsModalOpen(false);
+      setBookAvailability({
+        bookId: selectedBookId,
+        requestedDate: formattedDate,
+      });
+      setIsConfirmModalOpen(true);
+      return;
+    }
+
+    // If available, proceed with renewal
     try {
       const response = await api.post(
-        `/borrowed-books/${selectedBookId}/renew`,
-        {
-          renewDate: formattedDate,
-        }
+        `/borrowed-books/${selectedBookId}/renew-request`,
+        { renewDate: formattedDate }
       );
-      toast.success(response.data.message);
+      toast.success("Renewal request sent to admin for approval");
       setIsModalOpen(false);
       fetchBorrowedBooks();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to renew the book.");
+      toast.error(
+        error.response?.data?.message || "Failed to send renewal request."
+      );
+    }
+  };
+
+  const confirmUnavailableRenewal = async () => {
+    try {
+      await api.post(
+        `/borrowed-books/${bookAvailability.bookId}/notify-admin`,
+        {
+          requestedDate: bookAvailability.requestedDate,
+        }
+      );
+      toast.info(
+        "We've notified the admin about your interest. You'll be notified when copies become available."
+      );
+      setIsConfirmModalOpen(false);
+    } catch (error) {
+      toast.error("Failed to send notification to admin.");
     }
   };
 
@@ -287,6 +327,47 @@ function BorrowedBooks() {
                   onClick={handleRenewSubmit}
                 >
                   Renew
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation Modal for Unavailable Books */}
+        {isConfirmModalOpen && (
+          <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Book Not Available</h2>
+                <FaTimes
+                  className="text-gray-500 cursor-pointer"
+                  onClick={() => setIsConfirmModalOpen(false)}
+                />
+              </div>
+              <div className="mt-4">
+                <p>
+                  This book is currently not available for renewal. Would you
+                  like us to notify you when it becomes available?
+                </p>
+                <p className="mt-2 text-sm text-gray-600">
+                  Your requested renewal date:{" "}
+                  {new Date(
+                    bookAvailability.requestedDate
+                  ).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="mt-6 flex justify-end gap-4">
+                <button
+                  className="px-4 py-2 border border-gray-300 rounded-lg"
+                  onClick={() => setIsConfirmModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                  onClick={confirmUnavailableRenewal}
+                >
+                  Notify Me
                 </button>
               </div>
             </div>
