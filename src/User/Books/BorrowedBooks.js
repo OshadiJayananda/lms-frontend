@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import api from "../../Components/Api";
 import ClientSidebar from "../../Components/ClientSidebar";
 import ClientHeaderBanner from "../components/ClientHeaderBanner";
-import { FaSearch, FaUndo, FaSyncAlt } from "react-icons/fa";
+import { FaSearch, FaUndo, FaSyncAlt, FaTimes } from "react-icons/fa";
 import { toast } from "react-toastify";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 function BorrowedBooks() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -11,9 +13,12 @@ function BorrowedBooks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBookId, setSelectedBookId] = useState(null);
+  const [exactReturnDate, setExactReturnDate] = useState(null);
+  const [renewDate, setRenewDate] = useState(null);
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
-  // Fetch borrowed books
   const fetchBorrowedBooks = async () => {
     try {
       const response = await api.get("/borrowed-books");
@@ -33,12 +38,10 @@ function BorrowedBooks() {
     setSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  // Handle search
   const handleSearch = (e) => {
     setSearchQuery(e.target.value.toLowerCase());
   };
 
-  // Filter borrowed books based on search query
   const filteredBooks = borrowedBooks.filter(
     (borrow) =>
       borrow.book.name.toLowerCase().includes(searchQuery) ||
@@ -56,13 +59,60 @@ function BorrowedBooks() {
     try {
       const response = await api.post(`/borrowed-books/${bookId}/return`);
       toast.success(response.data.message);
-      fetchBorrowedBooks(); // Refresh the list of borrowed books
+      fetchBorrowedBooks();
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Failed to return the book."
       );
     }
   };
+
+  const handleRenewBook = async () => {
+    const bookId = document.querySelector('input[placeholder="Book ID"]').value;
+    if (!bookId) {
+      toast.error("Please enter a book ID.");
+      return;
+    }
+
+    const selectedBook = borrowedBooks.find(
+      (borrow) => borrow.book.id.toString() === bookId
+    );
+    if (selectedBook) {
+      setExactReturnDate(new Date(selectedBook.due_date));
+      setSelectedBookId(bookId);
+      setIsModalOpen(true);
+    } else {
+      toast.error("Book not found.");
+    }
+  };
+
+  const handleRenewSubmit = async () => {
+    if (!renewDate) {
+      toast.error("Please select a renewal date.");
+      return;
+    }
+
+    const formattedDate = renewDate.toISOString().split("T")[0]; // YYYY-MM-DD
+    console.log("Submitting:", {
+      bookId: selectedBookId,
+      renewDate: formattedDate,
+    });
+
+    try {
+      const response = await api.post(
+        `/borrowed-books/${selectedBookId}/renew`,
+        {
+          renewDate: formattedDate,
+        }
+      );
+      toast.success(response.data.message);
+      setIsModalOpen(false);
+      fetchBorrowedBooks();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to renew the book.");
+    }
+  };
+
   return (
     <div className="flex">
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
@@ -87,7 +137,7 @@ function BorrowedBooks() {
               borderRadius: "8px",
               width: "500px",
             }}
-            className="ml-auto" // Added this class to push it to the right
+            className="ml-auto"
           >
             <div className="relative flex-grow mb-2">
               <input
@@ -120,6 +170,7 @@ function BorrowedBooks() {
                 style={{
                   backgroundColor: "#001f5b",
                 }}
+                onClick={handleRenewBook}
               >
                 <FaSyncAlt className="mr-2" /> Renew Book
               </button>
@@ -199,6 +250,46 @@ function BorrowedBooks() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Renew Book Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Renew Book</h2>
+                <FaTimes
+                  className="text-gray-500 cursor-pointer"
+                  onClick={() => setIsModalOpen(false)}
+                />
+              </div>
+              <div className="mt-4">
+                <label className="block text-gray-700">
+                  Select Renewal Date:
+                </label>
+                <DatePicker
+                  selected={renewDate}
+                  onChange={(date) => setRenewDate(date)}
+                  minDate={exactReturnDate}
+                  maxDate={
+                    new Date(
+                      exactReturnDate.getTime() + 30 * 24 * 60 * 60 * 1000
+                    )
+                  }
+                  inline
+                  highlightDates={[exactReturnDate]}
+                />
+              </div>
+              <div className="mt-6">
+                <button
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                  onClick={handleRenewSubmit}
+                >
+                  Renew
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

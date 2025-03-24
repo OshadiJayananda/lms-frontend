@@ -24,7 +24,7 @@ function Header() {
         Book Requests
       </a>
       <a
-        href="#"
+        href="/renewBooks"
         style={{
           color: "#000",
           textDecoration: "none",

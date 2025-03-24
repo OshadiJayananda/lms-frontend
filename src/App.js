@@ -15,6 +15,7 @@ import AdminAuthMiddleware from "./middleware/AdminAuthMiddleware";
 import UserAuthMiddleware from "./middleware/UserAuthMiddleware";
 import ReturnedBooks from "./Admin/Books/ReturnedBooks";
 import BorrowedHistory from "./Admin/Books/BorrowedHistory";
+import RenewBook from "./Admin/Books/RenewBook";
 // import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
@@ -26,7 +27,6 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signIn" element={<SignIn />} />
-
           {/* Admin Routes */}
           <Route
             path="/admin/dashboard"
@@ -68,6 +68,15 @@ function App() {
               </AdminAuthMiddleware>
             }
           />
+          //renewBooks
+          <Route
+            path="/renewBooks"
+            element={
+              <AdminAuthMiddleware>
+                <RenewBook />
+              </AdminAuthMiddleware>
+            }
+          />
           <Route
             path="/borrowedHistory"
             element={
@@ -76,7 +85,6 @@ function App() {
               </AdminAuthMiddleware>
             }
           />
-
           {/* User Routes */}
           <Route
             path="/dashboard"
