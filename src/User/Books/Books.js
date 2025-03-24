@@ -121,6 +121,27 @@ function Books() {
     }
   };
 
+  const reserveBook = async (bookId) => {
+    try {
+      const response = await api.post(
+        `/books/${bookId}/reserve`,
+        { reservation_date: new Date().toISOString().split("T")[0] },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      toast.success(response.data.message);
+    } catch (error) {
+      console.error(
+        "Reservation error:",
+        error.response?.data || error.message
+      );
+      toast.error(error.response?.data?.message || "Failed to reserve book");
+    }
+  };
   return (
     <div className="flex">
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
@@ -200,7 +221,11 @@ function Books() {
                         book.no_of_copies > 0 ? "bg-blue-600" : "bg-gray-500"
                       }`}
                       style={{ backgroundColor: "#001f5b" }}
-                      onClick={() => requestBook(book.id)}
+                      onClick={() =>
+                        book.no_of_copies > 0
+                          ? requestBook(book.id)
+                          : reserveBook(book.id)
+                      }
                       disabled={requesting || isBorrowed}
                     >
                       {isBorrowed
@@ -209,6 +234,8 @@ function Books() {
                         ? requesting
                           ? "Requesting..."
                           : "Request"
+                        : requesting
+                        ? "Reserving..."
                         : "Reserve"}
                     </button>
                   </div>
