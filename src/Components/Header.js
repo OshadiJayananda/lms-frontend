@@ -46,6 +46,17 @@ function Header() {
         Returned Books
       </a>
       <a
+        href="/bookReservation"
+        style={{
+          color: "#000",
+          textDecoration: "none",
+          fontSize: "16px",
+          cursor: "pointer",
+        }}
+      >
+        Book reservations
+      </a>
+      <a
         href="#"
         style={{
           color: "#000",

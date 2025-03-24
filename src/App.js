@@ -16,6 +16,7 @@ import UserAuthMiddleware from "./middleware/UserAuthMiddleware";
 import ReturnedBooks from "./Admin/Books/ReturnedBooks";
 import BorrowedHistory from "./Admin/Books/BorrowedHistory";
 import RenewBook from "./Admin/Books/RenewBook";
+import BookReservation from "./Admin/Books/BookReservation";
 // import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
@@ -74,6 +75,15 @@ function App() {
             element={
               <AdminAuthMiddleware>
                 <RenewBook />
+              </AdminAuthMiddleware>
+            }
+          />
+          bookReservation
+          <Route
+            path="/bookReservation"
+            element={
+              <AdminAuthMiddleware>
+                <BookReservation />
               </AdminAuthMiddleware>
             }
           />
