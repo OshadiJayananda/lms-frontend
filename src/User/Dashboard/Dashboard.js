@@ -1,14 +1,82 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import HeaderBanner from "../../Admin/components/HeaderBanner";
 import ClientSidebar from "../../Components/ClientSidebar";
+import { FaBell } from "react-icons/fa";
+import api from "../../Components/Api";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const navigate = useNavigate();
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
+  const fetchNotifications = async () => {
+    try {
+      const response = await api.get("/user/notifications");
+      console.log(response);
+      setNotifications(response.data);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      if (error.response?.status === 401) {
+        navigate("/login");
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (notification.type === "reservation_approved") {
+      setSelectedNotification(notification);
+      setShowConfirmationModal(true);
+    }
+    markNotificationAsRead(notification.id);
+  };
+
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      await api.post(`/notifications/${notificationId}/read`);
+      fetchNotifications();
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  const handleConfirmReservation = async (confirm) => {
+    try {
+      const response = await api.post(
+        `/reservations/${selectedNotification.reservation_id}/respond`,
+        { confirm }
+      );
+
+      toast.success(
+        confirm
+          ? "Book reservation confirmed! Admin has been notified."
+          : response.data.message || "Reservation cancelled"
+      );
+
+      fetchNotifications();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to process your response"
+      );
+    } finally {
+      setShowConfirmationModal(false);
+    }
   };
 
   return (
@@ -24,9 +92,86 @@ function Dashboard() {
         <HeaderBanner book={"Dashboard"} heading_pic={heading_pic} />
 
         <div style={{ padding: "20px" }}>
+          <div className="relative float-right">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="p-2 text-gray-600 hover:text-blue-600 relative"
+            >
+              <FaBell size={20} />
+              {notifications.filter((n) => !n.is_read).length > 0 && (
+                <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  {notifications.filter((n) => !n.is_read).length}
+                </span>
+              )}
+            </button>
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10">
+                <div className="p-2 border-b">
+                  <h3 className="font-semibold">Notifications</h3>
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${
+                          !notification.is_read ? "bg-blue-50" : ""
+                        }`}
+                        onClick={() => handleNotificationClick(notification)}
+                      >
+                        <p className="text-sm font-medium">
+                          {notification.title}
+                        </p>
+                        <p className="text-sm">{notification.message}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(notification.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3 text-sm text-gray-500">
+                      No new notifications
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <h2>Welcome to the Dashboard</h2>
-          {/* Add additional dashboard content here */}
         </div>
+
+        {/* Confirmation Modal */}
+        {showConfirmationModal && (
+          <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Reservation Approved</h2>
+                <button onClick={() => setShowConfirmationModal(false)}>
+                  ×
+                </button>
+              </div>
+              <div className="mt-4">
+                <p>{selectedNotification?.message}</p>
+                <p className="mt-4">Do you still want this book?</p>
+              </div>
+              <div className="mt-6 flex justify-end gap-4">
+                <button
+                  className="px-4 py-2 bg-red-500 text-white rounded"
+                  onClick={() => handleConfirmReservation(false)}
+                >
+                  No, Cancel
+                </button>
+                <button
+                  className="px-4 py-2 bg-green-500 text-white rounded"
+                  onClick={() => handleConfirmReservation(true)}
+                >
+                  Yes, I Want It
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
