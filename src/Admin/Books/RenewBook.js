@@ -22,7 +22,15 @@ function RenewBook() {
       const response = await api.get("/admin/renew-requests");
       setRenewRequests(response.data);
     } catch (error) {
-      console.error("Error fetching renew requests:", error);
+      console.error("Error details:", {
+        message: error.message,
+        response: error.response,
+        config: error.config,
+      });
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to fetch renewal requests. Please try again later."
+      );
     }
   };
 
@@ -36,14 +44,29 @@ function RenewBook() {
 
   const handleApprove = async (requestId) => {
     try {
-      await api.post(`/admin/renew-requests/${requestId}/approve`, {
-        dueDate: newDueDate || selectedRequest.requested_date,
-      });
-      toast.success("Renewal approved successfully");
+      // Format the date properly before sending
+      const formattedDate = new Date(
+        newDueDate || selectedRequest.requested_date
+      )
+        .toISOString()
+        .split("T")[0]; // Gets just the YYYY-MM-DD part
+
+      const response = await api.post(
+        `/admin/renew-requests/${requestId}/approve`,
+        {
+          dueDate: formattedDate,
+        }
+      );
+
+      toast.success(response.data.message || "Renewal approved successfully");
       fetchRenewRequests();
       setIsDateModalOpen(false);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to approve renewal");
+      console.error("Approval error details:", error.response?.data);
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to approve renewal. Please try again later."
+      );
     }
   };
 
@@ -91,6 +114,7 @@ function RenewBook() {
                   <th className="px-6 py-3 text-left">Current Due Date</th>
                   <th className="px-6 py-3 text-left">Requested Date</th>
                   <th className="px-6 py-3 text-left">Copies Available</th>
+                  <th className="px-6 py-3 text-left">Pending Reservations</th>
                   <th className="px-6 py-3 text-left">Actions</th>
                 </tr>
               </thead>
@@ -106,6 +130,9 @@ function RenewBook() {
                       {new Date(request.requested_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">{request.book.no_of_copies}</td>
+                    <td className="px-6 py-4">
+                      {request.book.reservations?.length || 0}
+                    </td>
                     <td className="px-6 py-4 flex gap-2">
                       <button
                         onClick={() => openDateModal(request)}
@@ -118,6 +145,7 @@ function RenewBook() {
                         onClick={() => handleApprove(request.id)}
                         className="p-2 text-green-600 hover:text-green-800"
                         title="Approve"
+                        disabled={request.book.reservations?.length > 0}
                       >
                         <FaCheck />
                       </button>

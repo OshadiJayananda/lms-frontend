@@ -44,7 +44,35 @@ function Dashboard() {
       setSelectedNotification(notification);
       setShowConfirmationModal(true);
     }
+    // Add this condition for renewal date changes
+    else if (notification.type === "renewal_date_changed") {
+      setSelectedNotification(notification);
+      setShowConfirmationModal(true);
+    }
     markNotificationAsRead(notification.id);
+  };
+
+  const handleRenewalResponse = async (confirm) => {
+    try {
+      await api.post(
+        `/renew-requests/${selectedNotification.metadata.request_id}/confirm`,
+        {
+          confirm,
+        }
+      );
+
+      if (confirm) {
+        toast.success("You've accepted the new renewal date");
+      } else {
+        toast.info("You've declined the renewal date change");
+      }
+
+      fetchNotifications();
+    } catch (error) {
+      toast.error("Failed to process your response");
+    } finally {
+      setShowConfirmationModal(false);
+    }
   };
 
   const markNotificationAsRead = async (notificationId) => {
@@ -123,6 +151,28 @@ function Dashboard() {
                           {notification.title}
                         </p>
                         <p className="text-sm">{notification.message}</p>
+                        {notification.type === "renewal_date_changed" && (
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRenewalResponse(notification, true);
+                              }}
+                              className="px-2 py-1 bg-green-500 text-white rounded text-sm"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRenewalResponse(notification, false);
+                              }}
+                              className="px-2 py-1 bg-red-500 text-white rounded text-sm"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        )}
                         <p className="text-xs text-gray-500">
                           {new Date(notification.created_at).toLocaleString()}
                         </p>
@@ -146,27 +196,49 @@ function Dashboard() {
           <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
             <div className="bg-white p-6 rounded-lg shadow-lg w-96">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Reservation Approved</h2>
+                <h2 className="text-xl font-semibold">
+                  {selectedNotification?.type === "reservation_approved"
+                    ? "Reservation Approved"
+                    : "Renewal Date Changed"}
+                </h2>
                 <button onClick={() => setShowConfirmationModal(false)}>
                   ×
                 </button>
               </div>
               <div className="mt-4">
                 <p>{selectedNotification?.message}</p>
-                <p className="mt-4">Do you still want this book?</p>
+                <p className="mt-4">
+                  {selectedNotification?.type === "reservation_approved"
+                    ? "Do you still want this book?"
+                    : "Do you accept this new renewal date?"}
+                </p>
               </div>
               <div className="mt-6 flex justify-end gap-4">
                 <button
                   className="px-4 py-2 bg-red-500 text-white rounded"
-                  onClick={() => handleConfirmReservation(false)}
+                  onClick={() =>
+                    selectedNotification?.type === "reservation_approved"
+                      ? handleConfirmReservation(false)
+                      : handleRenewalResponse(false)
+                  }
                 >
-                  No, Cancel
+                  No,{" "}
+                  {selectedNotification?.type === "reservation_approved"
+                    ? "Cancel"
+                    : "Decline"}
                 </button>
                 <button
                   className="px-4 py-2 bg-green-500 text-white rounded"
-                  onClick={() => handleConfirmReservation(true)}
+                  onClick={() =>
+                    selectedNotification?.type === "reservation_approved"
+                      ? handleConfirmReservation(true)
+                      : handleRenewalResponse(true)
+                  }
                 >
-                  Yes, I Want It
+                  Yes,{" "}
+                  {selectedNotification?.type === "reservation_approved"
+                    ? "I Want It"
+                    : "Accept"}
                 </button>
               </div>
             </div>
