@@ -18,6 +18,7 @@ import BorrowedHistory from "./Admin/Books/BorrowedHistory";
 import RenewBook from "./Admin/Books/RenewBook";
 import BookReservation from "./Admin/Books/BookReservation";
 import AuthRedirectMiddleware from "./middleware/AuthRedirectMiddleware";
+import Payments from "./User/Payments/Payments";
 // import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
@@ -143,6 +144,7 @@ function App() {
               </UserAuthMiddleware>
             }
           />
+          <Route path="/payments" element={<Payments />} />
         </Routes>
       </div>
     </Router>
