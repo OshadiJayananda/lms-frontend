@@ -17,6 +17,7 @@ import ReturnedBooks from "./Admin/Books/ReturnedBooks";
 import BorrowedHistory from "./Admin/Books/BorrowedHistory";
 import RenewBook from "./Admin/Books/RenewBook";
 import BookReservation from "./Admin/Books/BookReservation";
+import AuthRedirectMiddleware from "./middleware/AuthRedirectMiddleware";
 // import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
@@ -26,8 +27,22 @@ function App() {
         <ToastContainer />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signIn" element={<SignIn />} />
+          <Route
+            path="/login"
+            element={
+              <AuthRedirectMiddleware>
+                <Login />
+              </AuthRedirectMiddleware>
+            }
+          />
+          <Route
+            path="/signIn"
+            element={
+              <AuthRedirectMiddleware>
+                <SignIn />
+              </AuthRedirectMiddleware>
+            }
+          />
           {/* Admin Routes */}
           <Route
             path="/admin/dashboard"
