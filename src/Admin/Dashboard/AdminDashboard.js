@@ -135,7 +135,7 @@ function AdminDashboard() {
           {/* Add additional dashboard content here */}
         </div>
       </div>
-      // Update the notification dropdown in the return statement:
+      {/* // Update the notification dropdown in the return statement: */}
     </div>
   );
 }

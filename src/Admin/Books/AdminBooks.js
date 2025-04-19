@@ -9,6 +9,8 @@ import { toast } from "react-toastify";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
+const config = { headers: { "Content-Type": "multipart/form-data" } };
+
 function AdminBooks() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [books, setBooks] = useState([]);
@@ -24,6 +26,7 @@ function AdminBooks() {
   const [selectedParent, setSelectedParent] = useState("");
   const [selectedBookToDelete, setSelectedBookToDelete] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
@@ -37,9 +40,14 @@ function AdminBooks() {
     isbn: Yup.string()
       .required("ISBN is required")
       .test("isbn-unique", "ISBN must be unique", async (value) => {
-        if (selectedBook && selectedBook.isbn === value) return true; // Skip check if editing the same book
-        const response = await api.get(`/books/check-isbn?isbn=${value}`);
-        return !response.data.exists; // Return true if ISBN is unique
+        if (!value) return true;
+        if (selectedBook && selectedBook.isbn === value) return true;
+        try {
+          const response = await api.get(`/books/check-isbn?isbn=${value}`);
+          return !response.data.exists;
+        } catch (error) {
+          return true; // Assume valid if check fails
+        }
       }),
     description: Yup.string().required("Description is required"),
     no_of_copies: Yup.number()
@@ -60,6 +68,7 @@ function AdminBooks() {
     },
     validationSchema,
     onSubmit: async (values) => {
+      setIsSubmitting(true);
       const formData = new FormData();
       formData.append("name", values.name);
       formData.append("author", values.author);
@@ -67,32 +76,47 @@ function AdminBooks() {
       formData.append("description", values.description);
       formData.append("no_of_copies", values.no_of_copies);
       formData.append("category_id", values.category_id);
-      if (values.image) {
+
+      if (values.image instanceof File) {
         formData.append("image", values.image);
       }
 
       try {
         let response;
         if (selectedBook) {
-          response = await api.put(`/books/${selectedBook.id}`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
+          response = await api.post(
+            `/books/${selectedBook.id}/update`,
+            formData,
+            config
+          );
+          // Check for successful response
+          if (response.status !== 200) {
+            throw new Error("Update failed");
+          }
           toast.success(response.data.message || "Book updated successfully!");
         } else {
-          response = await api.post("/books", formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
+          response = await api.post("/books", formData, config);
           toast.success("Book added successfully!");
         }
 
+        // Refresh the book list
         const booksResponse = await api.get("/books");
-        setBooks(booksResponse.data);
-        setFilteredBooks(booksResponse.data);
+        if (booksResponse.data) {
+          setBooks(booksResponse.data);
+          setFilteredBooks(booksResponse.data);
+        }
 
         closeModal();
       } catch (error) {
         console.error("Error saving book:", error);
-        toast.error("Failed to save book. Please try again.");
+
+        toast.error(
+          error.response?.data?.message ||
+            error.message ||
+            "Failed to save book. Please try again."
+        );
+      } finally {
+        setIsSubmitting(false);
       }
     },
   });
@@ -122,6 +146,7 @@ function AdminBooks() {
         setFilteredBooks(response.data);
       } catch (error) {
         console.error("Error fetching books:", error);
+        setError("Failed to fetch books. Please try again later.");
         toast.error("Failed to fetch books. Please try again later.");
       } finally {
         setLoading(false);
@@ -153,7 +178,7 @@ function AdminBooks() {
         name: book.name,
         author: book.author,
         isbn: book.isbn,
-        image: null,
+        image: null, // Keep the existing image
         description: book.description,
         no_of_copies: book.no_of_copies,
         category_id: book.category_id,
@@ -502,8 +527,13 @@ function AdminBooks() {
               <button
                 type="submit"
                 className="bg-blue-600 text-white px-4 py-2 rounded w-full"
+                disabled={isSubmitting}
               >
-                {selectedBook ? "Update Book" : "Add Book"}
+                {isSubmitting
+                  ? "Processing..."
+                  : selectedBook
+                  ? "Update Book"
+                  : "Add Book"}
               </button>
             </form>
           </div>
