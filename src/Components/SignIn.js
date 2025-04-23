@@ -56,15 +56,39 @@ export default function SignIn() {
       };
 
       try {
-        console.log("Submitting user data:", newUser); // Log the data being submitted
-        await api.post("/register", newUser);
-        toast.success("User Added Successfully");
-        navigate("/dashboard");
-      } catch (err) {
-        console.error("Error:", err.response.data); // Log the error response for debugging
-        toast.error(
-          "Error adding user: " + (err.response?.data?.message || err.message)
-        );
+        const response = await api.post("/register", newUser);
+
+        if (
+          !response.data ||
+          !response.data.access_token ||
+          !response.data.role
+        ) {
+          throw new Error("Invalid response from server");
+        }
+
+        localStorage.setItem("token", response.data.access_token);
+        localStorage.setItem("role", response.data.role);
+
+        toast.success("User registered successfully");
+
+        const userRole = response.data.role;
+
+        if (userRole === "admin") {
+          navigate("/admin/dashboard");
+        } else if (userRole === "user") {
+          navigate("/dashboard");
+        } else {
+          toast.error(
+            "Your account role is not recognized. Please contact support."
+          );
+        }
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+        toast.error("Register failed: " + errorMessage);
       }
     },
   });
@@ -228,6 +252,14 @@ export default function SignIn() {
             Sign In
           </button>
         </form>
+        <div className="mt-4">
+          <a
+            href="/login"
+            className="block text-[#003d73] text-sm hover:underline"
+          >
+            Login
+          </a>
+        </div>
       </div>
     </div>
   );

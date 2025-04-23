@@ -37,7 +37,7 @@ function App() {
             }
           />
           <Route
-            path="/signIn"
+            path="/register"
             element={
               <AuthRedirectMiddleware>
                 <SignIn />

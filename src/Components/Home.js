@@ -41,10 +41,10 @@ export default function Home() {
             </a>
 
             <a
-              href="/signIn"
+              href="/register"
               className="px-6 py-3 bg-blue-700 text-white font-semibold rounded-md shadow-md hover:bg-blue-500 transition-all"
             >
-              Sign Up
+              Register
             </a>
           </div>
         </div>

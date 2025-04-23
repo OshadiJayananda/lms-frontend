@@ -18,6 +18,14 @@ function Login() {
     try {
       const response = await api.post("/login", { email, password });
 
+      if (
+        !response.data ||
+        !response.data.access_token ||
+        !response.data.role
+      ) {
+        throw new Error("Invalid response from server");
+      }
+
       // Save token and role
       localStorage.setItem("token", response.data.access_token);
       localStorage.setItem("role", response.data.role); // Store the role
@@ -33,12 +41,17 @@ function Login() {
       } else if (userRole === "user") {
         navigate("/dashboard");
       } else {
-        alert("Unknown role: " + userRole);
+        toast.error(
+          "Your account role is not recognized. Please contact support."
+        );
       }
     } catch (error) {
-      toast.error(
-        "Login failed: " + (error.response?.data?.message || error.message)
-      );
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Something went wrong";
+      toast.error("Login failed: " + errorMessage);
     }
   };
 
@@ -152,10 +165,10 @@ function Login() {
             Forgot Password
           </a>
           <a
-            href="/signIn"
+            href="/register"
             className="block text-[#003d73] text-sm hover:underline"
           >
-            Sign Up
+            Register
           </a>
         </div>
       </div>

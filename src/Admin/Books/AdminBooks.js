@@ -84,8 +84,10 @@ function AdminBooks() {
       try {
         let response;
         if (selectedBook) {
+          formData.append("_method", "PUT");
+
           response = await api.post(
-            `/books/${selectedBook.id}/update`,
+            `/books/${selectedBook.id}`,
             formData,
             config
           );
