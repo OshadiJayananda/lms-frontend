@@ -10,7 +10,7 @@ const AuthRedirectMiddleware = ({ children }) => {
     if (userRole === "admin") {
       return <Navigate to="/admin/dashboard" replace />;
     } else {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/dashboard" replace />;
     }
   }
   return children;

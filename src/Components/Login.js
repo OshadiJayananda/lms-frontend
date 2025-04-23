@@ -29,7 +29,6 @@ function Login() {
 
       // Navigate based on the role
       if (userRole === "admin") {
-        localStorage.setItem("admin_token", response.data.access_token); // Save admin token
         navigate("/admin/dashboard");
       } else if (userRole === "user") {
         navigate("/dashboard");
