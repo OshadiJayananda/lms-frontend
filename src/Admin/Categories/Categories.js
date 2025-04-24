@@ -8,7 +8,6 @@ import Header from "../../Components/Header";
 import { toast } from "react-toastify";
 
 function Categories() {
-  const [parentCategories, setParentCategories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
@@ -22,37 +21,37 @@ function Categories() {
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
-  const fetchParentCategories = async () => {
-    try {
-      const response = await api.get("/categories");
-      if (response && response.data && response.data.parent_categories) {
-        setParentCategories(response.data.parent_categories);
-      }
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-    }
-  };
-
   const fetchCategories = async () => {
     try {
       const response = await api.get("/categories");
-      if (response && response.data && response.data.categories) {
-        setCategories(response.data.categories);
+      if (response?.data) {
+        // The backend now returns parent categories with their children
+        setCategories(response.data);
+
+        // Flatten the hierarchy for the table view
+        const allCategories = response.data.flatMap((parent) => [
+          parent,
+          ...(parent.child_categories || []),
+        ]);
+        setAllCategoriesFlat(allCategories);
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
+      toast.error("Failed to load categories");
     }
   };
 
+  // State to hold flattened categories for table display
+  const [allCategoriesFlat, setAllCategoriesFlat] = useState([]);
+
   useEffect(() => {
-    fetchParentCategories();
     fetchCategories();
   }, []);
 
   const getParentCategoryName = (parentId) => {
-    const parent = parentCategories.find(
-      (category) => category.id === parentId
-    );
+    if (!parentId) return "None";
+    // Find in parent categories
+    const parent = categories.find((category) => category.id === parentId);
     return parent ? parent.name : "None";
   };
 
@@ -62,6 +61,7 @@ function Categories() {
 
   const handleReset = () => {
     formik.resetForm();
+    setEditingCategoryId(null);
   };
 
   const handleEditClick = (category) => {
@@ -74,13 +74,13 @@ function Categories() {
       setEditingCategoryId(categoryToEdit.id);
       formik.setFieldValue("name", categoryToEdit.name);
       formik.setFieldValue("description", categoryToEdit.description || "");
-      formik.setFieldValue("parentId", categoryToEdit.parent_id || null);
+      formik.setFieldValue("parentId", categoryToEdit.parent_id || "");
       formik.setFieldValue(
         "status",
         categoryToEdit.status === 1 ? "Active" : "Inactive"
       );
       setShowEditModal(false);
-      window.scrollTo({ top: 0, behavior: "smooth" }); // Scroll to the top
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -102,10 +102,13 @@ function Categories() {
     setShowModal(false);
   };
 
-  // Edit categories logic
+  // Get parent categories for dropdown (categories without parent_id)
+  const parentCategories = categories.filter((cat) => !cat.parent_id);
+
+  // Filter categories based on showOnlyParents toggle
   const filteredCategories = showOnlyParents
-    ? categories.filter((category) => !category.parent_id)
-    : categories;
+    ? allCategoriesFlat.filter((category) => !category.parent_id)
+    : allCategoriesFlat;
 
   // Pagination logic
   const totalPages = Math.ceil(filteredCategories.length / recordsPerPage);
@@ -116,7 +119,7 @@ function Categories() {
     indexOfLastRecord
   );
 
-  // Formik setup with validation schema using Yup
+  // Formik setup
   const formik = useFormik({
     initialValues: {
       name: "",
@@ -136,23 +139,20 @@ function Categories() {
       const categoryData = {
         name: values.name,
         description: values.description,
-        parent_id: values.parentId,
+        parent_id: values.parentId || null,
         status: values.status === "Active" ? 1 : 0,
       };
 
       try {
         if (editingCategoryId) {
-          // Update category
           await api.put(`/categories/${editingCategoryId}`, categoryData);
           toast.success("Category updated successfully!");
         } else {
-          // Create new category
           await api.post("/categories", categoryData);
           toast.success("Category created successfully!");
         }
-        formik.resetForm();
-        setEditingCategoryId(null); // Reset editing state
-        fetchCategories(); // Refresh categories list
+        handleReset();
+        fetchCategories();
       } catch (error) {
         toast.error(error.response?.data?.message || "Something went wrong.");
       }
@@ -217,8 +217,9 @@ function Categories() {
                 fontSize: "20px",
               }}
             >
-              Add a new category
+              {editingCategoryId ? "Edit Category" : "Add New Category"}
             </h1>
+
             <label>Category Name:</label>
             <input
               type="text"
@@ -237,7 +238,7 @@ function Categories() {
               name="description"
               value={formik.values.description}
               onChange={formik.handleChange}
-            ></textarea>
+            />
             {formik.errors.description && formik.touched.description && (
               <div style={{ color: "red" }}>{formik.errors.description}</div>
             )}
@@ -298,12 +299,7 @@ function Categories() {
         </div>
 
         <div style={{ marginTop: "20px", padding: "10px" }}>
-          <h1
-            style={{
-              fontWeight: "bold",
-              fontSize: "20px",
-            }}
-          >
+          <h1 style={{ fontWeight: "bold", fontSize: "20px" }}>
             Existing Categories
           </h1>
 
@@ -317,7 +313,10 @@ function Categories() {
             <input
               type="checkbox"
               checked={showOnlyParents}
-              onChange={() => setShowOnlyParents(!showOnlyParents)}
+              onChange={() => {
+                setShowOnlyParents(!showOnlyParents);
+                setCurrentPage(1); // Reset to first page when changing filter
+              }}
               style={{ marginRight: "8px" }}
             />
             <span>Show Only Parent Categories</span>
@@ -358,108 +357,160 @@ function Categories() {
                   <td style={{ padding: "10px", border: "1px solid #ddd" }}>
                     {category.status === 1 ? "Active" : "Inactive"}
                   </td>
-                  <td className="p-2 border border-gray-300">
-                    <div className="flex items-center gap-3">
-                      {/* Edit Button */}
+                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>
+                    <div style={{ display: "flex", gap: "10px" }}>
                       <FaEdit
                         onClick={() => handleEditClick(category)}
-                        className="text-green-500 cursor-pointer hover:text-green-700 transition"
+                        style={{ color: "green", cursor: "pointer" }}
                         title="Edit"
                       />
-
-                      {/* Delete Button */}
                       <FaTrash
                         onClick={() => handleDeleteClick(category.id)}
-                        className="text-red-500 cursor-pointer hover:text-red-700 transition"
+                        style={{ color: "red", cursor: "pointer" }}
                         title="Delete"
                       />
                     </div>
-
-                    {/* Confirmation Modal */}
-                    {showModal && (
-                      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                        <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            Confirm Deletion
-                          </h3>
-                          <p className="text-gray-700 mt-2">
-                            Are you sure you want to delete this category?
-                          </p>
-                          <div className="flex justify-end gap-3 mt-4">
-                            <button
-                              onClick={() => setShowModal(false)}
-                              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={confirmDelete}
-                              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Edit Confirmation Modal */}
-                    {showEditModal && (
-                      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                        <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            Confirm Edit
-                          </h3>
-                          <p className="text-gray-700 mt-2">
-                            Are you sure you want to edit this category?
-                          </p>
-                          <div className="flex justify-end gap-3 mt-4">
-                            <button
-                              onClick={() => setShowEditModal(false)}
-                              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={confirmEdit}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-                            >
-                              Edit
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          {/* Pagination Controls */}
-          <div style={{ marginTop: "10px", textAlign: "center" }}>
+          {/* Pagination */}
+          <div style={{ marginTop: "20px", textAlign: "center" }}>
             <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
-              style={{ marginRight: "5px" }}
+              style={{ marginRight: "10px", padding: "5px 10px" }}
             >
               Previous
             </button>
             <span>
-              {" "}
-              Page {currentPage} of {totalPages}{" "}
+              Page {currentPage} of {totalPages}
             </span>
             <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages}
-              style={{ marginLeft: "5px" }}
+              style={{ marginLeft: "10px", padding: "5px 10px" }}
             >
               Next
             </button>
           </div>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {showModal && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1000,
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "white",
+                padding: "20px",
+                borderRadius: "8px",
+                width: "300px",
+              }}
+            >
+              <h3 style={{ fontWeight: "bold", marginBottom: "10px" }}>
+                Confirm Deletion
+              </h3>
+              <p>Are you sure you want to delete this category?</p>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginTop: "20px",
+                  gap: "10px",
+                }}
+              >
+                <button
+                  onClick={() => setShowModal(false)}
+                  style={{ padding: "5px 10px", backgroundColor: "#ccc" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  style={{
+                    padding: "5px 10px",
+                    backgroundColor: "red",
+                    color: "white",
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Confirmation Modal */}
+        {showEditModal && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1000,
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "white",
+                padding: "20px",
+                borderRadius: "8px",
+                width: "300px",
+              }}
+            >
+              <h3 style={{ fontWeight: "bold", marginBottom: "10px" }}>
+                Confirm Edit
+              </h3>
+              <p>Are you sure you want to edit this category?</p>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginTop: "20px",
+                  gap: "10px",
+                }}
+              >
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  style={{ padding: "5px 10px", backgroundColor: "#ccc" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmEdit}
+                  style={{
+                    padding: "5px 10px",
+                    backgroundColor: "#001f5b",
+                    color: "white",
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
