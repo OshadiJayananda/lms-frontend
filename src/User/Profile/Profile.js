@@ -38,7 +38,7 @@ function Profile() {
           profile_picture: picResponse.data.profile_picture,
         });
       } catch (error) {
-        toast.error("Error fetching user data:", error);
+        toast.error("Error fetching user data");
       } finally {
         setLoading(false);
       }
@@ -63,7 +63,7 @@ function Profile() {
         },
       });
 
-      toast.update("Profile picture updated successfully!");
+      toast.success("Profile picture updated successfully!");
       setUser((prevUser) => ({
         ...prevUser,
         profile_picture: response.data.profile_picture,
@@ -77,11 +77,9 @@ function Profile() {
   const handleRemoveProfilePicture = async () => {
     try {
       const token = localStorage.getItem("token");
-      await api.delete(
-        "/profile/1",
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.delete("/profile/1", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       toast.success("Profile picture removed.");
       setUser((prevUser) => ({ ...prevUser, profile_picture: null }));
@@ -92,15 +90,13 @@ function Profile() {
     }
   };
 
-  // if (loading) return <p>Loading...</p>;
-  // if (!user) return <p>Failed to load user data.</p>;
-
   const handlePasswordChange = async (values, { setSubmitting, resetForm }) => {
     try {
       const token = localStorage.getItem("token");
       await api.post(
         "/user/change-password",
         {
+          current_password: values.currentPassword,
           password: values.newPassword,
           password_confirmation: values.confirmPassword,
         },
@@ -121,6 +117,7 @@ function Profile() {
   };
 
   const validationSchema = Yup.object().shape({
+    currentPassword: Yup.string().required("Current password is required"),
     newPassword: Yup.string()
       .min(6, "Password must be at least 6 characters")
       .required("New password is required"),
@@ -208,10 +205,25 @@ function Profile() {
               <br />
               <input
                 type="file"
+                id="profile-picture-upload"
                 accept="image/*"
                 onChange={handleProfilePictureChange}
-                style={{ marginTop: "10px", border: "none", cursor: "pointer" }}
+                style={{ display: "none" }}
               />
+              <label
+                htmlFor="profile-picture-upload"
+                style={{
+                  marginTop: "10px",
+                  border: "1px solid #001f5b",
+                  padding: "8px 12px",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                  display: "inline-block",
+                  backgroundColor: "#f5f5f5",
+                }}
+              >
+                {user.profile_picture ? "Change Picture" : "Upload Picture"}
+              </label>
 
               {isModalOpen && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
@@ -245,10 +257,10 @@ function Profile() {
               <strong>Email:</strong> {user.email}
             </div>
             <div style={{ marginBottom: "15px" }}>
-              <strong>Address:</strong> {user.address}
+              <strong>Address:</strong> {user.address || "Not provided"}
             </div>
             <div style={{ marginBottom: "15px" }}>
-              <strong>Contact:</strong> {user.contact}
+              <strong>Contact:</strong> {user.contact || "Not provided"}
             </div>
             <div style={{ marginBottom: "15px" }}>
               <strong>Role:</strong> {user.role || "User"}
@@ -281,23 +293,65 @@ function Profile() {
         onRequestClose={() => setPasswordModalOpen(false)}
         style={{
           content: {
+            top: "50%",
+            left: "50%",
+            right: "auto",
+            bottom: "auto",
+            marginRight: "-50%",
+            transform: "translate(-50%, -50%)",
             maxWidth: "400px",
-            margin: "auto",
-            padding: "20px",
-            borderRadius: "10px",
+            width: "90%",
+            padding: "25px",
+            borderRadius: "12px",
             textAlign: "center",
-            boxShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
+            backgroundColor: "#fff",
+          },
+          overlay: {
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
           },
         }}
       >
-        <h2 style={{ marginBottom: "20px" }}>Change Password</h2>
+        <h2
+          style={{ marginBottom: "20px", fontSize: "22px", color: "#001f5b" }}
+        >
+          Change Password
+        </h2>
         <Formik
-          initialValues={{ newPassword: "", confirmPassword: "" }}
+          initialValues={{
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+          }}
           validationSchema={validationSchema}
           onSubmit={handlePasswordChange}
         >
           {({ isSubmitting }) => (
             <Form>
+              <div>
+                <Field
+                  type="password"
+                  name="currentPassword"
+                  placeholder="Current Password"
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    marginBottom: "10px",
+                    border: "1px solid #ccc",
+                    borderRadius: "6px",
+                    fontSize: "16px",
+                  }}
+                />
+                <ErrorMessage
+                  name="currentPassword"
+                  component="div"
+                  style={{
+                    color: "red",
+                    fontSize: "14px",
+                    marginBottom: "8px",
+                  }}
+                />
+              </div>
               <div>
                 <Field
                   type="password"
@@ -308,14 +362,18 @@ function Profile() {
                     padding: "12px",
                     marginBottom: "10px",
                     border: "1px solid #ccc",
-                    borderRadius: "5px",
+                    borderRadius: "6px",
                     fontSize: "16px",
                   }}
                 />
                 <ErrorMessage
                   name="newPassword"
                   component="div"
-                  style={{ color: "red" }}
+                  style={{
+                    color: "red",
+                    fontSize: "14px",
+                    marginBottom: "8px",
+                  }}
                 />
               </div>
               <div>
@@ -328,14 +386,18 @@ function Profile() {
                     padding: "12px",
                     marginBottom: "10px",
                     border: "1px solid #ccc",
-                    borderRadius: "5px",
+                    borderRadius: "6px",
                     fontSize: "16px",
                   }}
                 />
                 <ErrorMessage
                   name="confirmPassword"
                   component="div"
-                  style={{ color: "red" }}
+                  style={{
+                    color: "red",
+                    fontSize: "14px",
+                    marginBottom: "8px",
+                  }}
                 />
               </div>
               <button
@@ -346,7 +408,7 @@ function Profile() {
                   backgroundColor: "#001f5b",
                   color: "#fff",
                   border: "none",
-                  borderRadius: "5px",
+                  borderRadius: "6px",
                   cursor: "pointer",
                   fontSize: "16px",
                   transition: "background-color 0.3s",
