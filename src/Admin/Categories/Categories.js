@@ -12,8 +12,8 @@ function Categories() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [showOnlyParents, setShowOnlyParents] = useState(false);
-  const recordsPerPage = 5;
   const [showModal, setShowModal] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -21,19 +21,16 @@ function Categories() {
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (page = 1) => {
     try {
-      const response = await api.get("/categories");
-      if (response?.data) {
-        // The backend now returns parent categories with their children
-        setCategories(response.data);
+      const params = { page };
+      if (showOnlyParents) params.parents_only = true;
 
-        // Flatten the hierarchy for the table view
-        const allCategories = response.data.flatMap((parent) => [
-          parent,
-          ...(parent.child_categories || []),
-        ]);
-        setAllCategoriesFlat(allCategories);
+      const response = await api.get("/categories", { params });
+      if (response?.data) {
+        setCategories(response.data.data);
+        setTotalPages(response.data.last_page);
+        setCurrentPage(response.data.current_page);
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -41,19 +38,9 @@ function Categories() {
     }
   };
 
-  // State to hold flattened categories for table display
-  const [allCategoriesFlat, setAllCategoriesFlat] = useState([]);
-
   useEffect(() => {
     fetchCategories();
-  }, []);
-
-  const getParentCategoryName = (parentId) => {
-    if (!parentId) return "None";
-    // Find in parent categories
-    const parent = categories.find((category) => category.id === parentId);
-    return parent ? parent.name : "None";
-  };
+  }, [showOnlyParents]); // Refetch when filter changes
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
@@ -93,7 +80,7 @@ function Categories() {
     try {
       await api.delete(`/categories/${selectedCategoryId}`);
       toast.success("Category deleted successfully!");
-      fetchCategories();
+      fetchCategories(currentPage);
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Failed to delete category."
@@ -104,20 +91,6 @@ function Categories() {
 
   // Get parent categories for dropdown (categories without parent_id)
   const parentCategories = categories.filter((cat) => !cat.parent_id);
-
-  // Filter categories based on showOnlyParents toggle
-  const filteredCategories = showOnlyParents
-    ? allCategoriesFlat.filter((category) => !category.parent_id)
-    : allCategoriesFlat;
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredCategories.length / recordsPerPage);
-  const indexOfLastRecord = currentPage * recordsPerPage;
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentRecords = filteredCategories.slice(
-    indexOfFirstRecord,
-    indexOfLastRecord
-  );
 
   // Formik setup
   const formik = useFormik({
@@ -152,7 +125,7 @@ function Categories() {
           toast.success("Category created successfully!");
         }
         handleReset();
-        fetchCategories();
+        fetchCategories(currentPage);
       } catch (error) {
         toast.error(error.response?.data?.message || "Something went wrong.");
       }
@@ -315,7 +288,7 @@ function Categories() {
               checked={showOnlyParents}
               onChange={() => {
                 setShowOnlyParents(!showOnlyParents);
-                setCurrentPage(1); // Reset to first page when changing filter
+                setCurrentPage(1);
               }}
               style={{ marginRight: "8px" }}
             />
@@ -343,16 +316,22 @@ function Categories() {
               </tr>
             </thead>
             <tbody>
-              {currentRecords.map((category) => (
+              {categories.map((category) => (
                 <tr key={category.id}>
                   <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                    {category.name}
+                    {category.parent_id ? (
+                      <span>{category.name}</span>
+                    ) : (
+                      <strong>{category.name}</strong>
+                    )}
                   </td>
                   <td style={{ padding: "10px", border: "1px solid #ddd" }}>
                     {category.description}
                   </td>
                   <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                    {getParentCategoryName(category.parent_id)}
+                    {category.parentCategory
+                      ? category.parentCategory.name
+                      : "None"}
                   </td>
                   <td style={{ padding: "10px", border: "1px solid #ddd" }}>
                     {category.status === 1 ? "Active" : "Inactive"}
@@ -379,7 +358,11 @@ function Categories() {
           {/* Pagination */}
           <div style={{ marginTop: "20px", textAlign: "center" }}>
             <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              onClick={() => {
+                const prevPage = Math.max(currentPage - 1, 1);
+                setCurrentPage(prevPage);
+                fetchCategories(prevPage);
+              }}
               disabled={currentPage === 1}
               style={{ marginRight: "10px", padding: "5px 10px" }}
             >
@@ -389,7 +372,11 @@ function Categories() {
               Page {currentPage} of {totalPages}
             </span>
             <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              onClick={() => {
+                const nextPage = Math.min(currentPage + 1, totalPages);
+                setCurrentPage(nextPage);
+                fetchCategories(nextPage);
+              }}
               disabled={currentPage === totalPages}
               style={{ marginLeft: "10px", padding: "5px 10px" }}
             >
