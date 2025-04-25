@@ -19,6 +19,8 @@ import RenewBook from "./Admin/Books/RenewBook";
 import BookReservation from "./Admin/Books/BookReservation";
 import AuthRedirectMiddleware from "./middleware/AuthRedirectMiddleware";
 import Payments from "./User/Payments/Payments";
+import ForgotPassword from "./Components/ForgotPassword";
+import ResetPassword from "./Components/ResetPassword";
 // import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
@@ -41,6 +43,22 @@ function App() {
             element={
               <AuthRedirectMiddleware>
                 <SignIn />
+              </AuthRedirectMiddleware>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <AuthRedirectMiddleware>
+                <ForgotPassword />
+              </AuthRedirectMiddleware>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <AuthRedirectMiddleware>
+                <ResetPassword />
               </AuthRedirectMiddleware>
             }
           />
