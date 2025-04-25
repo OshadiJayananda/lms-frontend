@@ -29,7 +29,7 @@ function Profile() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const picResponse = await api.get("/user/get-profile-picture", {
+        const picResponse = await api.get("/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -56,7 +56,7 @@ function Profile() {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await api.post("/user/profile-picture", formData, {
+      const response = await api.post("/profile", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -77,8 +77,8 @@ function Profile() {
   const handleRemoveProfilePicture = async () => {
     try {
       const token = localStorage.getItem("token");
-      await api.post(
-        "/user/remove-profile-picture",
+      await api.delete(
+        "/profile/1",
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -163,31 +163,48 @@ function Profile() {
             <div style={{ textAlign: "center", marginBottom: "20px" }}>
               <div
                 style={{
-                  width: "150px",
-                  height: "150px",
-                  borderRadius: "50%",
-                  backgroundColor: "grey",
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
-                  justifyContent: "center",
-                  border: "3px solid #001f5b",
-                  overflow: "hidden",
                 }}
               >
-                {user.profile_picture ? (
-                  <img
-                    src={user.profile_picture}
-                    alt="Profile"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                ) : (
-                  <FaUserCircle size={100} color="white" />
+                <div
+                  style={{
+                    width: "150px",
+                    height: "150px",
+                    borderRadius: "50%",
+                    backgroundColor: "grey",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "3px solid #001f5b",
+                    overflow: "hidden",
+                  }}
+                >
+                  {user.profile_picture ? (
+                    <img
+                      src={user.profile_picture}
+                      alt="Profile"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <FaUserCircle size={100} color="white" />
+                  )}
+                </div>
+                {user.profile_picture && (
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="mt-2 bg-red-600 text-white border-none py-2 px-3 cursor-pointer rounded flex items-center gap-2"
+                  >
+                    <FaTrash /> Remove Picture
+                  </button>
                 )}
               </div>
+
               <br />
               <input
                 type="file"
@@ -195,14 +212,6 @@ function Profile() {
                 onChange={handleProfilePictureChange}
                 style={{ marginTop: "10px", border: "none", cursor: "pointer" }}
               />
-              {user.profile_picture && (
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="mt-2 bg-red-600 text-white border-none py-2 px-3 cursor-pointer rounded flex items-center gap-2"
-                >
-                  <FaTrash /> Remove Picture
-                </button>
-              )}
 
               {isModalOpen && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">

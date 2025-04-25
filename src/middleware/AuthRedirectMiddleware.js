@@ -6,7 +6,6 @@ const AuthRedirectMiddleware = ({ children }) => {
 
   if (isAuthenticated) {
     const userRole = localStorage.getItem("role");
-
     if (userRole === "admin") {
       return <Navigate to="/admin/dashboard" replace />;
     } else {
