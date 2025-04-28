@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaBook, FaUserAlt, FaCalendarAlt } from "react-icons/fa";
 import api from "../../Components/Api";
 import { useNavigate } from "react-router-dom";
 import ClientSidebar from "../../Components/ClientSidebar";
-import ClientHeaderBanner from "../components/ClientHeaderBanner";
 import { toast } from "react-toastify";
+import HeaderBanner from "../../Components/HeaderBanner";
 
 function Books() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -142,54 +142,110 @@ function Books() {
       toast.error(error.response?.data?.message || "Failed to reserve book");
     }
   };
+
   return (
-    <div className="flex">
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar - width changes based on collapsed state */}
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
+
+      {/* Main Content Area - adjusts margin based on sidebar state */}
       <div
-        className={`transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-[5%]" : "ml-[20%]"
-        } w-full`}
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          isSidebarCollapsed ? "ml-20" : "ml-64"
+        }`}
       >
-        <ClientHeaderBanner book={"Books"} heading_pic={heading_pic} />
-
+        {/* Header Banner - full width, stays connected to sidebar */}
+        <HeaderBanner
+          book={"Books"}
+          heading_pic={heading_pic}
+          className="w-full"
+        />
         <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <select
-              value={selectedCategory}
-              onChange={handleCategoryChange}
-              className="border rounded-lg px-4 py-2"
-            >
-              <option value="All">All Books</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.name}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+          {/* Search and Filter Section */}
+          <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 font-serif mb-6">
+              Discover Our Collection
+            </h2>
 
-            <div className="flex items-center">
-              <input
-                type="text"
-                placeholder="Search books..."
-                value={searchQuery}
-                onChange={handleSearch}
-                className="border rounded-l-lg px-4 py-2 w-96"
-              />
-              <button
-                className="bg-blue-600 text-white px-4 py-2 rounded-r-lg"
-                style={{ backgroundColor: "#001f5b" }}
-              >
-                <FaSearch />
-              </button>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="w-full md:w-1/3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Filter by Category
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={handleCategoryChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                >
+                  <option value="All">All Categories</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="w-full md:w-2/3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Search Books
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaSearch className="text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search by title, author, or ISBN..."
+                    value={searchQuery}
+                    onChange={handleSearch}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
+          {/* Books Display Section */}
           {loading ? (
-            <p>Loading books...</p>
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+            </div>
           ) : error ? (
-            <p className="text-red-500">{error}</p>
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-500"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
+            </div>
+          ) : filteredBooks.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl shadow-md">
+              <FaBook className="mx-auto text-gray-400 text-4xl mb-3" />
+              <h3 className="text-lg font-medium text-gray-900">
+                No books found
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchQuery
+                  ? "Try adjusting your search or filter"
+                  : "The library catalog is currently empty"}
+              </p>
+            </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {filteredBooks.map((book) => {
                 const isBorrowed = borrowedBooks.some(
                   (borrowedBook) =>
@@ -198,46 +254,59 @@ function Books() {
                       borrowedBook.status === "Approved" ||
                       borrowedBook.status === "Issued")
                 );
+
                 return (
                   <div
                     key={book.id}
-                    className="bg-white p-4 shadow-md rounded-lg flex flex-col items-center"
+                    className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
                   >
-                    <img
-                      src={book.image}
-                      alt={book.name}
-                      className="h-40 w-28 object-cover mb-3"
-                    />
-                    <h3 className="text-lg font-semibold text-center">
-                      {book.name}
-                    </h3>
-                    <p className="text-sm text-gray-600">{book.author}</p>
-                    <p className="text-xs text-gray-500">ISBN: {book.isbn}</p>
-                    <p className="text-xs text-gray-500">
-                      No of Copies: {book.no_of_copies}
-                    </p>
-                    <button
-                      className={`px-4 py-2 mt-2 rounded text-white ${
-                        book.no_of_copies > 0 ? "bg-blue-600" : "bg-gray-500"
-                      }`}
-                      style={{ backgroundColor: "#001f5b" }}
-                      onClick={() =>
-                        book.no_of_copies > 0
-                          ? requestBook(book.id)
-                          : reserveBook(book.id)
-                      }
-                      disabled={requesting || isBorrowed}
-                    >
-                      {isBorrowed
-                        ? "Requested"
-                        : book.no_of_copies > 0
-                        ? requesting
-                          ? "Requesting..."
-                          : "Request"
-                        : requesting
-                        ? "Reserving..."
-                        : "Reserve"}
-                    </button>
+                    <div className="relative pb-[150%]">
+                      <img
+                        src={book.image || "/default-book-cover.jpg"}
+                        alt={book.name}
+                        className="absolute h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-gray-900 truncate">
+                        {book.name}
+                      </h3>
+                      <div className="flex items-center mt-1 text-sm text-gray-600">
+                        <FaUserAlt className="mr-1 text-gray-400" />
+                        <span className="truncate">{book.author}</span>
+                      </div>
+                      <div className="mt-2 flex justify-between items-center">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <FaBook className="mr-1" />
+                          {book.no_of_copies} available
+                        </span>
+                        <button
+                          onClick={() =>
+                            book.no_of_copies > 0
+                              ? requestBook(book.id)
+                              : reserveBook(book.id)
+                          }
+                          disabled={requesting || isBorrowed}
+                          className={`px-3 py-1 text-sm rounded-md font-medium ${
+                            isBorrowed
+                              ? "bg-gray-200 text-gray-600 cursor-not-allowed"
+                              : book.no_of_copies > 0
+                              ? "bg-blue-600 text-white hover:bg-blue-700"
+                              : "bg-purple-600 text-white hover:bg-purple-700"
+                          } transition-colors`}
+                        >
+                          {isBorrowed
+                            ? "Requested"
+                            : book.no_of_copies > 0
+                            ? requesting
+                              ? "Processing..."
+                              : "Borrow"
+                            : requesting
+                            ? "Processing..."
+                            : "Reserve"}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}

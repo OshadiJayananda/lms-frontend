@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import SideBar from "../../Components/SideBar";
-import HeaderBanner from "../components/HeaderBanner";
+import HeaderBanner from "../../Components/HeaderBanner";
 import Header from "../../Components/Header";
 import { FaCheck, FaTimes, FaBell, FaBook } from "react-icons/fa";
 import api from "../../Components/Api";

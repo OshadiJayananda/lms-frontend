@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../../Components/Api";
 import SideBar from "../../Components/SideBar";
-import HeaderBanner from "../components/HeaderBanner";
+import HeaderBanner from "../../Components/HeaderBanner";
 import Header from "../../Components/Header";
 import { toast } from "react-toastify";
 

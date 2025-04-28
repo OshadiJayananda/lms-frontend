@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import SideBar from "../../Components/SideBar";
-import HeaderBanner from "../components/HeaderBanner";
+import HeaderBanner from "../../Components/HeaderBanner";
 import Header from "../../Components/Header";
 import { FaCheck, FaTimes, FaCalendarAlt } from "react-icons/fa";
 import { toast } from "react-toastify";

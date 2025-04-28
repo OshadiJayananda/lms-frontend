@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import api from "../../Components/Api";
 import ClientSidebar from "../../Components/ClientSidebar";
-import ClientHeaderBanner from "../components/ClientHeaderBanner";
 import { FaSearch, FaUndo, FaSyncAlt, FaTimes } from "react-icons/fa";
 import { toast } from "react-toastify";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import HeaderBanner from "../../Components/HeaderBanner";
 
 function BorrowedBooks() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -161,7 +161,7 @@ function BorrowedBooks() {
           isSidebarCollapsed ? "ml-[5%]" : "ml-[20%]"
         } w-full`}
       >
-        <ClientHeaderBanner book={"Borrowed Books"} heading_pic={heading_pic} />
+        <HeaderBanner book={"Borrowed Books"} heading_pic={heading_pic} />
 
         {/* Search and Action Buttons */}
         <div className="mb-4 flex flex-row sm:flex-row gap-4 p-6">
