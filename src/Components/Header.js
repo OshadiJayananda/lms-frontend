@@ -1,72 +1,71 @@
-import React, { useState } from "react";
+import React from "react";
+import { NavLink } from "react-router-dom";
 
-function Header() {
-  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
-
+function Header({ isCollapsed }) {
   return (
-    <div
-      style={{
-        marginLeft: isSidebarCollapsed ? "5%" : "1%",
-        display: "flex",
-        padding: "10px 0",
-        gap: "15px",
-      }}
-    >
-      <a
-        href="/bookRequests"
-        style={{
-          color: "#000",
-          textDecoration: "none",
-          fontSize: "16px",
-          cursor: "pointer",
-        }}
-      >
-        Book Requests
-      </a>
-      <a
-        href="/renewBooks"
-        style={{
-          color: "#000",
-          textDecoration: "none",
-          fontSize: "16px",
-          cursor: "pointer",
-        }}
-      >
-        Renew Requests
-      </a>
-      <a
-        href="/returnedBooks"
-        style={{
-          color: "#000",
-          textDecoration: "none",
-          fontSize: "16px",
-          cursor: "pointer",
-        }}
-      >
-        Returned Books
-      </a>
-      <a
-        href="/bookReservation"
-        style={{
-          color: "#000",
-          textDecoration: "none",
-          fontSize: "16px",
-          cursor: "pointer",
-        }}
-      >
-        Book reservations
-      </a>
-      <a
-        href="#"
-        style={{
-          color: "#000",
-          textDecoration: "none",
-          fontSize: "16px",
-          cursor: "pointer",
-        }}
-      >
-        Member Info
-      </a>
+    <div className="bg-white shadow-sm w-full">
+      <div className="flex items-center px-6 py-3 space-x-8 border-b border-gray-100">
+        <NavLink
+          to="/bookRequests"
+          className={({ isActive }) =>
+            `text-sm font-medium px-2 py-1 rounded-md transition-colors ${
+              isActive
+                ? "text-blue-600 bg-blue-50"
+                : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+            }`
+          }
+        >
+          Book Requests
+        </NavLink>
+        <NavLink
+          to="/renewBooks"
+          className={({ isActive }) =>
+            `text-sm font-medium px-2 py-1 rounded-md transition-colors ${
+              isActive
+                ? "text-blue-600 bg-blue-50"
+                : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+            }`
+          }
+        >
+          Renew Requests
+        </NavLink>
+        <NavLink
+          to="/returnedBooks"
+          className={({ isActive }) =>
+            `text-sm font-medium px-2 py-1 rounded-md transition-colors ${
+              isActive
+                ? "text-blue-600 bg-blue-50"
+                : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+            }`
+          }
+        >
+          Returned Books
+        </NavLink>
+        <NavLink
+          to="/bookReservation"
+          className={({ isActive }) =>
+            `text-sm font-medium px-2 py-1 rounded-md transition-colors ${
+              isActive
+                ? "text-blue-600 bg-blue-50"
+                : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+            }`
+          }
+        >
+          Book Reservations
+        </NavLink>
+        <NavLink
+          to="/memberInfo"
+          className={({ isActive }) =>
+            `text-sm font-medium px-2 py-1 rounded-md transition-colors ${
+              isActive
+                ? "text-blue-600 bg-blue-50"
+                : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+            }`
+          }
+        >
+          Member Info
+        </NavLink>
+      </div>
     </div>
   );
 }

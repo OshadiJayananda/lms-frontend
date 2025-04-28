@@ -3,12 +3,14 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import SideBar from "../../Components/SideBar";
 import api from "../../Components/Api";
-import { FaEdit, FaTrash } from "react-icons/fa";
+import { FaEdit, FaTrash, FaPlus, FaFilter, FaTimes } from "react-icons/fa";
 import Header from "../../Components/Header";
 import { toast } from "react-toastify";
+import HeaderBanner from "../../Components/HeaderBanner";
 
 function Categories() {
   const [categories, setCategories] = useState([]);
+  const [allCategories, setAllCategories] = useState([]); // Store all categories for parent selection
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -16,13 +18,14 @@ function Categories() {
   const [showOnlyParents, setShowOnlyParents] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [categoryToEdit, setCategoryToEdit] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   const fetchCategories = async (page = 1) => {
     try {
+      setLoading(true);
       const params = { page };
       if (showOnlyParents) params.parents_only = true;
 
@@ -31,16 +34,26 @@ function Categories() {
         setCategories(response.data.data);
         setTotalPages(response.data.last_page);
         setCurrentPage(response.data.current_page);
+
+        // Fetch all categories separately for parent dropdown
+        if (!showOnlyParents) {
+          const allResponse = await api.get("/categories?all=true");
+          setAllCategories(allResponse.data.data);
+        } else {
+          setAllCategories(response.data.data);
+        }
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
       toast.error("Failed to load categories");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchCategories();
-  }, [showOnlyParents]); // Refetch when filter changes
+  }, [showOnlyParents]);
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
@@ -49,26 +62,20 @@ function Categories() {
   const handleReset = () => {
     formik.resetForm();
     setEditingCategoryId(null);
+    setShowForm(false);
   };
 
   const handleEditClick = (category) => {
-    setCategoryToEdit(category);
-    setShowEditModal(true);
-  };
-
-  const confirmEdit = () => {
-    if (categoryToEdit) {
-      setEditingCategoryId(categoryToEdit.id);
-      formik.setFieldValue("name", categoryToEdit.name);
-      formik.setFieldValue("description", categoryToEdit.description || "");
-      formik.setFieldValue("parentId", categoryToEdit.parent_id || "");
-      formik.setFieldValue(
-        "status",
-        categoryToEdit.status === 1 ? "Active" : "Inactive"
-      );
-      setShowEditModal(false);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    setEditingCategoryId(category.id);
+    formik.setFieldValue("name", category.name);
+    formik.setFieldValue("description", category.description || "");
+    formik.setFieldValue("parentId", category.parent_id || "");
+    formik.setFieldValue(
+      "status",
+      category.status === 1 ? "Active" : "Inactive"
+    );
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDeleteClick = (categoryId) => {
@@ -89,10 +96,13 @@ function Categories() {
     setShowModal(false);
   };
 
-  // Get parent categories for dropdown (categories without parent_id)
-  const parentCategories = categories.filter((cat) => !cat.parent_id);
+  // Get parent name for display
+  const getParentName = (parentId) => {
+    if (!parentId) return "None";
+    const parent = allCategories.find((cat) => cat.id === parentId);
+    return parent ? parent.name : "Unknown";
+  };
 
-  // Formik setup
   const formik = useFormik({
     initialValues: {
       name: "",
@@ -133,366 +143,375 @@ function Categories() {
   });
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50 flex">
       <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
+
       <div
-        style={{
-          marginLeft: isSidebarCollapsed ? "5%" : "20%",
-          padding: "0px",
-          transition: "margin-left 0.3s ease",
-        }}
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          isSidebarCollapsed ? "ml-20" : "ml-64"
+        }`}
       >
-        <div
-          style={{
-            backgroundImage: `url(${heading_pic})`,
-            height: "100px",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            position: "relative",
-            filter: "brightness(150%)",
-          }}
-        >
-          <h1
-            style={{
-              fontSize: "40px",
-              textAlign: "left",
-              padding: "20px",
-              color: "#000",
-              fontWeight: "bold",
-            }}
+        <HeaderBanner
+          book={"Categories Management"}
+          heading_pic={heading_pic}
+          className="w-full"
+        />
+        <Header />
+
+        <div className="p-6">
+          {/* Add/Edit Category Form (Collapsible) */}
+          <div
+            className={`mb-8 transition-all duration-300 ${
+              showForm ? "max-h-screen" : "max-h-0 overflow-hidden"
+            }`}
           >
-            Categories
-          </h1>
-        </div>
+            <div className="bg-white rounded-xl shadow-md p-6 border border-blue-100">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-blue-800">
+                  {editingCategoryId ? "Edit Category" : "Add New Category"}
+                </h2>
+                <button
+                  onClick={handleReset}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <FaTimes size={20} />
+                </button>
+              </div>
 
-        <div>
-          <Header />
-        </div>
+              <form onSubmit={formik.handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category Name *
+                  </label>
+                  <input
+                    type="text"
+                    className={`w-full px-4 py-2 rounded-lg border ${
+                      formik.errors.name && formik.touched.name
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                    name="name"
+                    value={formik.values.name}
+                    onChange={formik.handleChange}
+                    placeholder="Enter category name"
+                  />
+                  {formik.errors.name && formik.touched.name && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {formik.errors.name}
+                    </p>
+                  )}
+                </div>
 
-        <div
-          style={{
-            marginLeft: isSidebarCollapsed ? "5%" : "0%",
-            padding: "10px",
-            transition: "margin-left 0.3s ease",
-          }}
-        >
-          <form
-            style={{
-              backgroundColor: "#f0f4ff",
-              padding: "20px",
-              borderRadius: "8px",
-            }}
-            onSubmit={formik.handleSubmit}
-          >
-            <h1
-              style={{
-                fontWeight: "bold",
-                fontSize: "20px",
-              }}
-            >
-              {editingCategoryId ? "Edit Category" : "Add New Category"}
-            </h1>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    className={`w-full px-4 py-2 rounded-lg border ${
+                      formik.errors.description && formik.touched.description
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                    name="description"
+                    value={formik.values.description}
+                    onChange={formik.handleChange}
+                    rows={3}
+                    placeholder="Enter description"
+                  />
+                  {formik.errors.description && formik.touched.description && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {formik.errors.description}
+                    </p>
+                  )}
+                </div>
 
-            <label>Category Name:</label>
-            <input
-              type="text"
-              style={{ display: "block", margin: "10px 0", width: "100%" }}
-              name="name"
-              value={formik.values.name}
-              onChange={formik.handleChange}
-            />
-            {formik.errors.name && formik.touched.name && (
-              <div style={{ color: "red" }}>{formik.errors.name}</div>
-            )}
-
-            <label>Description:</label>
-            <textarea
-              style={{ display: "block", margin: "10px 0", width: "100%" }}
-              name="description"
-              value={formik.values.description}
-              onChange={formik.handleChange}
-            />
-            {formik.errors.description && formik.touched.description && (
-              <div style={{ color: "red" }}>{formik.errors.description}</div>
-            )}
-
-            <label>Parent Category:</label>
-            <select
-              style={{ display: "block", margin: "10px 0", width: "100%" }}
-              name="parentId"
-              value={formik.values.parentId}
-              onChange={formik.handleChange}
-            >
-              <option value="">None</option>
-              {parentCategories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-
-            <label>Status:</label>
-            <select
-              style={{ display: "block", margin: "10px 0", width: "100%" }}
-              name="status"
-              value={formik.values.status}
-              onChange={formik.handleChange}
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-
-            <button
-              type="submit"
-              style={{
-                backgroundColor: "#001f5b",
-                color: "#fff",
-                padding: "10px",
-                border: "none",
-                borderRadius: "4px",
-                marginRight: "10px",
-              }}
-            >
-              {editingCategoryId ? "Update" : "Add"}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleReset}
-              style={{
-                backgroundColor: "#ccc",
-                padding: "10px",
-                border: "none",
-                borderRadius: "4px",
-              }}
-            >
-              Clear
-            </button>
-          </form>
-        </div>
-
-        <div style={{ marginTop: "20px", padding: "10px" }}>
-          <h1 style={{ fontWeight: "bold", fontSize: "20px" }}>
-            Existing Categories
-          </h1>
-
-          <label
-            style={{
-              marginBottom: "10px",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={showOnlyParents}
-              onChange={() => {
-                setShowOnlyParents(!showOnlyParents);
-                setCurrentPage(1);
-              }}
-              style={{ marginRight: "8px" }}
-            />
-            <span>Show Only Parent Categories</span>
-          </label>
-
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#001f5b", color: "#fff" }}>
-                <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  Name
-                </th>
-                <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  Description
-                </th>
-                <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  Parent
-                </th>
-                <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  Status
-                </th>
-                <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {categories.map((category) => (
-                <tr key={category.id}>
-                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                    {category.parent_id ? (
-                      <span>{category.name}</span>
-                    ) : (
-                      <strong>{category.name}</strong>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Parent Category
+                    </label>
+                    <select
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      name="parentId"
+                      value={formik.values.parentId}
+                      onChange={formik.handleChange}
+                      disabled={
+                        editingCategoryId && formik.values.parentId === null
+                      }
+                    >
+                      <option value="">None (Top-level category)</option>
+                      {allCategories
+                        .filter(
+                          (cat) =>
+                            !cat.parent_id && cat.id !== editingCategoryId
+                        )
+                        .map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                    </select>
+                    {editingCategoryId && formik.values.parentId === null && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Cannot change a parent category to child
+                      </p>
                     )}
-                  </td>
-                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                    {category.description}
-                  </td>
-                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                    {category.parentCategory
-                      ? category.parentCategory.name
-                      : "None"}
-                  </td>
-                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                    {category.status === 1 ? "Active" : "Inactive"}
-                  </td>
-                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      <FaEdit
-                        onClick={() => handleEditClick(category)}
-                        style={{ color: "green", cursor: "pointer" }}
-                        title="Edit"
-                      />
-                      <FaTrash
-                        onClick={() => handleDeleteClick(category.id)}
-                        style={{ color: "red", cursor: "pointer" }}
-                        title="Delete"
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
 
-          {/* Pagination */}
-          <div style={{ marginTop: "20px", textAlign: "center" }}>
-            <button
-              onClick={() => {
-                const prevPage = Math.max(currentPage - 1, 1);
-                setCurrentPage(prevPage);
-                fetchCategories(prevPage);
-              }}
-              disabled={currentPage === 1}
-              style={{ marginRight: "10px", padding: "5px 10px" }}
-            >
-              Previous
-            </button>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => {
-                const nextPage = Math.min(currentPage + 1, totalPages);
-                setCurrentPage(nextPage);
-                fetchCategories(nextPage);
-              }}
-              disabled={currentPage === totalPages}
-              style={{ marginLeft: "10px", padding: "5px 10px" }}
-            >
-              Next
-            </button>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <select
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      name="status"
+                      value={formik.values.status}
+                      onChange={formik.handleChange}
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    {editingCategoryId ? "Update Category" : "Add Category"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          {/* Existing Categories Section */}
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between">
+              <div className="flex items-center mb-4 md:mb-0">
+                <h2 className="text-xl font-bold text-gray-800">
+                  Existing Categories
+                </h2>
+                <span className="ml-3 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                  {categories.length}{" "}
+                  {categories.length === 1 ? "item" : "items"}
+                </span>
+              </div>
+
+              <div className="flex space-x-3">
+                <label className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-lg cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="form-checkbox h-4 w-4 text-blue-600"
+                    checked={showOnlyParents}
+                    onChange={() => {
+                      setShowOnlyParents(!showOnlyParents);
+                      setCurrentPage(1);
+                    }}
+                  />
+                  <span className="ml-2 text-sm text-gray-700 flex items-center">
+                    <FaFilter className="mr-1" /> Parent Categories Only
+                  </span>
+                </label>
+
+                <button
+                  onClick={() => {
+                    setShowForm(!showForm);
+                    setEditingCategoryId(null);
+                    formik.resetForm();
+                  }}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <FaPlus className="mr-2" />
+                  {showForm ? "Hide Form" : "Add Category"}
+                </button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading categories...</p>
+              </div>
+            ) : categories.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="text-gray-500 mb-4">No categories found</div>
+                <button
+                  onClick={() => {
+                    setShowForm(true);
+                    setEditingCategoryId(null);
+                    formik.resetForm();
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Create Your First Category
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Parent
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {categories.map((category) => (
+                      <tr
+                        key={category.id}
+                        className={`hover:bg-gray-50 ${
+                          !category.parent_id ? "bg-blue-50" : ""
+                        }`}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {!category.parent_id && (
+                              <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+                            )}
+                            <div className="text-sm font-medium text-gray-900">
+                              {category.name}
+                              {!category.parent_id && (
+                                <span className="ml-2 text-xs text-blue-600">
+                                  (Parent)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-500 max-w-xs truncate">
+                            {category.description}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {getParentName(category.parent_id)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full font-medium ${
+                              category.status === 1
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {category.status === 1 ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => handleEditClick(category)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Edit"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(category.id)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Delete"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Pagination */}
+            {categories.length > 0 && !loading && (
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <div className="text-sm text-gray-500">
+                  Showing page {currentPage} of {totalPages}
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      const prevPage = Math.max(currentPage - 1, 1);
+                      setCurrentPage(prevPage);
+                      fetchCategories(prevPage);
+                    }}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-1 rounded-md ${
+                      currentPage === 1
+                        ? "bg-gray-100 text-gray-400"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => {
+                      const nextPage = Math.min(currentPage + 1, totalPages);
+                      setCurrentPage(nextPage);
+                      fetchCategories(nextPage);
+                    }}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-1 rounded-md ${
+                      currentPage === totalPages
+                        ? "bg-gray-100 text-gray-400"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Delete Confirmation Modal */}
         {showModal && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 1000,
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                width: "300px",
-              }}
-            >
-              <h3 style={{ fontWeight: "bold", marginBottom: "10px" }}>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Confirm Deletion
               </h3>
-              <p>Are you sure you want to delete this category?</p>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  marginTop: "20px",
-                  gap: "10px",
-                }}
-              >
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete this category? This action
+                cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setShowModal(false)}
-                  style={{ padding: "5px 10px", backgroundColor: "#ccc" }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDelete}
-                  style={{
-                    padding: "5px 10px",
-                    backgroundColor: "red",
-                    color: "white",
-                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                 >
                   Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Confirmation Modal */}
-        {showEditModal && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 1000,
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                width: "300px",
-              }}
-            >
-              <h3 style={{ fontWeight: "bold", marginBottom: "10px" }}>
-                Confirm Edit
-              </h3>
-              <p>Are you sure you want to edit this category?</p>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  marginTop: "20px",
-                  gap: "10px",
-                }}
-              >
-                <button
-                  onClick={() => setShowEditModal(false)}
-                  style={{ padding: "5px 10px", backgroundColor: "#ccc" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmEdit}
-                  style={{
-                    padding: "5px 10px",
-                    backgroundColor: "#001f5b",
-                    color: "white",
-                  }}
-                >
-                  Edit
                 </button>
               </div>
             </div>

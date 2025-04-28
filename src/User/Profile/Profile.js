@@ -3,10 +3,10 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import api from "../../Components/Api";
 import Modal from "react-modal";
-import ClientHeaderBanner from "../components/ClientHeaderBanner";
 import ClientSidebar from "../../Components/ClientSidebar";
 import { toast } from "react-toastify";
 import { FaUserCircle, FaTrash } from "react-icons/fa";
+import HeaderBanner from "../../Components/HeaderBanner";
 
 Modal.setAppElement("#root"); // Prevents accessibility issues
 
@@ -129,21 +129,27 @@ function Profile() {
   if (loading) return <p>Loading...</p>;
   if (!user) return <p>Failed to load user data.</p>;
 
-  return (
-    <div>
-      <ClientSidebar
-        isCollapsed={isSidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!isSidebarCollapsed)}
-      />
-      <div
-        style={{
-          marginLeft: isSidebarCollapsed ? "5%" : "20%",
-          padding: "20px",
-          transition: "margin-left 0.3s ease",
-        }}
-      >
-        <ClientHeaderBanner book={"Profile"} heading_pic={heading_pic} />
+  const handleToggle = () => {
+    setSidebarCollapsed(!isSidebarCollapsed);
+  };
 
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar - width changes based on collapsed state */}
+      <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
+
+      {/* Main Content Area - adjusts margin based on sidebar state */}
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          isSidebarCollapsed ? "ml-20" : "ml-64"
+        }`}
+      >
+        {/* Header Banner - full width, stays connected to sidebar */}
+        <HeaderBanner
+          book={"Admin Dashboard"}
+          heading_pic={heading_pic}
+          className="w-full"
+        />
         <div
           style={{ display: "flex", justifyContent: "center", padding: "20px" }}
         >

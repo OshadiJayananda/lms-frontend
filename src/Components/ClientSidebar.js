@@ -1,36 +1,37 @@
 import React, { useState } from "react";
-import { FaUserCircle } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import {
+  FaUserCircle,
+  FaBook,
+  FaHistory,
+  FaCreditCard,
+  FaHome,
+  FaBars,
+  FaSignOutAlt,
+  FaUser,
+} from "react-icons/fa";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "./Api";
 
 function ClientSidebar({ isCollapsed, onToggle }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const activeRoute = location.pathname.split("/")[1] || "dashboard";
 
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem("token");
-
       if (!token) {
         console.error("No token found");
         return;
       }
-
       await api.post(
         "/logout",
         {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // Clear token from storage
       localStorage.removeItem("token");
-
-      // Redirect to login page
-      navigate("/login", { replace: true });
+      navigate("/login");
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
@@ -38,173 +39,195 @@ function ClientSidebar({ isCollapsed, onToggle }) {
     }
   };
 
+  const navItems = [
+    {
+      path: "/dashboard",
+      icon: <FaHome />,
+      label: "Dashboard",
+      key: "dashboard",
+    },
+    { path: "/books", icon: <FaBook />, label: "Books", key: "books" },
+    {
+      path: "/borrowedBook",
+      icon: <FaHistory />,
+      label: "Borrowed History",
+      key: "borrowedBook",
+    },
+    {
+      path: "/payments",
+      icon: <FaCreditCard />,
+      label: "Payments",
+      key: "payments",
+    },
+  ];
+
   return (
     <div
       style={{
-        width: isCollapsed ? "5%" : "20%",
-        backgroundColor: "#001f5b",
-        color: "#fff",
+        width: isCollapsed ? "80px" : "250px",
+        backgroundColor: "#2c3e50",
+        color: "#ecf0f1",
         height: "100vh",
         position: "fixed",
         transition: "width 0.3s ease",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
+        zIndex: 100,
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
       }}
     >
+      {/* Navigation Items */}
       <div
         style={{
-          padding: "20px",
+          padding: "20px 10px",
           display: "flex",
           flexDirection: "column",
-          alignItems: isCollapsed ? "center" : "flex-start",
         }}
       >
         <button
+          onClick={onToggle}
           style={{
             background: "none",
             border: "none",
-            color: "#fff",
-            fontSize: "20px",
+            color: "#ecf0f1",
+            fontSize: "24px",
             cursor: "pointer",
-            marginBottom: "20px",
+            marginBottom: "30px",
+            alignSelf: isCollapsed ? "center" : "flex-start",
           }}
-          onClick={onToggle}
+          aria-label="Toggle sidebar"
         >
-          ☰
+          <FaBars />
         </button>
+
         {!isCollapsed && (
           <h1
             style={{
-              textAlign: "center",
-              fontSize: "24px",
-              marginBottom: "30px",
-              fontWeight: "bold",
+              fontSize: "22px",
+              marginBottom: "40px",
+              fontWeight: "600",
+              color: "#f1c40f",
+              paddingLeft: "10px",
+              borderLeft: "3px solid #f1c40f",
             }}
           >
-            Library
+            Library Portal
           </h1>
         )}
-        <ul
-          style={{
-            listStyleType: "none",
-            padding: 0,
-            marginTop: isCollapsed ? "10px" : "30px",
-          }}
-        >
-          <li style={{ margin: "10px 0" }}>
-            <a
-              href="/dashboard"
-              style={{
-                color: "#fff",
-                textDecoration: "none",
-                fontSize: isCollapsed ? "10px" : "16px",
-              }}
-            >
-              Dashboard
-            </a>
-          </li>
-          <li style={{ margin: "10px 0" }}>
-            <a
-              href="/books"
-              style={{
-                color: "#fff",
-                textDecoration: "none",
-                fontSize: isCollapsed ? "10px" : "16px",
-              }}
-            >
-              Books
-            </a>
-          </li>
-          <li style={{ margin: "10px 0" }}>
-            <a
-              href="/borrowedBook"
-              style={{
-                color: "#fff",
-                textDecoration: "none",
-                fontSize: isCollapsed ? "10px" : "16px",
-              }}
-            >
-              Borrowed History
-            </a>
-          </li>
-          <li style={{ margin: "10px 0" }}>
-            <a
-              href="#"
-              style={{
-                color: "#fff",
-                textDecoration: "none",
-                fontSize: isCollapsed ? "10px" : "16px",
-              }}
-            >
-              Payments
-            </a>
-          </li>
+
+        <ul style={{ listStyleType: "none", padding: 0, width: "100%" }}>
+          {navItems.map((item) => (
+            <li key={item.key} style={{ margin: "15px 0" }}>
+              <button
+                onClick={() => navigate(item.path)}
+                style={{
+                  color: activeRoute === item.key ? "#f1c40f" : "#ecf0f1",
+                  background:
+                    activeRoute === item.key
+                      ? "rgba(241, 196, 15, 0.1)"
+                      : "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "15px",
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "5px",
+                  transition: "all 0.2s",
+                  fontSize: isCollapsed ? "24px" : "16px",
+                  justifyContent: isCollapsed ? "center" : "flex-start",
+                }}
+              >
+                {item.icon}
+                {!isCollapsed && item.label}
+              </button>
+            </li>
+          ))}
         </ul>
       </div>
 
-      {/* Profile Icon & Dropdown */}
+      {/* Profile Section */}
       <div
         style={{
           position: "relative",
-          padding: "20px",
-          display: "flex",
-          justifyContent: isCollapsed ? "center" : "flex-end",
+          padding: "20px 10px",
+          borderTop: "1px solid rgba(236, 240, 241, 0.1)",
         }}
       >
-        <FaUserCircle
-          size={isCollapsed ? 30 : 40}
-          style={{ cursor: "pointer" }}
+        <div
           onClick={() => setShowProfileMenu(!showProfileMenu)}
-        />
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            cursor: "pointer",
+            padding: "10px",
+            borderRadius: "5px",
+            transition: "all 0.2s",
+            justifyContent: isCollapsed ? "center" : "flex-start",
+            ":hover": { backgroundColor: "rgba(236, 240, 241, 0.1)" },
+          }}
+        >
+          <FaUserCircle size={24} style={{ color: "#f1c40f" }} />
+          {!isCollapsed && <span style={{ fontSize: "14px" }}>My Account</span>}
+        </div>
 
-        {/* Profile Dropdown Menu */}
+        {/* Profile Dropdown - Fixed Positioning */}
         {showProfileMenu && (
           <div
             style={{
-              position: "absolute",
-              bottom: "60px",
-              right: isCollapsed ? "0px" : "20px",
-              backgroundColor: "#fff",
-              color: "#000",
+              position: "fixed",
+              bottom: "80px",
+              left: isCollapsed ? "80px" : "250px",
+              backgroundColor: "#34495e",
+              color: "#ecf0f1",
               borderRadius: "8px",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-              width: "150px",
-              display: "flex",
-              flexDirection: "column",
-              textAlign: "left",
-              zIndex: 10,
+              boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+              width: "180px",
+              overflow: "hidden",
+              zIndex: 1000,
+              marginLeft: "10px",
+              transition: "all 0.3s ease",
             }}
           >
             <button
-              style={{
-                background: "none",
-                border: "none",
-                padding: "10px",
-                cursor: "pointer",
-                textAlign: "left",
-                fontSize: "14px",
-                borderBottom: "1px solid #ddd",
-              }}
               onClick={() => {
                 setShowProfileMenu(false);
                 navigate("/profile");
               }}
-            >
-              View Profile
-            </button>
-            <button
               style={{
                 background: "none",
                 border: "none",
-                padding: "10px",
+                padding: "12px 15px",
                 cursor: "pointer",
-                textAlign: "left",
-                fontSize: "14px",
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                transition: "all 0.2s",
+                ":hover": { backgroundColor: "rgba(241, 196, 15, 0.1)" },
               }}
-              onClick={handleLogout}
             >
-              Log Out
+              <FaUser /> View Profile
+            </button>
+            <button
+              onClick={handleLogout}
+              style={{
+                background: "none",
+                border: "none",
+                padding: "12px 15px",
+                cursor: "pointer",
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                transition: "all 0.2s",
+                ":hover": { backgroundColor: "rgba(241, 196, 15, 0.1)" },
+              }}
+            >
+              <FaSignOutAlt /> Log Out
             </button>
           </div>
         )}

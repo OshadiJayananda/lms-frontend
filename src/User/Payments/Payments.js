@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import HeaderBanner from "../../Admin/components/HeaderBanner";
+import HeaderBanner from "../../Components/HeaderBanner";
 import ClientSidebar from "../../Components/ClientSidebar";
 import { FaBell } from "react-icons/fa";
 import api from "../../Components/Api";

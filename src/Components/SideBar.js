@@ -1,35 +1,34 @@
 import React, { useState } from "react";
-import { FaUserCircle } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import {
+  FaUserCircle,
+  FaHome,
+  FaBook,
+  FaHistory,
+  FaMoneyBillWave,
+  FaTags,
+  FaBars,
+  FaSignOutAlt,
+  FaUserCog,
+} from "react-icons/fa";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "./Api";
 
 function SideBar({ isCollapsed, onToggle }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const activeRoute = location.pathname.split("/")[2] || "dashboard";
 
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem("token");
-
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
-
+      if (!token) return;
       await api.post(
         "/logout",
         {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // Clear token from storage
       localStorage.removeItem("token");
-
-      // Redirect to login page
       navigate("/login");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -38,185 +37,204 @@ function SideBar({ isCollapsed, onToggle }) {
     }
   };
 
+  const navItems = [
+    {
+      path: "/admin/dashboard",
+      icon: <FaHome />,
+      label: "Dashboard",
+      key: "dashboard",
+    },
+    { path: "/admin/books", icon: <FaBook />, label: "Books", key: "books" },
+    {
+      path: "/admin/borrowed-history",
+      icon: <FaHistory />,
+      label: "Borrowed History",
+      key: "borrowed-history",
+    },
+    {
+      path: "/admin/payments",
+      icon: <FaMoneyBillWave />,
+      label: "Payments",
+      key: "payments",
+    },
+    {
+      path: "/admin/categories",
+      icon: <FaTags />,
+      label: "Categories",
+      key: "categories",
+    },
+  ];
+
   return (
     <div
       style={{
-        width: isCollapsed ? "5%" : "20%",
-        backgroundColor: "#001f5b",
+        width: isCollapsed ? "80px" : "250px",
+        backgroundColor: "#1a365d",
         color: "#fff",
         height: "100vh",
         position: "fixed",
         transition: "width 0.3s ease",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        zIndex: 100,
+        fontFamily: "'Roboto', sans-serif",
       }}
     >
+      {/* Navigation Items */}
       <div
         style={{
-          padding: "20px",
+          padding: "20px 10px",
           display: "flex",
           flexDirection: "column",
-          alignItems: isCollapsed ? "center" : "flex-start",
         }}
       >
-        <button
+        <div
           style={{
-            background: "none",
-            border: "none",
-            color: "#fff",
-            fontSize: "20px",
-            cursor: "pointer",
-            marginBottom: "20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: isCollapsed ? "center" : "space-between",
+            width: "100%",
+            marginBottom: "30px",
           }}
-          onClick={onToggle}
         >
-          ☰
-        </button>
-        {!isCollapsed && (
-          <h1
+          <button
+            onClick={onToggle}
             style={{
-              textAlign: "center",
+              background: "none",
+              border: "none",
+              color: "#fff",
               fontSize: "24px",
-              marginBottom: "30px",
-              fontWeight: "bold",
+              cursor: "pointer",
+              padding: "5px",
+              borderRadius: "4px",
+              ":hover": { backgroundColor: "rgba(255,255,255,0.1)" },
             }}
+            aria-label="Toggle sidebar"
           >
-            Library
-          </h1>
-        )}
-        <ul
-          style={{
-            listStyleType: "none",
-            padding: 0,
-            marginTop: isCollapsed ? "10px" : "30px",
-          }}
-        >
-          <li style={{ margin: "10px 0" }}>
-            <a
-              href="/admin/dashboard"
-              style={{
-                color: "#fff",
-                textDecoration: "none",
-                fontSize: isCollapsed ? "10px" : "16px",
-              }}
+            <FaBars />
+          </button>
+          {!isCollapsed && (
+            <h1
+              style={{ fontSize: "20px", fontWeight: "600", color: "#63b3ed" }}
             >
-              Dashboard
-            </a>
-          </li>
-          <li style={{ margin: "10px 0" }}>
-            <a
-              href="/admin/books"
-              style={{
-                color: "#fff",
-                textDecoration: "none",
-                fontSize: isCollapsed ? "10px" : "16px",
-              }}
-            >
-              Books
-            </a>
-          </li>
-          <li style={{ margin: "10px 0" }}>
-            <a
-              href="/borrowedHistory"
-              style={{
-                color: "#fff",
-                textDecoration: "none",
-                fontSize: isCollapsed ? "10px" : "16px",
-              }}
-            >
-              Borrowed History
-            </a>
-          </li>
-          <li style={{ margin: "10px 0" }}>
-            <a
-              href="#"
-              style={{
-                color: "#fff",
-                textDecoration: "none",
-                fontSize: isCollapsed ? "10px" : "16px",
-              }}
-            >
-              Payments
-            </a>
-          </li>
-          <li style={{ margin: "10px 0" }}>
-            <a
-              href="/admin/categories"
-              style={{
-                color: "#fff",
-                textDecoration: "none",
-                fontSize: isCollapsed ? "10px" : "16px",
-              }}
-            >
-              Categories
-            </a>
-          </li>
+              Admin Portal
+            </h1>
+          )}
+        </div>
+
+        <ul style={{ listStyleType: "none", padding: 0, width: "100%" }}>
+          {navItems.map((item) => (
+            <li key={item.key} style={{ margin: "8px 0" }}>
+              <button
+                onClick={() => navigate(item.path)}
+                style={{
+                  color: activeRoute === item.key ? "#63b3ed" : "#fff",
+                  background:
+                    activeRoute === item.key
+                      ? "rgba(99, 179, 237, 0.1)"
+                      : "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "15px",
+                  width: "100%",
+                  padding: "12px 15px",
+                  borderRadius: "6px",
+                  transition: "all 0.2s",
+                  fontSize: isCollapsed ? "24px" : "16px",
+                  justifyContent: isCollapsed ? "center" : "flex-start",
+                }}
+              >
+                {item.icon}
+                {!isCollapsed && item.label}
+              </button>
+            </li>
+          ))}
         </ul>
       </div>
-      {/* Profile Icon & Dropdown */}
+
+      {/* Profile Section */}
       <div
         style={{
-          position: "absolute",
-          bottom: "20px",
-          right: isCollapsed ? "50%" : "20px",
-          transform: isCollapsed ? "translateX(50%)" : "none",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+          position: "relative",
+          padding: "20px 10px",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
         }}
       >
-        <FaUserCircle
-          size={isCollapsed ? 30 : 40}
-          style={{ cursor: "pointer" }}
+        <div
           onClick={() => setShowProfileMenu(!showProfileMenu)}
-        />
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            cursor: "pointer",
+            padding: "10px",
+            borderRadius: "6px",
+            transition: "all 0.2s",
+            justifyContent: isCollapsed ? "center" : "flex-start",
+            ":hover": { backgroundColor: "rgba(255,255,255,0.1)" },
+          }}
+        >
+          <FaUserCircle size={24} style={{ color: "#63b3ed" }} />
+          {!isCollapsed && (
+            <span style={{ fontSize: "14px" }}>Admin Profile</span>
+          )}
+        </div>
 
-        {/* Profile Dropdown Menu */}
+        {/* Profile Dropdown - Fixed Positioning */}
         {showProfileMenu && (
           <div
             style={{
-              position: "absolute",
-              bottom: "50px",
-              right: isCollapsed ? "50%" : "0",
-              transform: isCollapsed ? "translateX(50%)" : "none",
-              backgroundColor: "#fff",
-              color: "#000",
+              position: "fixed",
+              bottom: "80px",
+              left: isCollapsed ? "80px" : "250px",
+              backgroundColor: "#2d3748",
+              color: "#fff",
               borderRadius: "8px",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-              width: "150px",
-              display: "flex",
-              flexDirection: "column",
-              textAlign: "left",
-              zIndex: 10,
+              boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+              width: "180px",
+              overflow: "hidden",
+              zIndex: 1000,
+              marginLeft: "10px",
+              transition: "all 0.3s ease",
             }}
           >
             <button
-              style={{
-                background: "none",
-                border: "none",
-                padding: "10px",
-                cursor: "pointer",
-                textAlign: "left",
-                fontSize: "14px",
-                borderBottom: "1px solid #ddd",
-              }}
               onClick={() => {
                 setShowProfileMenu(false);
-                navigate("/profile");
+                navigate("/admin/profile");
               }}
-            >
-              View Profile
-            </button>
-            <button
               style={{
                 background: "none",
                 border: "none",
-                padding: "10px",
+                padding: "12px 15px",
                 cursor: "pointer",
-                textAlign: "left",
-                fontSize: "14px",
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                ":hover": { backgroundColor: "rgba(99, 179, 237, 0.1)" },
               }}
-              onClick={handleLogout}
             >
-              Log Out
+              <FaUserCog /> Admin Profile
+            </button>
+            <button
+              onClick={handleLogout}
+              style={{
+                background: "none",
+                border: "none",
+                padding: "12px 15px",
+                cursor: "pointer",
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                ":hover": { backgroundColor: "rgba(99, 179, 237, 0.1)" },
+              }}
+            >
+              <FaSignOutAlt /> Sign Out
             </button>
           </div>
         )}

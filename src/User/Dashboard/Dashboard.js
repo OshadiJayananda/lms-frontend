@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import HeaderBanner from "../../Admin/components/HeaderBanner";
+import HeaderBanner from "../../Components/HeaderBanner";
 import ClientSidebar from "../../Components/ClientSidebar";
 import { FaBell } from "react-icons/fa";
 import api from "../../Components/Api";
@@ -108,16 +108,22 @@ function Dashboard() {
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar - width changes based on collapsed state */}
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
+
+      {/* Main Content Area - adjusts margin based on sidebar state */}
       <div
-        style={{
-          marginLeft: isSidebarCollapsed ? "5%" : "20%",
-          padding: "0px",
-          transition: "margin-left 0.3s ease",
-        }}
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          isSidebarCollapsed ? "ml-20" : "ml-64"
+        }`}
       >
-        <HeaderBanner book={"Dashboard"} heading_pic={heading_pic} />
+        {/* Header Banner - full width, stays connected to sidebar */}
+        <HeaderBanner
+          book={"Admin Dashboard"}
+          heading_pic={heading_pic}
+          className="w-full"
+        />
 
         <div style={{ padding: "20px" }}>
           <div className="relative float-right">
