@@ -2,7 +2,13 @@ import React, { useState, useEffect } from "react";
 import SideBar from "../../Components/SideBar";
 import HeaderBanner from "../../Components/HeaderBanner";
 import Header from "../../Components/Header";
-import { FaCheck, FaTimes, FaCalendarAlt } from "react-icons/fa";
+import {
+  FaCheck,
+  FaTimes,
+  FaCalendarAlt,
+  FaInfoCircle,
+  FaUser,
+} from "react-icons/fa";
 import { toast } from "react-toastify";
 import api from "../../Components/Api";
 import DatePicker from "react-datepicker";
@@ -14,23 +20,23 @@ function RenewBook() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [newDueDate, setNewDueDate] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   const fetchRenewRequests = async () => {
     try {
+      setLoading(true);
       const response = await api.get("/admin/renew-requests");
       setRenewRequests(response.data);
     } catch (error) {
-      console.error("Error details:", {
-        message: error.message,
-        response: error.response,
-        config: error.config,
-      });
+      console.error("Error fetching renewal requests:", error);
       toast.error(
         error.response?.data?.message ||
           "Failed to fetch renewal requests. Please try again later."
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -44,25 +50,17 @@ function RenewBook() {
 
   const handleApprove = async (requestId) => {
     try {
-      // Format the date properly before sending
-      const formattedDate = new Date(
-        newDueDate || selectedRequest.requested_date
-      )
-        .toISOString()
-        .split("T")[0]; // Gets just the YYYY-MM-DD part
+      const formattedDate = new Date(newDueDate).toISOString().split("T")[0];
 
       const response = await api.post(
         `/admin/renew-requests/${requestId}/approve`,
-        {
-          dueDate: formattedDate,
-        }
+        { dueDate: formattedDate }
       );
 
       toast.success(response.data.message || "Renewal approved successfully");
       fetchRenewRequests();
       setIsDateModalOpen(false);
     } catch (error) {
-      console.error("Approval error details:", error.response?.data);
       toast.error(
         error.response?.data?.message ||
           "Failed to approve renewal. Please try again later."
@@ -73,7 +71,7 @@ function RenewBook() {
   const handleReject = async (requestId) => {
     try {
       await api.post(`/admin/renew-requests/${requestId}/reject`);
-      toast.success("Renewal rejected");
+      toast.success("Renewal request rejected");
       fetchRenewRequests();
     } catch (error) {
       toast.error("Failed to reject renewal");
@@ -87,116 +85,239 @@ function RenewBook() {
   };
 
   return (
-    <div>
+    <div className="flex min-h-screen bg-gray-50 font-sans">
       <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
+
       <div
-        style={{
-          marginLeft: isSidebarCollapsed ? "5%" : "20%",
-          padding: "0px",
-          transition: "margin-left 0.3s ease",
-        }}
+        className={`flex-1 transition-all duration-300 ${
+          isSidebarCollapsed ? "ml-20" : "ml-64"
+        }`}
       >
-        <HeaderBanner book={"Renew Book"} heading_pic={heading_pic} />
+        <HeaderBanner
+          book={"Book Renewal Management"}
+          heading_pic={heading_pic}
+        />
+        <Header />
 
-        <div style={{ padding: "20px" }}>
-          <div className="flex-1">
-            <Header />
+        <div className="p-6">
+          {/* Dashboard Header */}
+          <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800 font-serif">
+                  Renewal Requests Dashboard
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  Manage all book renewal requests from library patrons
+                </p>
+              </div>
+            </div>
           </div>
 
-          <h2 className="text-2xl font-bold mb-6">Renewal Requests</h2>
-
-          <div className="bg-white shadow-md rounded-lg overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left">User</th>
-                  <th className="px-6 py-3 text-left">Book</th>
-                  <th className="px-6 py-3 text-left">Current Due Date</th>
-                  <th className="px-6 py-3 text-left">Requested Date</th>
-                  <th className="px-6 py-3 text-left">Copies Available</th>
-                  <th className="px-6 py-3 text-left">Pending Reservations</th>
-                  <th className="px-6 py-3 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {renewRequests.map((request) => (
-                  <tr key={request.id}>
-                    <td className="px-6 py-4">{request.user.name}</td>
-                    <td className="px-6 py-4">{request.book.name}</td>
-                    <td className="px-6 py-4">
-                      {new Date(request.current_due_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      {new Date(request.requested_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">{request.book.no_of_copies}</td>
-                    <td className="px-6 py-4">
-                      {request.book.reservations?.length || 0}
-                    </td>
-                    <td className="px-6 py-4 flex gap-2">
-                      <button
-                        onClick={() => openDateModal(request)}
-                        className="p-2 text-blue-600 hover:text-blue-800"
-                        title="Adjust Date"
+          {/* Renewal Requests Table */}
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+            </div>
+          ) : renewRequests.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl shadow-md">
+              <FaInfoCircle className="mx-auto text-gray-400 text-4xl mb-3" />
+              <h3 className="text-lg font-medium text-gray-900">
+                No renewal requests found
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                There are currently no book renewal requests
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                        Book Details
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                        Patron
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                        Current Due Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                        Requested Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                        Availability
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {renewRequests.map((request) => (
+                      <tr
+                        key={request.id}
+                        className="hover:bg-gray-50 transition"
                       >
-                        <FaCalendarAlt />
-                      </button>
-                      <button
-                        onClick={() => handleApprove(request.id)}
-                        className="p-2 text-green-600 hover:text-green-800"
-                        title="Approve"
-                        disabled={request.book.reservations?.length > 0}
-                      >
-                        <FaCheck />
-                      </button>
-                      <button
-                        onClick={() => handleReject(request.id)}
-                        className="p-2 text-red-600 hover:text-red-800"
-                        title="Reject"
-                      >
-                        <FaTimes />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-16 w-12">
+                              <img
+                                className="h-full w-full object-cover rounded"
+                                src={
+                                  request.book.image ||
+                                  "/default-book-cover.jpg"
+                                }
+                                alt={request.book.name}
+                              />
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {request.book.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                ISBN: {request.book.isbn}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                              <FaUser className="text-blue-600" />
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {request.user.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                ID: {request.user.id}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {new Date(
+                              request.current_due_date
+                            ).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {new Date(
+                              request.requested_date
+                            ).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                request.book.no_of_copies > 0
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {request.book.no_of_copies} available
+                            </span>
+                            {request.book.reservations?.length > 0 && (
+                              <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                {request.book.reservations.length} pending
+                                reservations
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openDateModal(request)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition"
+                              title="Adjust Date"
+                            >
+                              <FaCalendarAlt />
+                            </button>
+                            <button
+                              onClick={() => handleApprove(request.id)}
+                              className={`p-2 rounded-full transition ${
+                                request.book.reservations?.length > 0
+                                  ? "text-gray-400 cursor-not-allowed"
+                                  : "text-green-600 hover:bg-green-50"
+                              }`}
+                              title="Approve"
+                              disabled={request.book.reservations?.length > 0}
+                            >
+                              <FaCheck />
+                            </button>
+                            <button
+                              onClick={() => handleReject(request.id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-full transition"
+                              title="Reject"
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Date Adjustment Modal */}
       {isDateModalOpen && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Adjust Renewal Date</h2>
-              <FaTimes
-                className="text-gray-500 cursor-pointer"
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">
+                Adjust Renewal Date
+              </h2>
+              <button
                 onClick={() => setIsDateModalOpen(false)}
-              />
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes />
+              </button>
             </div>
-            <div className="mt-4">
-              <label className="block mb-2">New Due Date:</label>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Due Date
+              </label>
               <DatePicker
                 selected={newDueDate}
                 onChange={(date) => setNewDueDate(date)}
                 minDate={new Date(selectedRequest.current_due_date)}
-                className="w-full p-2 border rounded"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                dateFormat="MMMM d, yyyy"
               />
+              <p className="mt-2 text-sm text-gray-500">
+                Current due date:{" "}
+                {new Date(
+                  selectedRequest.current_due_date
+                ).toLocaleDateString()}
+              </p>
             </div>
-            <div className="mt-6 flex justify-end gap-4">
+
+            <div className="flex justify-end gap-3">
               <button
-                className="px-4 py-2 border rounded"
                 onClick={() => setIsDateModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
               >
                 Cancel
               </button>
               <button
-                className="px-4 py-2 bg-blue-600 text-white rounded"
                 onClick={() => handleApprove(selectedRequest.id)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
               >
-                Confirm
+                Confirm Renewal
               </button>
             </div>
           </div>

@@ -2,9 +2,17 @@ import React, { useState, useEffect } from "react";
 import SideBar from "../../Components/SideBar";
 import HeaderBanner from "../../Components/HeaderBanner";
 import Header from "../../Components/Header";
-import { FaCheck, FaTimes, FaBell, FaBook } from "react-icons/fa";
+import {
+  FaCheck,
+  FaTimes,
+  FaBell,
+  FaBook,
+  FaUser,
+  FaSearch,
+} from "react-icons/fa";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function BookReservation() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -12,6 +20,7 @@ function BookReservation() {
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
@@ -104,128 +113,258 @@ function BookReservation() {
     }
   };
 
+  const filteredReservations = reservations.filter(
+    (reservation) =>
+      reservation.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      reservation.book.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      reservation.status.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div>
+    <div className="flex min-h-screen bg-gray-50">
       <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
       <div
-        style={{
-          marginLeft: isSidebarCollapsed ? "5%" : "20%",
-          padding: "0px",
-          transition: "margin-left 0.3s ease",
-        }}
+        className={`flex-1 transition-all duration-300 ${
+          isSidebarCollapsed ? "ml-20" : "ml-64"
+        }`}
       >
-        <HeaderBanner book={"Book Reservations"} heading_pic={heading_pic} />
+        <HeaderBanner
+          book={"Book Reservations Management"}
+          heading_pic={heading_pic}
+        />
+        <Header />
 
-        <div style={{ padding: "20px" }}>
-          <div className="flex justify-between items-center">
-            <Header />
-            <div className="relative">
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 text-gray-600 hover:text-blue-600 relative"
-              >
-                <FaBell size={20} />
-                {notifications.length > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                    {notifications.length}
-                  </span>
-                )}
-              </button>
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10">
-                  <div className="p-2 border-b">
-                    <h3 className="font-semibold">Notifications</h3>
+        <div className="p-6">
+          {/* Dashboard Header */}
+          <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800 font-serif">
+                  Reservations Dashboard
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  Manage all book reservation requests from library patrons
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="relative w-full md:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaSearch className="text-gray-400" />
                   </div>
-                  <div className="max-h-60 overflow-y-auto">
-                    {notifications.length > 0 ? (
-                      notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className="p-3 border-b hover:bg-gray-50"
-                        >
-                          <div className="flex items-start">
-                            <FaBook className="mt-1 mr-2 text-blue-500" />
-                            <div>
-                              <p className="text-sm">{notification.message}</p>
-                              <p className="text-xs text-gray-500">
-                                {new Date(
-                                  notification.created_at
-                                ).toLocaleString()}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-3 text-sm text-gray-500">
-                        No new notifications
-                      </div>
-                    )}
-                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search reservations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
-              )}
+
+                <div className="relative">
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="p-2 text-gray-600 hover:text-blue-600 relative"
+                  >
+                    <FaBell size={20} />
+                    {notifications.length > 0 && (
+                      <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        {notifications.length}
+                      </span>
+                    )}
+                  </button>
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                      <div className="p-3 border-b bg-gray-50">
+                        <h3 className="font-semibold text-gray-800">
+                          Notifications
+                        </h3>
+                      </div>
+                      <div className="max-h-60 overflow-y-auto">
+                        {notifications.length > 0 ? (
+                          notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              className="p-3 border-b hover:bg-gray-50"
+                            >
+                              <div className="flex items-start">
+                                <FaBook className="mt-1 mr-2 text-blue-500" />
+                                <div>
+                                  <p className="text-sm text-gray-800">
+                                    {notification.message}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {new Date(
+                                      notification.created_at
+                                    ).toLocaleString()}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-3 text-sm text-gray-500 text-center">
+                            No new notifications
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold mb-6">Book Reservations</h2>
-
+          {/* Reservations Table */}
           {loading ? (
-            <p>Loading reservations...</p>
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+            </div>
+          ) : filteredReservations.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl shadow-md">
+              <FaBook className="mx-auto text-gray-400 text-4xl mb-3" />
+              <h3 className="text-lg font-medium text-gray-900">
+                No reservations found
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchQuery
+                  ? "Try adjusting your search"
+                  : "There are currently no book reservations"}
+              </p>
+            </div>
           ) : (
-            <div className="bg-white shadow-md rounded-lg overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left">User</th>
-                    <th className="px-6 py-3 text-left">Book</th>
-                    <th className="px-6 py-3 text-left">Copies Available</th>
-                    <th className="px-6 py-3 text-left">Status</th>
-                    <th className="px-6 py-3 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {reservations.map((reservation) => (
-                    <tr key={reservation.id}>
-                      <td className="px-6 py-4">{reservation.user.name}</td>
-                      <td className="px-6 py-4">{reservation.book.name}</td>
-                      <td className="px-6 py-4">
-                        {reservation.book.no_of_copies}
-                      </td>
-                      <td className="px-6 py-4 capitalize">
-                        {reservation.status}
-                      </td>
-                      <td className="px-6 py-4 flex gap-2">
-                        {reservation.status === "pending" && (
-                          <>
-                            <button
-                              onClick={() => handleApprove(reservation.id)}
-                              className="p-2 text-green-600 hover:text-green-800"
-                              title="Approve"
-                            >
-                              <FaCheck />
-                            </button>
-                            <button
-                              onClick={() => handleReject(reservation.id)}
-                              className="p-2 text-red-600 hover:text-red-800"
-                              title="Reject"
-                            >
-                              <FaTimes />
-                            </button>
-                          </>
-                        )}
-                        {reservation.status === "approved" && (
-                          <button
-                            onClick={() => handleConfirmGiven(reservation.id)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
-                          >
-                            Confirm Given
-                          </button>
-                        )}
-                      </td>
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Patron
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Book Details
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Availability
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredReservations.map((reservation) => (
+                      <tr
+                        key={reservation.id}
+                        className="hover:bg-gray-50 transition"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                              <FaUser className="text-blue-600" />
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {reservation.user.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                ID: {reservation.user.id}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-16 w-12">
+                              <img
+                                className="h-full w-full object-cover rounded"
+                                src={
+                                  reservation.book.image ||
+                                  "/default-book-cover.jpg"
+                                }
+                                alt={reservation.book.name}
+                              />
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {reservation.book.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                ISBN: {reservation.book.isbn}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            <div className="flex items-center">
+                              <span className="font-medium">Copies:</span>{" "}
+                              <span
+                                className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${
+                                  reservation.book.no_of_copies > 0
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {reservation.book.no_of_copies} available
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              reservation.status === "pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : reservation.status === "approved"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {reservation.status.charAt(0).toUpperCase() +
+                              reservation.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex space-x-2">
+                            {reservation.status === "pending" && (
+                              <>
+                                <button
+                                  onClick={() => handleApprove(reservation.id)}
+                                  className="flex items-center bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 transition text-sm"
+                                  title="Approve"
+                                >
+                                  <FaCheck className="mr-1" /> Approve
+                                </button>
+                                <button
+                                  onClick={() => handleReject(reservation.id)}
+                                  className="flex items-center bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700 transition text-sm"
+                                  title="Reject"
+                                >
+                                  <FaTimes className="mr-1" /> Reject
+                                </button>
+                              </>
+                            )}
+                            {reservation.status === "approved" && (
+                              <button
+                                onClick={() =>
+                                  handleConfirmGiven(reservation.id)
+                                }
+                                className="flex items-center bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 transition text-sm"
+                              >
+                                Confirm Issued
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
