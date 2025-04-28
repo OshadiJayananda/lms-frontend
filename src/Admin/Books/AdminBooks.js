@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { FaEdit, FaTrash, FaPlus, FaTimes } from "react-icons/fa";
+import {
+  FaEdit,
+  FaTrash,
+  FaPlus,
+  FaTimes,
+  FaSearch,
+  FaBook,
+} from "react-icons/fa";
 import SideBar from "../../Components/SideBar";
 import Header from "../../Components/Header";
 import api from "../../Components/Api";
 import { useNavigate } from "react-router-dom";
-import HeaderBanner from "../components/HeaderBanner";
+import HeaderBanner from "../../Components/HeaderBanner";
 import { toast } from "react-toastify";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -85,33 +92,25 @@ function AdminBooks() {
         let response;
         if (selectedBook) {
           formData.append("_method", "PUT");
-
           response = await api.post(
             `/books/${selectedBook.id}`,
             formData,
             config
           );
-          // Check for successful response
-          if (response.status !== 200) {
-            throw new Error("Update failed");
-          }
           toast.success(response.data.message || "Book updated successfully!");
         } else {
           response = await api.post("/books", formData, config);
           toast.success("Book added successfully!");
         }
 
-        // Refresh the book list
         const booksResponse = await api.get("/books");
         if (booksResponse.data) {
           setBooks(booksResponse.data);
           setFilteredBooks(booksResponse.data);
         }
-
         closeModal();
       } catch (error) {
         console.error("Error saving book:", error);
-
         toast.error(
           error.response?.data?.message ||
             error.message ||
@@ -124,20 +123,16 @@ function AdminBooks() {
   });
 
   // Fetch categories from API
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await api.get("/categories");
-        if (response.data && response.data.categories) {
-          setCategories(response.data.categories);
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get("/categories");
+      if (response.data && response.data.data) {
+        setCategories(response.data.data);
       }
-    };
-
-    fetchCategories();
-  }, []);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
 
   // Fetch books from API
   useEffect(() => {
@@ -156,6 +151,7 @@ function AdminBooks() {
     };
 
     fetchBooks();
+    fetchCategories();
   }, []);
 
   // Handle search
@@ -172,25 +168,51 @@ function AdminBooks() {
     }
   };
 
+  // Find parent category for a given category ID
+  const findParentCategory = (categoryId) => {
+    const category = categories.find((cat) => cat.id === categoryId);
+    if (!category) return null;
+
+    if (category.parent_id) {
+      return category.parent_id;
+    }
+    return categoryId;
+  };
+
   // Open modal for adding or updating a book
   const openModal = (book = null) => {
     if (book) {
       setSelectedBook(book);
+
+      // First set the form values
       formik.setValues({
         name: book.name,
         author: book.author,
         isbn: book.isbn,
-        image: null, // Keep the existing image
+        image: null,
         description: book.description,
         no_of_copies: book.no_of_copies,
         category_id: book.category_id,
       });
-      setSelectedParent(book.category_id);
+
+      // Then find and set the parent category
+      const parentId = findParentCategory(book.category_id);
+      setSelectedParent(parentId || "");
+
+      // If we have a parent ID, find its subcategories
+      if (parentId) {
+        const children = categories.filter((cat) => cat.parent_id === parentId);
+        setSubCategories(children);
+      } else {
+        setSubCategories([]);
+      }
+
       setImagePreview(book.image);
     } else {
       setSelectedBook(null);
       formik.resetForm();
       setSelectedParent("");
+      setSubCategories([]);
       setImagePreview(null);
     }
     setIsModalOpen(true);
@@ -202,6 +224,7 @@ function AdminBooks() {
     setSelectedBook(null);
     formik.resetForm();
     setSelectedParent("");
+    setSubCategories([]);
     setImagePreview(null);
   };
 
@@ -214,12 +237,14 @@ function AdminBooks() {
 
   // Handle parent category selection
   const handleParentChange = (e) => {
-    const parentId = Number(e.target.value);
+    const parentId = e.target.value;
     setSelectedParent(parentId);
-    formik.setFieldValue("category_id", parentId);
+
+    // Reset the category_id when parent changes
+    formik.setFieldValue("category_id", "");
 
     // Find subcategories of selected parent
-    const children = categories.filter((cat) => cat.parent_id === parentId);
+    const children = categories.filter((cat) => cat.parent_id == parentId);
     setSubCategories(children);
   };
 
@@ -236,7 +261,6 @@ function AdminBooks() {
       await api.delete(`/books/${selectedBookToDelete}`);
       toast.success("Book deleted successfully!");
 
-      // Remove the deleted book from the state
       setBooks((prevBooks) =>
         prevBooks.filter((book) => book.id !== selectedBookToDelete)
       );
@@ -252,78 +276,141 @@ function AdminBooks() {
   };
 
   return (
-    <div className="flex">
+    <div className="flex min-h-screen bg-gray-50 font-sans">
       <SideBar
         isCollapsed={isSidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!isSidebarCollapsed)}
       />
+
       <div
-        className={`transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-[5%]" : "ml-[20%]"
-        } w-full`}
+        className={`flex-1 transition-all duration-300 ${
+          isSidebarCollapsed ? "ml-20" : "ml-64"
+        }`}
       >
-        <HeaderBanner book={"Books"} heading_pic={heading_pic} />
+        <HeaderBanner book={"Books Management"} heading_pic={heading_pic} />
+        <Header />
 
         <div className="p-6">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex-1">
-              <Header />
+          {/* Dashboard Header */}
+          <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Books Inventory
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  Manage all books in the library collection
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="relative w-full md:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaSearch className="text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search books..."
+                    value={searchQuery}
+                    onChange={handleSearch}
+                    className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <button
+                  onClick={() => openModal()}
+                  className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+                >
+                  <FaPlus className="mr-2" />
+                  Add Book
+                </button>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <input
-                type="text"
-                placeholder="Search books..."
-                value={searchQuery}
-                onChange={handleSearch}
-                className="border rounded-lg px-5 py-2 w-96"
-              />
-              <button
-                onClick={() => openModal()}
-                className="text-white px-3 py-2 rounded-lg flex items-center"
-                style={{ backgroundColor: "#001f5b" }}
-              >
-                <FaPlus className="text-white" />
-              </button>
-            </div>
-          </div>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold">All Books</h2>
           </div>
 
+          {/* Main Content */}
           {loading ? (
-            <p>Loading books...</p>
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+            </div>
           ) : error ? (
-            <p className="text-red-500">{error}</p>
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-500"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
+            </div>
+          ) : filteredBooks.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl shadow-md">
+              <FaBook className="mx-auto text-gray-400 text-4xl mb-3" />
+              <h3 className="text-lg font-medium text-gray-900">
+                No books found
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchQuery
+                  ? "Try adjusting your search"
+                  : "There are currently no books in the library"}
+              </p>
+            </div>
           ) : (
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {filteredBooks.map((book) => (
                 <div
                   key={book.id}
-                  className="bg-white p-4 shadow-md rounded-lg flex flex-col items-center"
+                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition"
                 >
-                  <img
-                    src={book.image}
-                    alt={book.name}
-                    className="h-40 w-28 object-cover mb-3"
-                  />
-
-                  <h3 className="text-lg font-semibold text-center">
-                    {book.name}
-                  </h3>
-                  <p className="text-sm text-gray-600">{book.author}</p>
-                  <p className="text-xs text-gray-500">ISBN: {book.isbn}</p>
-                  <p className="text-xs text-gray-500">
-                    No of Copies: {book.no_of_copies}
-                  </p>
-                  <div className="flex justify-center space-x-3 mt-2">
-                    <FaEdit
-                      className="text-blue-600 cursor-pointer"
-                      onClick={() => openModal(book)}
+                  <div className="h-48 bg-gray-100 flex items-center justify-center">
+                    <img
+                      src={book.image || "/default-book-cover.jpg"}
+                      alt={book.name}
+                      className="h-full w-full object-cover"
                     />
-                    <FaTrash
-                      className="text-red-600 cursor-pointer"
-                      onClick={() => handleDelete(book.id)}
-                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-1">
+                      {book.name}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-2 line-clamp-1">
+                      {book.author}
+                    </p>
+                    <div className="flex justify-between items-center text-xs text-gray-500 mb-3">
+                      <span>ISBN: {book.isbn}</span>
+                      <span
+                        className={`px-2 py-1 rounded-full ${
+                          book.no_of_copies > 0
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {book.no_of_copies} available
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t pt-3">
+                      <button
+                        onClick={() => openModal(book)}
+                        className="text-blue-600 hover:text-blue-800 flex items-center"
+                      >
+                        <FaEdit className="mr-1" /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(book.id)}
+                        className="text-red-600 hover:text-red-800 flex items-center"
+                      >
+                        <FaTrash className="mr-1" /> Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -334,23 +421,35 @@ function AdminBooks() {
 
       {/* Delete Confirmation Modal */}
       {isModalOpenDelete && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h2 className="text-xl font-semibold mb-4">
-              Are you sure you want to delete this book?
-            </h2>
-            <div className="flex justify-between">
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">
+                Confirm Deletion
+              </h2>
               <button
-                className="bg-red-600 text-white px-4 py-2 rounded"
-                onClick={handleConfirmDelete}
-              >
-                Yes, Delete
-              </button>
-              <button
-                className="bg-gray-400 text-white px-4 py-2 rounded"
                 onClick={() => setIsModalOpenDelete(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <p className="mb-6 text-gray-600">
+              Are you sure you want to delete this book? This action cannot be
+              undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsModalOpenDelete(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
               >
                 Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Delete Book
               </button>
             </div>
           </div>
@@ -359,184 +458,283 @@ function AdminBooks() {
 
       {/* Add/Update Book Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">
-                {selectedBook ? "Update Book" : "Add New Book"}
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">
+                {selectedBook ? "Edit Book Details" : "Add New Book"}
               </h2>
-              <FaTimes
-                className="text-gray-500 cursor-pointer"
+              <button
                 onClick={closeModal}
-              />
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes />
+              </button>
             </div>
 
-            <form onSubmit={formik.handleSubmit} className="space-y-4 mt-4">
-              {/* Image Upload */}
-              <div>
-                <label className="block text-gray-700">Image:</label>
-                <input
-                  type="file"
-                  name="image"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="w-full border p-2 rounded"
-                />
-                {imagePreview && (
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="h-40 w-28 object-cover mt-3"
-                  />
-                )}
-                {formik.touched.image && formik.errors.image ? (
-                  <div className="text-red-500">{formik.errors.image}</div>
-                ) : null}
-              </div>
-
-              {/* Title */}
-              <div>
-                <label className="block text-gray-700">Title:</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formik.values.name}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className="w-full border p-2 rounded"
-                />
-                {formik.touched.name && formik.errors.name ? (
-                  <div className="text-red-500">{formik.errors.name}</div>
-                ) : null}
-              </div>
-
-              {/* Author */}
-              <div>
-                <label className="block text-gray-700">Author:</label>
-                <input
-                  type="text"
-                  name="author"
-                  value={formik.values.author}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className="w-full border p-2 rounded"
-                />
-                {formik.touched.author && formik.errors.author ? (
-                  <div className="text-red-500">{formik.errors.author}</div>
-                ) : null}
-              </div>
-
-              {/* ISBN */}
-              <div>
-                <label className="block text-gray-700">ISBN:</label>
-                <input
-                  type="text"
-                  name="isbn"
-                  value={formik.values.isbn}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className="w-full border p-2 rounded"
-                />
-                {formik.touched.isbn && formik.errors.isbn ? (
-                  <div className="text-red-500">{formik.errors.isbn}</div>
-                ) : null}
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-gray-700">Description:</label>
-                <textarea
-                  name="description"
-                  value={formik.values.description}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className="w-full border p-2 rounded"
-                  rows="4"
-                ></textarea>
-                {formik.touched.description && formik.errors.description ? (
-                  <div className="text-red-500">
-                    {formik.errors.description}
+            <form
+              onSubmit={formik.handleSubmit}
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            >
+              {/* Left Column */}
+              <div className="space-y-4">
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Book Cover
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <div className="h-40 w-28 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                      {imagePreview ? (
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <FaBook className="text-gray-400 text-2xl" />
+                      )}
+                    </div>
+                    <div>
+                      <label className="cursor-pointer bg-white border border-gray-300 rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Upload Image
+                        <input
+                          type="file"
+                          name="image"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          className="sr-only"
+                        />
+                      </label>
+                      <p className="mt-1 text-xs text-gray-500">
+                        JPG, PNG up to 2MB
+                      </p>
+                    </div>
                   </div>
-                ) : null}
+                </div>
+
+                {/* Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formik.values.name}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      formik.touched.name && formik.errors.name
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                  />
+                  {formik.touched.name && formik.errors.name && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {formik.errors.name}
+                    </p>
+                  )}
+                </div>
+
+                {/* Author */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Author *
+                  </label>
+                  <input
+                    type="text"
+                    name="author"
+                    value={formik.values.author}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      formik.touched.author && formik.errors.author
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                  />
+                  {formik.touched.author && formik.errors.author && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {formik.errors.author}
+                    </p>
+                  )}
+                </div>
+
+                {/* ISBN */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ISBN *
+                  </label>
+                  <input
+                    type="text"
+                    name="isbn"
+                    value={formik.values.isbn}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      formik.touched.isbn && formik.errors.isbn
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                  />
+                  {formik.touched.isbn && formik.errors.isbn && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {formik.errors.isbn}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Category Selection */}
-              <div>
-                <label className="block text-gray-700">Category:</label>
-                <select
-                  name="category_id"
-                  value={selectedParent}
-                  onChange={handleParentChange}
-                  onBlur={formik.handleBlur}
-                  className="w-full border p-2 rounded"
-                >
-                  <option value="">Select a category</option>
-                  {categories
-                    .filter((cat) => cat.parent_id === null)
-                    .map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                </select>
+              {/* Right Column */}
+              <div className="space-y-4">
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formik.values.description}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    rows="4"
+                    className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      formik.touched.description && formik.errors.description
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                  ></textarea>
+                  {formik.touched.description && formik.errors.description && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {formik.errors.description}
+                    </p>
+                  )}
+                </div>
 
-                {subCategories.length > 0 && (
-                  <div className="mt-4">
-                    <label className="block text-gray-700">Subcategory:</label>
-                    <select
-                      name="category_id"
-                      value={formik.values.category_id}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      className="w-full border p-2 rounded"
-                    >
-                      <option value="">Select a subcategory</option>
-                      {subCategories.map((category) => (
+                {/* Category Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category *
+                  </label>
+                  <select
+                    name="parent_category"
+                    value={selectedParent}
+                    onChange={handleParentChange}
+                    className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      formik.touched.category_id && formik.errors.category_id
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    <option value="">Select a category</option>
+                    {categories
+                      .filter((cat) => !cat.parent_id)
+                      .map((category) => (
                         <option key={category.id} value={category.id}>
                           {category.name}
                         </option>
                       ))}
-                    </select>
-                  </div>
-                )}
-                {formik.touched.category_id && formik.errors.category_id ? (
-                  <div className="text-red-500">
-                    {formik.errors.category_id}
-                  </div>
-                ) : null}
-              </div>
+                  </select>
 
-              {/* Number of Copies */}
-              <div>
-                <label className="block text-gray-700">Number of Copies:</label>
-                <input
-                  type="number"
-                  name="no_of_copies"
-                  value={formik.values.no_of_copies}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className="w-full border p-2 rounded"
-                  min="1"
-                />
-                {formik.touched.no_of_copies && formik.errors.no_of_copies ? (
-                  <div className="text-red-500">
-                    {formik.errors.no_of_copies}
-                  </div>
-                ) : null}
-              </div>
+                  {subCategories.length > 0 && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Subcategory
+                      </label>
+                      <select
+                        name="category_id"
+                        value={formik.values.category_id}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          formik.touched.category_id &&
+                          formik.errors.category_id
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        <option value="">Select a subcategory</option>
+                        {subCategories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {formik.touched.category_id && formik.errors.category_id && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {formik.errors.category_id}
+                    </p>
+                  )}
+                </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting
-                  ? "Processing..."
-                  : selectedBook
-                  ? "Update Book"
-                  : "Add Book"}
-              </button>
+                {/* Number of Copies */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Number of Copies *
+                  </label>
+                  <input
+                    type="number"
+                    name="no_of_copies"
+                    value={formik.values.no_of_copies}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    min="1"
+                    className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      formik.touched.no_of_copies && formik.errors.no_of_copies
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                  />
+                  {formik.touched.no_of_copies &&
+                    formik.errors.no_of_copies && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {formik.errors.no_of_copies}
+                      </p>
+                    )}
+                </div>
+
+                {/* Submit Button */}
+                <div className="md:col-span-2 pt-4">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Processing...
+                      </>
+                    ) : selectedBook ? (
+                      "Update Book"
+                    ) : (
+                      "Add Book"
+                    )}
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         </div>
