@@ -104,7 +104,7 @@ function App() {
             }
           />
           <Route
-            path="/borrowedHistory"
+            path="/admin/borrowed-history"
             element={
               <AdminAuthMiddleware>
                 <BorrowedHistory />
