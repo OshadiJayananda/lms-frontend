@@ -136,7 +136,9 @@ function BorrowedBooks() {
         `/borrowed-books/${selectedBookId}/renew-request`,
         { renewDate: formattedDate }
       );
-      toast.success("Renewal request sent to admin for approval");
+      toast.success(
+        response.data.message || "Renewal request sent to admin for approval"
+      );
       setIsModalOpen(false);
       setSelectedBookIdInput("");
       fetchBorrowedBooks();
