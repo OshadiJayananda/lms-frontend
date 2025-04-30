@@ -120,7 +120,7 @@ function Dashboard() {
       >
         {/* Header Banner - full width, stays connected to sidebar */}
         <HeaderBanner
-          book={"Admin Dashboard"}
+          book={"Dashboard"}
           heading_pic={heading_pic}
           className="w-full"
         />
