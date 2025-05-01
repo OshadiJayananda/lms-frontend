@@ -103,7 +103,7 @@ function App() {
               </AdminAuthMiddleware>
             }
           />
-          //renewBooks
+          {/* //renewBooks */}
           <Route
             path="/renewBooks"
             element={
@@ -112,7 +112,7 @@ function App() {
               </AdminAuthMiddleware>
             }
           />
-          bookReservation
+          {/* bookReservation */}
           <Route
             path="/bookReservation"
             element={

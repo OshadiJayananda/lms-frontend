@@ -25,10 +25,10 @@ function Payments() {
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
       <div
         style={{
-          marginLeft: isSidebarCollapsed ? "5%" : "20%",
           padding: "0px",
           transition: "margin-left 0.3s ease",
         }}
+        className={`${isSidebarCollapsed ? "ml-20" : "ml-64"}`}
       >
         <HeaderBanner book={"Payments"} heading_pic={heading_pic} />
       </div>

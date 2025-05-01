@@ -1,18 +1,23 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
+import { cleanupInvalidToken, isTokenValid } from "../utils/authUtils";
 
 const AuthRedirectMiddleware = ({ children }) => {
-  const isAuthenticated = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
+  const isAuthenticated = token && isTokenValid(token);
 
-  if (isAuthenticated) {
-    const userRole = localStorage.getItem("role");
-    if (userRole === "admin") {
-      return <Navigate to="/admin/dashboard" replace />;
-    } else {
-      return <Navigate to="/dashboard" replace />;
-    }
+  if (!isAuthenticated) {
+    cleanupInvalidToken();
+    return children;
   }
-  return children;
+
+  const userRole = localStorage.getItem("role");
+
+  if (userRole === "admin") {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  return <Navigate to="/dashboard" replace />;
 };
 
 export default AuthRedirectMiddleware;
