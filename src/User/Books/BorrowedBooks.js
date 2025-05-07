@@ -112,6 +112,7 @@ function BorrowedBooks() {
     }
   };
 
+  // Update the handleRenewSubmit function
   const handleRenewSubmit = async () => {
     if (!renewDate) {
       toast.error("Please select a renewal date.");
@@ -119,17 +120,6 @@ function BorrowedBooks() {
     }
 
     const formattedDate = renewDate.toISOString().split("T")[0];
-    const isAvailable = await checkBookAvailability(selectedBookId);
-
-    if (!isAvailable) {
-      setIsModalOpen(false);
-      setBookAvailability({
-        bookId: selectedBookId,
-        requestedDate: formattedDate,
-      });
-      setIsConfirmModalOpen(true);
-      return;
-    }
 
     try {
       const response = await api.post(
@@ -148,7 +138,6 @@ function BorrowedBooks() {
       );
     }
   };
-
   const confirmUnavailableRenewal = async () => {
     try {
       await api.post(
