@@ -39,17 +39,10 @@ function Dashboard() {
     setSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  // In Dashboard.js, update the handleNotificationClick function
   const handleNotificationClick = (notification) => {
-    if (
-      notification.type === "renewal_date_changed" ||
-      notification.type === "renewal_confirmed" ||
-      notification.type === "renewal_declined"
-    ) {
+    if (notification.type === "renewal_date_changed") {
       setSelectedNotification(notification);
-      if (notification.type === "renewal_date_changed") {
-        setShowConfirmationModal(true);
-      }
+      setShowConfirmationModal(true);
     }
     markNotificationAsRead(notification.id);
   };
@@ -63,7 +56,7 @@ function Dashboard() {
     try {
       setProcessing(true);
       const response = await api.post(
-        `/renew-requests/${selectedNotification.renew_request_id}/confirm`,
+        `/notifications/${selectedNotification.id}/renewal-response`,
         { confirm }
       );
 
@@ -87,6 +80,7 @@ function Dashboard() {
       setProcessing(false);
     }
   };
+
   const markNotificationAsRead = async (notificationId) => {
     try {
       await api.post(`/notifications/${notificationId}/read`);
@@ -145,47 +139,53 @@ function Dashboard() {
                   </button>
                 </div>
                 <div className="max-h-60 overflow-y-auto">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${
-                        !notification.is_read ? "bg-blue-50" : ""
-                      }`}
-                      onClick={() => handleNotificationClick(notification)}
-                    >
-                      <p className="text-sm font-medium">
-                        {notification.title}
-                      </p>
-                      <p className="text-sm">{notification.message}</p>
-                      {notification.type === "renewal_date_changed" && (
-                        <div className="mt-2 flex gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRenewalResponse(true);
-                            }}
-                            className="px-2 py-1 bg-green-500 text-white rounded text-sm"
-                            disabled={processing}
-                          >
-                            Accept
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRenewalResponse(false);
-                            }}
-                            className="px-2 py-1 bg-red-500 text-white rounded text-sm"
-                            disabled={processing}
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        {new Date(notification.created_at).toLocaleString()}
-                      </p>
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${
+                          !notification.is_read ? "bg-blue-50" : ""
+                        }`}
+                        onClick={() => handleNotificationClick(notification)}
+                      >
+                        <p className="text-sm font-medium">
+                          {notification.title}
+                        </p>
+                        <p className="text-sm">{notification.message}</p>
+                        {notification.type === "renewal_date_changed" && (
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRenewalResponse(true);
+                              }}
+                              className="px-2 py-1 bg-green-500 text-white rounded text-sm"
+                              disabled={processing}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRenewalResponse(false);
+                              }}
+                              className="px-2 py-1 bg-red-500 text-white rounded text-sm"
+                              disabled={processing}
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          {new Date(notification.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3 text-sm text-gray-500">
+                      No new notifications
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}
@@ -195,43 +195,25 @@ function Dashboard() {
         </div>
 
         {/* Renewal Confirmation Modal */}
-        {showConfirmationModal && (
-          <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">
-                  {selectedNotification?.type === "renewal_date_changed"
-                    ? "Renewal Date Change"
-                    : selectedNotification?.type === "renewal_confirmed"
-                    ? "Renewal Confirmed"
-                    : "Renewal Declined"}
-                </h2>
-                <button
-                  onClick={() => setShowConfirmationModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ×
-                </button>
-              </div>
-              <div className="mb-4">
-                <p>{selectedNotification.message}</p>
-                {selectedNotification?.type === "renewal_date_changed" && (
-                  <>
-                    <p className="mt-4 font-medium">
-                      Do you accept this new renewal date?
-                    </p>
-                    <div className="mt-2 bg-blue-50 p-3 rounded">
-                      <p className="text-sm font-medium">Proposed Date:</p>
-                      <p className="text-sm">
-                        {new Date(
-                          selectedNotification.metadata?.proposed_date
-                        ).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-              {selectedNotification?.type === "renewal_date_changed" && (
+        {showConfirmationModal &&
+          selectedNotification?.type === "renewal_date_changed" && (
+            <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">Renewal Date Change</h2>
+                  <button
+                    onClick={() => setShowConfirmationModal(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="mb-4">
+                  <p>{selectedNotification.message}</p>
+                  <p className="mt-4 font-medium">
+                    Do you accept this new renewal date?
+                  </p>
+                </div>
                 <div className="flex justify-end gap-4">
                   <button
                     onClick={() => handleRenewalResponse(false)}
@@ -252,10 +234,9 @@ function Dashboard() {
                     {processing ? "Processing..." : "Yes, Accept"}
                   </button>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </div>
   );

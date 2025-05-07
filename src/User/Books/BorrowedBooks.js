@@ -112,7 +112,6 @@ function BorrowedBooks() {
     }
   };
 
-  // Update the handleRenewSubmit function
   const handleRenewSubmit = async () => {
     if (!renewDate) {
       toast.error("Please select a renewal date.");
@@ -138,6 +137,7 @@ function BorrowedBooks() {
       );
     }
   };
+
   const confirmUnavailableRenewal = async () => {
     try {
       await api.post(
@@ -358,6 +358,8 @@ function BorrowedBooks() {
                                 ? "bg-green-100 text-green-800"
                                 : borrow.status === "Expired"
                                 ? "bg-red-100 text-red-800"
+                                : borrow.status === "Renewed"
+                                ? "bg-blue-100 text-blue-800" // New status color
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
                           >
