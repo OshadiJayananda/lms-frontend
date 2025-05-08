@@ -21,6 +21,7 @@ import AuthRedirectMiddleware from "./middleware/AuthRedirectMiddleware";
 import Payments from "./User/Payments/Payments";
 import ForgotPassword from "./Components/ForgotPassword";
 import ResetPassword from "./Components/ResetPassword";
+import AdminProfile from "./Admin/Profile/AdminProfile";
 // import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
@@ -126,6 +127,14 @@ function App() {
             element={
               <AdminAuthMiddleware>
                 <BorrowedHistory />
+              </AdminAuthMiddleware>
+            }
+          />
+          <Route
+            path="/admin/profile"
+            element={
+              <AdminAuthMiddleware>
+                <AdminProfile />
               </AdminAuthMiddleware>
             }
           />

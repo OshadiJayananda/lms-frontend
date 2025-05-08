@@ -3,14 +3,14 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import api from "../../Components/Api";
 import Modal from "react-modal";
-import ClientSidebar from "../../Components/ClientSidebar";
 import { toast } from "react-toastify";
 import { FaUserCircle, FaTrash } from "react-icons/fa";
 import HeaderBanner from "../../Components/HeaderBanner";
+import SideBar from "../../Components/SideBar";
 
 Modal.setAppElement("#root"); // Prevents accessibility issues
 
-function Profile() {
+function AdminProfile() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -136,7 +136,7 @@ function Profile() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar - width changes based on collapsed state */}
-      <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
+      <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
 
       {/* Main Content Area - adjusts margin based on sidebar state */}
       <div
@@ -146,7 +146,7 @@ function Profile() {
       >
         {/* Header Banner - full width, stays connected to sidebar */}
         <HeaderBanner
-          book={"Profile"}
+          book={"Admin Profile"}
           heading_pic={heading_pic}
           className="w-full"
         />
@@ -431,4 +431,4 @@ function Profile() {
   );
 }
 
-export default Profile;
+export default AdminProfile;

@@ -6,7 +6,6 @@ import { FaBell, FaChevronDown } from "react-icons/fa";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { NavLink } from "react-router-dom";
 
 function AdminDashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
