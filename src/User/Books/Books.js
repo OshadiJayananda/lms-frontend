@@ -17,6 +17,7 @@ function Books() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [requesting, setRequesting] = useState(false);
   const [borrowedBooks, setBorrowedBooks] = useState([]);
+  const [reservedBooks, setReservedBooks] = useState([]);
   const navigate = useNavigate();
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
@@ -30,6 +31,18 @@ function Books() {
       }
     };
     fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchReservedBooks = async () => {
+      try {
+        const response = await api.get("/book-reservations");
+        setReservedBooks(response.data);
+      } catch (error) {
+        console.error("Error fetching reserved books:", error);
+      }
+    };
+    fetchReservedBooks();
   }, []);
 
   useEffect(() => {
@@ -250,10 +263,18 @@ function Books() {
                 const isBorrowed = borrowedBooks.some(
                   (borrowedBook) =>
                     borrowedBook.book_id === book.id &&
-                    (borrowedBook.status === "Pending" ||
-                      borrowedBook.status === "Approved" ||
-                      borrowedBook.status === "Issued")
+                    ["pending", "approved", "issued"].includes(
+                      borrowedBook.status?.toLowerCase()
+                    )
                 );
+
+                const isReserved = reservedBooks.some(
+                  (resBook) =>
+                    resBook.book_id === book.id &&
+                    resBook.status?.toLowerCase() === "pending"
+                );
+
+                const isUnavailable = isBorrowed || isReserved || requesting;
 
                 return (
                   <div
@@ -278,7 +299,9 @@ function Books() {
                       <div className="mt-2 flex justify-between items-center">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           <FaBook className="mr-1" />
-                          {book.no_of_copies} available
+                          {book.no_of_copies > 0
+                            ? `${book.no_of_copies} available`
+                            : "Not available"}
                         </span>
                         <button
                           onClick={() =>
@@ -286,23 +309,23 @@ function Books() {
                               ? requestBook(book.id)
                               : reserveBook(book.id)
                           }
-                          disabled={requesting || isBorrowed}
-                          className={`px-3 py-1 text-sm rounded-md font-medium ${
-                            isBorrowed
+                          disabled={isUnavailable}
+                          className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+                            isUnavailable
                               ? "bg-gray-200 text-gray-600 cursor-not-allowed"
                               : book.no_of_copies > 0
                               ? "bg-blue-600 text-white hover:bg-blue-700"
                               : "bg-purple-600 text-white hover:bg-purple-700"
-                          } transition-colors`}
+                          }`}
                         >
                           {isBorrowed
                             ? "Requested"
-                            : book.no_of_copies > 0
-                            ? requesting
-                              ? "Processing..."
-                              : "Borrow"
+                            : isReserved
+                            ? "Reserved"
                             : requesting
                             ? "Processing..."
+                            : book.no_of_copies > 0
+                            ? "Borrow"
                             : "Reserve"}
                         </button>
                       </div>
