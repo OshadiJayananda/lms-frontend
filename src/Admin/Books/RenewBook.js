@@ -65,7 +65,12 @@ function RenewBook() {
         );
       } else {
         // Approval with date change
-        const formattedDate = newDueDate.toISOString().split("T")[0];
+        const formattedDate =
+          newDueDate.getFullYear() +
+          "-" +
+          String(newDueDate.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(newDueDate.getDate()).padStart(2, "0");
         response = await api.post(
           `/admin/renew-requests/${requestId}/approve`,
           {
@@ -237,7 +242,7 @@ function RenewBook() {
                             {request.status.replace(/_/g, " ")}
                           </span>
                         </td>
-                        <td className="px-6 py-4 flex gap-2">
+                        <td className="px-6 py-4">
                           {request.status === "pending" && (
                             <>
                               <button

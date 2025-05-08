@@ -118,7 +118,12 @@ function BorrowedBooks() {
       return;
     }
 
-    const formattedDate = renewDate.toISOString().split("T")[0];
+    const formattedDate =
+      renewDate.getFullYear() +
+      "-" +
+      String(renewDate.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(renewDate.getDate()).padStart(2, "0");
 
     try {
       const response = await api.post(
