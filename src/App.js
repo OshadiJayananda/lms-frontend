@@ -22,6 +22,7 @@ import Payments from "./User/Payments/Payments";
 import ForgotPassword from "./Components/ForgotPassword";
 import ResetPassword from "./Components/ResetPassword";
 import AdminProfile from "./Admin/Profile/AdminProfile";
+import Authors from "./Admin/Books/Authors";
 // import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
@@ -85,6 +86,14 @@ function App() {
             element={
               <AdminAuthMiddleware>
                 <Categories />
+              </AdminAuthMiddleware>
+            }
+          />
+          <Route
+            path="/admin/authors"
+            element={
+              <AdminAuthMiddleware>
+                <Authors />
               </AdminAuthMiddleware>
             }
           />

@@ -9,6 +9,7 @@ import {
   FaBars,
   FaSignOutAlt,
   FaUserCog,
+  FaUser,
 } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "./Api";
@@ -62,6 +63,12 @@ function SideBar({ isCollapsed, onToggle }) {
       icon: <FaTags />,
       label: "Categories",
       key: "categories",
+    },
+    {
+      path: "/admin/authors",
+      icon: <FaUser />,
+      label: "Authors",
+      key: "authors",
     },
   ];
 

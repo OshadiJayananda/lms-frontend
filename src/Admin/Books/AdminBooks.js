@@ -361,14 +361,6 @@ function AdminBooks() {
                 {/* Add Author & Add Book Buttons */}
                 <div className="order-3 md:ml-auto flex flex-col md:flex-row gap-2 whitespace-nowrap">
                   <button
-                    onClick={() => alert("Add Author clicked")}
-                    className="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition text-sm md:text-base whitespace-nowrap"
-                    aria-label="Add new author"
-                  >
-                    <FaPlus className="mr-2" />
-                    Add Author
-                  </button>
-                  <button
                     onClick={() => openModal()}
                     className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm md:text-base whitespace-nowrap"
                     aria-label="Add new book"
