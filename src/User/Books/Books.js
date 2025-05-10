@@ -12,19 +12,35 @@ function Books() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [requesting, setRequesting] = useState(false);
   const [borrowedBooks, setBorrowedBooks] = useState([]);
   const [reservedBooks, setReservedBooks] = useState([]);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
+
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   useEffect(() => {
     const fetchCategories = async () => {
+      setIsCategoriesLoading(true);
       try {
         const response = await api.get("/categories");
-        setCategories(response.data.categories || []);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
+
+        // Handle Laravel paginated response
+        const categoriesData = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        setCategories(categoriesData);
+        setError(null);
+      } catch (err) {
+        console.error("Fetch categories error:", err);
+        setError("Failed to load categories");
+        setCategories([]);
+      } finally {
+        setIsCategoriesLoading(false);
       }
     };
     fetchCategories();
@@ -34,7 +50,7 @@ function Books() {
     const fetchReservedBooks = async () => {
       try {
         const response = await api.get("/book-reservations");
-        setReservedBooks(response.data);
+        setReservedBooks(response.data || []);
       } catch (error) {
         console.error("Error fetching reserved books:", error);
       }
@@ -45,8 +61,12 @@ function Books() {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await api.get("/books");
-        setFilteredBooks(response.data);
+        const url = selectedCategory
+          ? `/books?category=${selectedCategory}&q=${searchQuery}`
+          : `/books?q=${searchQuery}`;
+
+        const response = await api.get(url);
+        setFilteredBooks(response.data || []);
       } catch (error) {
         console.error("Error fetching books:", error);
         setError("Failed to fetch books. Please try again later.");
@@ -55,13 +75,13 @@ function Books() {
       }
     };
     fetchBooks();
-  }, []);
+  }, [selectedCategory, searchQuery]);
 
   useEffect(() => {
     const fetchBorrowedBooks = async () => {
       try {
         const response = await api.get("/borrowed-books");
-        setBorrowedBooks(response.data);
+        setBorrowedBooks(response.data || []);
       } catch (error) {
         console.error("Error fetching borrowed books:", error);
       }
@@ -76,20 +96,11 @@ function Books() {
   const handleCategoryChange = (event) => {
     const category = event.target.value;
     setSelectedCategory(category);
-    // filterBooks(searchQuery, category);
   };
 
   const handleSearch = async (event) => {
     const query = event.target.value.toLowerCase();
     setSearchQuery(query);
-
-    try {
-      const response = await api.get(`/books/search?q=${query}`);
-      setFilteredBooks(response.data);
-    } catch (error) {
-      console.error("Error searching books:", error);
-      toast.error("Failed to search books. Please try again later.");
-    }
   };
 
   const requestBook = async (bookId) => {
@@ -120,7 +131,7 @@ function Books() {
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       if (error.response?.status === 400) {
-        toast.info(errorMessage); // Show the "already requested" message as info
+        toast.info(errorMessage);
       } else {
         toast.error("Failed to request book: " + errorMessage);
       }
@@ -128,6 +139,7 @@ function Books() {
       setRequesting(false);
     }
   };
+
   const reserveBook = async (bookId) => {
     try {
       const response = await api.post(
@@ -152,49 +164,49 @@ function Books() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar - width changes based on collapsed state */}
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
 
-      {/* Main Content Area - adjusts margin based on sidebar state */}
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
           isSidebarCollapsed ? "ml-20" : "ml-64"
         }`}
       >
-        {/* Header Banner - full width, stays connected to sidebar */}
         <HeaderBanner
           book={"Books"}
           heading_pic={heading_pic}
           className="w-full"
         />
         <div className="p-6">
-          {/* Search and Filter Section */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-8">
             <h2 className="text-2xl font-bold text-gray-800 font-serif mb-6">
               Discover Our Collection
             </h2>
 
             <div className="flex flex-col md:flex-row items-end gap-4 w-full">
-              {/* Category Filter - takes 1/3 width on desktop */}
               <div className="w-full md:w-1/3">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Filter by Category
                 </label>
-                <select
-                  value={selectedCategory}
-                  onChange={handleCategoryChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                >
-                  <option value="All">All Categories</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.name}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                {isCategoriesLoading ? (
+                  <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 animate-pulse">
+                    Loading categories...
+                  </div>
+                ) : (
+                  <select
+                    value={selectedCategory}
+                    onChange={handleCategoryChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
-              {/* Search Input - takes remaining space on desktop */}
               <div className="relative w-full md:flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1 md:sr-only">
                   Search
@@ -215,7 +227,6 @@ function Books() {
             </div>
           </div>
 
-          {/* Books Display Section */}
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
