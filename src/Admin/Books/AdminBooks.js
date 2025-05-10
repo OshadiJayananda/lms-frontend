@@ -10,7 +10,6 @@ import {
 import SideBar from "../../Components/SideBar";
 import Header from "../../Components/Header";
 import api from "../../Components/Api";
-import { useNavigate } from "react-router-dom";
 import HeaderBanner from "../../Components/HeaderBanner";
 import { toast } from "react-toastify";
 import { useFormik } from "formik";
@@ -20,7 +19,6 @@ const config = { headers: { "Content-Type": "multipart/form-data" } };
 
 function AdminBooks() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [books, setBooks] = useState([]);
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,8 +32,9 @@ function AdminBooks() {
   const [selectedBookToDelete, setSelectedBookToDelete] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
 
-  const navigate = useNavigate();
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   // Formik validation schema
@@ -105,7 +104,6 @@ function AdminBooks() {
 
         const booksResponse = await api.get("/books");
         if (booksResponse.data) {
-          setBooks(booksResponse.data);
           setFilteredBooks(booksResponse.data);
         }
         closeModal();
@@ -122,37 +120,56 @@ function AdminBooks() {
     },
   });
 
-  // Fetch categories from API
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get("/categories");
-      if (response.data && response.data.data) {
-        setCategories(response.data.data);
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setIsCategoriesLoading(true);
+      try {
+        const response = await api.get("/categories");
+
+        // Handle Laravel paginated response
+        const categoriesData = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        setCategories(categoriesData);
+        setError(null);
+      } catch (err) {
+        console.error("Fetch categories error:", err);
+        setError("Failed to load categories");
+        setCategories([]);
+      } finally {
+        setIsCategoriesLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-    }
-  };
+    };
+    fetchCategories();
+  }, []);
 
   // Fetch books from API
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await api.get("/books");
-        setBooks(response.data);
-        setFilteredBooks(response.data);
+        const url = selectedCategory
+          ? `/books?category=${selectedCategory}&q=${searchQuery}`
+          : `/books?q=${searchQuery}`;
+
+        const response = await api.get(url);
+        setFilteredBooks(response.data || []);
       } catch (error) {
         console.error("Error fetching books:", error);
         setError("Failed to fetch books. Please try again later.");
-        toast.error("Failed to fetch books. Please try again later.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchBooks();
-    fetchCategories();
-  }, []);
+  }, [selectedCategory, searchQuery]);
+
+  const handleCategoryChange = (event) => {
+    const category = event.target.value;
+    setSelectedCategory(category);
+  };
 
   // Handle search
   const handleSearch = async (event) => {
@@ -244,7 +261,7 @@ function AdminBooks() {
     formik.setFieldValue("category_id", "");
 
     // Find subcategories of selected parent
-    const children = categories.filter((cat) => cat.parent_id == parentId);
+    const children = categories.filter((cat) => cat.parent_id === parentId);
     setSubCategories(children);
   };
 
@@ -261,9 +278,6 @@ function AdminBooks() {
       await api.delete(`/books/${selectedBookToDelete}`);
       toast.success("Book deleted successfully!");
 
-      setBooks((prevBooks) =>
-        prevBooks.filter((book) => book.id !== selectedBookToDelete)
-      );
       setFilteredBooks((prevBooks) =>
         prevBooks.filter((book) => book.id !== selectedBookToDelete)
       );
@@ -293,35 +307,68 @@ function AdminBooks() {
         <div className="p-6">
           {/* Dashboard Header */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">
+            <div className="flex flex-col gap-6 p-4 bg-white rounded-lg shadow-sm">
+              {/* Title Section */}
+              <div className="flex flex-col">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
                   Books Inventory
                 </h1>
-                <p className="text-gray-600 mt-1">
+                <p className="text-gray-500 mt-1 text-sm md:text-base">
                   Manage all books in the library collection
                 </p>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="relative w-full md:w-64">
+
+              {/* Controls Section */}
+              <div className="flex flex-col md:flex-row gap-4 w-full">
+                {/* Search Input - Moved to top on mobile */}
+                <div className="relative w-full md:w-72 order-1 md:order-2">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <FaSearch className="text-gray-400" />
                   </div>
                   <input
                     type="text"
-                    placeholder="Search books..."
+                    placeholder="Search by title, author..."
                     value={searchQuery}
                     onChange={handleSearch}
-                    className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+                    aria-label="Search books"
                   />
                 </div>
-                <button
-                  onClick={() => openModal()}
-                  className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
-                >
-                  <FaPlus className="mr-2" />
-                  Add Book
-                </button>
+
+                {/* Filter Dropdown */}
+                <div className="w-full md:w-56 order-2 md:order-1">
+                  {isCategoriesLoading ? (
+                    <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 animate-pulse text-sm">
+                      Loading categories...
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedCategory}
+                      onChange={handleCategoryChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm md:text-base"
+                      aria-label="Filter by category"
+                    >
+                      <option value="">All Categories</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Add Book Button */}
+                <div className="order-3 md:ml-auto">
+                  <button
+                    onClick={() => openModal()}
+                    className="flex items-center justify-center w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm md:text-base"
+                    aria-label="Add new book"
+                  >
+                    <FaPlus className="mr-2" />
+                    Add Book
+                  </button>
+                </div>
               </div>
             </div>
           </div>
