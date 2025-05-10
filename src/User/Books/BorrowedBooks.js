@@ -27,7 +27,7 @@ function BorrowedBooks() {
   const [exactReturnDate, setExactReturnDate] = useState(null);
   const [renewDate, setRenewDate] = useState(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [bookAvailability, setBookAvailability] = useState(null);
+  const [bookAvailability] = useState(null);
   const [selectedBookIdInput, setSelectedBookIdInput] = useState("");
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
@@ -99,16 +99,6 @@ function BorrowedBooks() {
       setIsModalOpen(true);
     } else {
       toast.error("Book not found in your borrowed items.");
-    }
-  };
-
-  const checkBookAvailability = async (bookId) => {
-    try {
-      const response = await api.get(`/books/${bookId}/availability`);
-      return response.data.available;
-    } catch (error) {
-      console.error("Error checking book availability:", error);
-      return false;
     }
   };
 

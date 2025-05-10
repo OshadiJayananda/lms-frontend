@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { FaSearch, FaBook, FaUserAlt, FaCalendarAlt } from "react-icons/fa";
+import { FaSearch, FaBook, FaUserAlt } from "react-icons/fa";
 import api from "../../Components/Api";
-import { useNavigate } from "react-router-dom";
 import ClientSidebar from "../../Components/ClientSidebar";
 import { toast } from "react-toastify";
 import HeaderBanner from "../../Components/HeaderBanner";
 
 function Books() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [books, setBooks] = useState([]);
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,7 +16,6 @@ function Books() {
   const [requesting, setRequesting] = useState(false);
   const [borrowedBooks, setBorrowedBooks] = useState([]);
   const [reservedBooks, setReservedBooks] = useState([]);
-  const navigate = useNavigate();
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   useEffect(() => {
@@ -49,7 +46,6 @@ function Books() {
     const fetchBooks = async () => {
       try {
         const response = await api.get("/books");
-        setBooks(response.data);
         setFilteredBooks(response.data);
       } catch (error) {
         console.error("Error fetching books:", error);

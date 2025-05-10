@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import HeaderBanner from "../../Components/HeaderBanner";
 import ClientSidebar from "../../Components/ClientSidebar";
 import { FaBell } from "react-icons/fa";
@@ -17,7 +17,7 @@ function Dashboard() {
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const response = await api.get("/user/notifications");
       setNotifications(response.data);
@@ -27,13 +27,13 @@ function Dashboard() {
         navigate("/login");
       }
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchNotifications]);
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
