@@ -307,7 +307,7 @@ function AdminBooks() {
         <div className="p-6">
           {/* Dashboard Header */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-            <div className="flex flex-col gap-6 p-4 bg-white rounded-lg shadow-sm">
+            <div className="flex flex-col gap-6 rounded-lg">
               {/* Title Section */}
               <div className="flex flex-col">
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
@@ -321,7 +321,7 @@ function AdminBooks() {
               {/* Controls Section */}
               <div className="flex flex-col md:flex-row gap-4 w-full">
                 {/* Search Input - Moved to top on mobile */}
-                <div className="relative w-full md:w-72 order-1 md:order-2">
+                <div className="relative w-full md:w-2/3 order-1 md:order-2">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <FaSearch className="text-gray-400" />
                   </div>
@@ -358,11 +358,19 @@ function AdminBooks() {
                   )}
                 </div>
 
-                {/* Add Book Button */}
-                <div className="order-3 md:ml-auto">
+                {/* Add Author & Add Book Buttons */}
+                <div className="order-3 md:ml-auto flex flex-col md:flex-row gap-2 whitespace-nowrap">
+                  <button
+                    onClick={() => alert("Add Author clicked")}
+                    className="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition text-sm md:text-base whitespace-nowrap"
+                    aria-label="Add new author"
+                  >
+                    <FaPlus className="mr-2" />
+                    Add Author
+                  </button>
                   <button
                     onClick={() => openModal()}
-                    className="flex items-center justify-center w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm md:text-base"
+                    className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm md:text-base whitespace-nowrap"
                     aria-label="Add new book"
                   >
                     <FaPlus className="mr-2" />
