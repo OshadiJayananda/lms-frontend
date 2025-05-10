@@ -14,6 +14,9 @@ import HeaderBanner from "../../Components/HeaderBanner";
 import { toast } from "react-toastify";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import Select from "react-select";
+import BookFilters from "../../Components/BookFilters";
+import CategoryFilter from "../../Components/CategoryFilter";
 
 const config = { headers: { "Content-Type": "multipart/form-data" } };
 
@@ -34,6 +37,7 @@ function AdminBooks() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
+  const [authorOptions, setAuthorOptions] = useState([]);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
@@ -42,7 +46,7 @@ function AdminBooks() {
     name: Yup.string()
       .min(2, "Title must be at least 2 characters")
       .required("Title is required"),
-    author: Yup.string().required("Author is required"),
+    author_id: Yup.string().required("Author is required"),
     isbn: Yup.string()
       .required("ISBN is required")
       .test("isbn-unique", "ISBN must be unique", async (value) => {
@@ -59,13 +63,13 @@ function AdminBooks() {
     no_of_copies: Yup.number()
       .min(1, "Number of copies must be at least 1")
       .required("Number of copies is required"),
-    category_id: Yup.string().required("Category is required"),
+    category_id: Yup.number().required("Category is required"),
   });
 
   const formik = useFormik({
     initialValues: {
       name: "",
-      author: "",
+      author_id: "",
       isbn: "",
       image: null,
       description: "",
@@ -77,7 +81,7 @@ function AdminBooks() {
       setIsSubmitting(true);
       const formData = new FormData();
       formData.append("name", values.name);
-      formData.append("author", values.author);
+      formData.append("author_id", values.author_id);
       formData.append("isbn", values.isbn);
       formData.append("description", values.description);
       formData.append("no_of_copies", values.no_of_copies);
@@ -121,6 +125,23 @@ function AdminBooks() {
   });
 
   useEffect(() => {
+    const fetchAuthors = async () => {
+      try {
+        const response = await api.get("/authors"); // Adjust endpoint if needed
+        const options = response.data.map((author) => ({
+          value: author.id,
+          label: author.name,
+        }));
+        setAuthorOptions(options);
+      } catch (error) {
+        console.error("Failed to fetch authors", error);
+      }
+    };
+
+    fetchAuthors();
+  }, []);
+
+  useEffect(() => {
     const fetchCategories = async () => {
       setIsCategoriesLoading(true);
       try {
@@ -132,6 +153,8 @@ function AdminBooks() {
           : Array.isArray(response.data)
           ? response.data
           : [];
+
+        console.log("Categories Data:", categoriesData);
 
         setCategories(categoriesData);
         setError(null);
@@ -204,7 +227,7 @@ function AdminBooks() {
       // First set the form values
       formik.setValues({
         name: book.name,
-        author: book.author,
+        author_id: book.author_id,
         isbn: book.isbn,
         image: null,
         description: book.description,
@@ -254,7 +277,7 @@ function AdminBooks() {
 
   // Handle parent category selection
   const handleParentChange = (e) => {
-    const parentId = e.target.value;
+    const parentId = Number(e.target.value);
     setSelectedParent(parentId);
 
     // Reset the category_id when parent changes
@@ -321,44 +344,20 @@ function AdminBooks() {
               {/* Controls Section */}
               <div className="flex flex-col md:flex-row gap-4 w-full">
                 {/* Search Input - Moved to top on mobile */}
-                <div className="relative w-full md:w-2/3 order-1 md:order-2">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaSearch className="text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search by title, author..."
-                    value={searchQuery}
-                    onChange={handleSearch}
-                    className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
-                    aria-label="Search books"
-                  />
-                </div>
+                <BookFilters
+                  searchQuery={searchQuery}
+                  onSearch={setSearchQuery}
+                />
 
                 {/* Filter Dropdown */}
-                <div className="w-full md:w-56 order-2 md:order-1">
-                  {isCategoriesLoading ? (
-                    <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 animate-pulse text-sm">
-                      Loading categories...
-                    </div>
-                  ) : (
-                    <select
-                      value={selectedCategory}
-                      onChange={handleCategoryChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm md:text-base"
-                      aria-label="Filter by category"
-                    >
-                      <option value="">All Categories</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+                <CategoryFilter
+                  categories={categories}
+                  selectedCategory={selectedCategory}
+                  onChange={setSelectedCategory}
+                  isLoading={isCategoriesLoading}
+                />
 
-                {/* Add Author & Add Book Buttons */}
+                {/* Add Book Buttons */}
                 <div className="order-3 md:ml-auto flex flex-col md:flex-row gap-2 whitespace-nowrap">
                   <button
                     onClick={() => openModal()}
@@ -420,7 +419,7 @@ function AdminBooks() {
                 >
                   <div className="h-48 bg-gray-100 flex items-center justify-center">
                     <img
-                      src={book.image || "/default-book-cover.jpg"}
+                      src={book.image || "/default-book-cover.png"}
                       alt={book.name}
                       className="h-full w-full object-cover"
                     />
@@ -430,7 +429,7 @@ function AdminBooks() {
                       {book.name}
                     </h3>
                     <p className="text-sm text-gray-600 mb-2 line-clamp-1">
-                      {book.author}
+                      {book.author?.name || "Unknown Author"}
                     </p>
                     <div className="flex justify-between items-center text-xs text-gray-500 mb-3">
                       <span>ISBN: {book.isbn}</span>
@@ -589,21 +588,28 @@ function AdminBooks() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Author *
                   </label>
-                  <input
-                    type="text"
-                    name="author"
-                    value={formik.values.author}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      formik.touched.author && formik.errors.author
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    }`}
+                  <Select
+                    name="author_id"
+                    options={authorOptions}
+                    value={
+                      authorOptions.find(
+                        (option) => option.value === formik.values.author_id
+                      ) || null
+                    }
+                    onChange={(selected) => {
+                      formik.setFieldValue(
+                        "author_id",
+                        selected ? selected.value : ""
+                      );
+                    }}
+                    onBlur={() => formik.setFieldTouched("author_id", true)}
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    placeholder="Select an author..."
                   />
-                  {formik.touched.author && formik.errors.author && (
+                  {formik.touched.author_id && formik.errors.author_id && (
                     <p className="mt-1 text-sm text-red-600">
-                      {formik.errors.author}
+                      {formik.errors.author_id}
                     </p>
                   )}
                 </div>
