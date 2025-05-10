@@ -208,7 +208,7 @@ function BookRequests() {
                                 className="h-full w-full object-cover rounded"
                                 src={
                                   request.book.image ||
-                                  "/default-book-cover.jpg"
+                                  "/default-book-cover.png"
                                 }
                                 alt={request.book.name}
                               />

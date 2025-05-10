@@ -283,7 +283,7 @@ function BookReservation() {
                                 className="h-full w-full object-cover rounded"
                                 src={
                                   reservation.book.image ||
-                                  "/default-book-cover.jpg"
+                                  "/default-book-cover.png"
                                 }
                                 alt={reservation.book.name}
                               />

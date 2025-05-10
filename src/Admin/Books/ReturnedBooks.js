@@ -148,7 +148,7 @@ function ReturnedBooks() {
                               <img
                                 className="h-full w-full object-cover rounded"
                                 src={
-                                  borrow.book.image || "/default-book-cover.jpg"
+                                  borrow.book.image || "/default-book-cover.png"
                                 }
                                 alt={borrow.book.name}
                               />

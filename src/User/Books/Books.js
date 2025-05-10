@@ -290,7 +290,7 @@ function Books() {
                   >
                     <div className="relative pb-[150%]">
                       <img
-                        src={book.image || "/default-book-cover.jpg"}
+                        src={book.image || "/default-book-cover.png"}
                         alt={book.name}
                         className="absolute h-full w-full object-cover"
                       />
