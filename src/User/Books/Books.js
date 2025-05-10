@@ -77,30 +77,23 @@ function Books() {
     setSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  const handleSearch = (event) => {
-    const query = event.target.value.toLowerCase();
-    setSearchQuery(query);
-    filterBooks(query, selectedCategory);
-  };
-
   const handleCategoryChange = (event) => {
     const category = event.target.value;
     setSelectedCategory(category);
-    filterBooks(searchQuery, category);
+    // filterBooks(searchQuery, category);
   };
 
-  const filterBooks = (query, category) => {
-    let filtered = books.filter(
-      (book) =>
-        book.name.toLowerCase().includes(query) ||
-        book.author.toLowerCase().includes(query) ||
-        book.isbn.toLowerCase().includes(query)
-    );
+  const handleSearch = async (event) => {
+    const query = event.target.value.toLowerCase();
+    setSearchQuery(query);
 
-    if (category !== "All") {
-      filtered = filtered.filter((book) => book.category === category);
+    try {
+      const response = await api.get(`/books/search?q=${query}`);
+      setFilteredBooks(response.data);
+    } catch (error) {
+      console.error("Error searching books:", error);
+      toast.error("Failed to search books. Please try again later.");
     }
-    setFilteredBooks(filtered);
   };
 
   const requestBook = async (bookId) => {
@@ -180,7 +173,8 @@ function Books() {
               Discover Our Collection
             </h2>
 
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col md:flex-row items-end gap-4 w-full">
+              {/* Category Filter - takes 1/3 width on desktop */}
               <div className="w-full md:w-1/3">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Filter by Category
@@ -199,9 +193,10 @@ function Books() {
                 </select>
               </div>
 
-              <div className="w-full md:w-2/3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Search Books
+              {/* Search Input - takes remaining space on desktop */}
+              <div className="relative w-full md:flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 md:sr-only">
+                  Search
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -209,10 +204,10 @@ function Books() {
                   </div>
                   <input
                     type="text"
-                    placeholder="Search by title, author, or ISBN..."
+                    placeholder="Search books..."
                     value={searchQuery}
                     onChange={handleSearch}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
