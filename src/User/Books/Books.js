@@ -301,7 +301,7 @@ function Books() {
                       </h3>
                       <div className="flex items-center mt-1 text-sm text-gray-600">
                         <FaUserAlt className="mr-1 text-gray-400" />
-                        <span className="truncate">{book.author}</span>
+                        <span className="truncate">{book.author?.name}</span>
                       </div>
                       <div className="mt-2 flex justify-between items-center">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
