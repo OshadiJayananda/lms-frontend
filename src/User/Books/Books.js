@@ -102,27 +102,32 @@ function Books() {
             book.status === "Approved" ||
             book.status === "Issued")
       )
-    )
+    ) {
+      toast.info(
+        "This book is already requested. Confirmation is still pending."
+      );
       return;
+    }
 
     setRequesting(true);
     try {
-      await api.post(`/books/${bookId}/request`);
+      const response = await api.post(`/books/${bookId}/request`);
       setBorrowedBooks([
         ...borrowedBooks,
         { book_id: bookId, status: "Pending" },
       ]);
-      toast.success("Book requested successfully!");
+      toast.success(response.data.message || "Book requested successfully!");
     } catch (error) {
-      toast.error(
-        "Failed to request book: " +
-          (error.response?.data?.message || error.message)
-      );
+      const errorMessage = error.response?.data?.message || error.message;
+      if (error.response?.status === 400) {
+        toast.info(errorMessage); // Show the "already requested" message as info
+      } else {
+        toast.error("Failed to request book: " + errorMessage);
+      }
     } finally {
       setRequesting(false);
     }
   };
-
   const reserveBook = async (bookId) => {
     try {
       const response = await api.post(
