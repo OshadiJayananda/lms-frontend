@@ -23,6 +23,7 @@ import ForgotPassword from "./Components/ForgotPassword";
 import ResetPassword from "./Components/ResetPassword";
 import AdminProfile from "./Admin/Profile/AdminProfile";
 import Authors from "./Admin/Books/Authors";
+import MemberDetails from "./Admin/Members/MemberDetails";
 // import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
@@ -94,6 +95,14 @@ function App() {
             element={
               <AdminAuthMiddleware>
                 <Authors />
+              </AdminAuthMiddleware>
+            }
+          />
+          <Route
+            path="/admin/members"
+            element={
+              <AdminAuthMiddleware>
+                <MemberDetails />
               </AdminAuthMiddleware>
             }
           />

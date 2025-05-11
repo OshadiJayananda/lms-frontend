@@ -54,7 +54,7 @@ function Header({ isCollapsed }) {
           Book Reservations
         </NavLink>
         <NavLink
-          to="/memberInfo"
+          to="/admin/members"
           className={({ isActive }) =>
             `text-sm font-medium px-2 py-1 rounded-md transition-colors ${
               isActive
@@ -63,7 +63,7 @@ function Header({ isCollapsed }) {
             }`
           }
         >
-          Member Info
+          Members Info
         </NavLink>
       </div>
     </div>
