@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import SideBar from "../../Components/SideBar";
 import Header from "../../Components/Header";
 import HeaderBanner from "../../Components/HeaderBanner";
@@ -10,33 +10,31 @@ import {
   FaUserCheck,
   FaUserTimes,
 } from "react-icons/fa";
+import { toast } from "react-toastify";
+import api from "../../Components/Api";
 
 function MemberDetails() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
-  const members = [
-    {
-      mid: "E01",
-      name: "Jenny Sheiny",
-      email: "jenny123@gmail.com",
-      contact: "0771233232",
-      borrowed: 123,
-      returned: 87,
-      status: "Blocked",
-    },
-    {
-      mid: "E02",
-      name: "John Die",
-      email: "john123@gmail.com",
-      contact: "0764452065",
-      borrowed: 35,
-      returned: 30,
-      status: "Active",
-    },
-  ];
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const response = await api.get("/admin/members"); // adjust base URL if needed
+        setMembers(response.data);
+      } catch (error) {
+        toast.error("Failed to load members");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMembers();
+  }, []);
 
   const filteredMembers = members.filter(
     (member) =>
@@ -130,7 +128,7 @@ function MemberDetails() {
                             {member.name}
                           </div>
                           <div className="text-xs text-gray-500">
-                            ID: {member.mid}
+                            ID: {member.id}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-700">
@@ -145,10 +143,10 @@ function MemberDetails() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-800">
-                            Borrowed: {member.borrowed}
+                            Borrowed: {member.total_borrowed}
                           </div>
                           <div className="text-sm text-gray-600">
-                            Returned: {member.returned}
+                            Returned: {member.total_returned}
                           </div>
                         </td>
                         <td className="px-6 py-4">
