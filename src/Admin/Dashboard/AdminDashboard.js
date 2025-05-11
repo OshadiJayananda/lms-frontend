@@ -13,6 +13,15 @@ import {
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 function AdminDashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -201,14 +210,97 @@ function AdminDashboard() {
             ))}
           </div>
 
-          {/* Additional Dashboard Content Placeholder */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              System Overview
-            </h2>
-            <p className="text-gray-600">
-              Add charts or other modules here as needed.
-            </p>
+          {/* Chart */}
+          <div className="bg-white p-6 rounded-lg shadow mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Borrowed Books Per Month
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={stats.borrowedPerMonth || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" tickFormatter={(m) => `M${m}`} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Top Lists */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                Top Borrowing Members
+              </h3>
+              <ul className="space-y-2">
+                {stats.topMembers?.map((member) => (
+                  <li key={member.id} className="flex justify-between text-sm">
+                    <span>{member.name}</span>
+                    <span className="font-semibold">
+                      {member.borrowed_books_count}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                Most Borrowed Books
+              </h3>
+              <ul className="space-y-2">
+                {stats.topBooks?.map((book) => (
+                  <li key={book.id} className="flex justify-between text-sm">
+                    <span>{book.name}</span>
+                    <span className="font-semibold">{book.borrows_count}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Latest Book Requests */}
+          <div className="bg-white p-6 rounded-lg shadow mb-6">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">
+              Latest Book Requests
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm text-left">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2">User</th>
+                    <th className="px-4 py-2">Book</th>
+                    <th className="px-4 py-2">Requested At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.recentRequests && stats.recentRequests.length > 0 ? (
+                    stats.recentRequests.map((req) => (
+                      <tr key={req.id} className="border-t">
+                        <td className="px-4 py-2">{req.user?.name}</td>
+                        <td className="px-4 py-2">{req.book?.name}</td>
+                        <td className="px-4 py-2">
+                          {new Date(req.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="3"
+                        className="px-4 py-2 text-center text-gray-500"
+                      >
+                        No recent requests found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
