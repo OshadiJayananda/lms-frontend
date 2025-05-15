@@ -1,11 +1,28 @@
 import React, { useState, useEffect, useCallback } from "react";
 import HeaderBanner from "../../Components/HeaderBanner";
 import ClientSidebar from "../../Components/ClientSidebar";
-import { FaBell } from "react-icons/fa";
+import {
+  FaBell,
+  FaBookOpen,
+  FaClock,
+  FaExchangeAlt,
+  FaCheckCircle,
+} from "react-icons/fa";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Legend,
+} from "recharts";
 
 const QUOTES = [
   {
@@ -65,12 +82,15 @@ function Dashboard() {
     borrowDuration: "2 weeks",
     finePerDay: 50,
     latestBooks: [],
+    monthlyStats: [],
   });
   const [quote, setQuote] = useState(QUOTES[0]);
   const navigate = useNavigate();
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
-  const COLORS = ["#1E3A8A", "#0284C7", "#94A3B8"];
+  const COLORS = ["#4F46E5", "#10B981", "#F59E0B"]; // Purple, Emerald, Amber
+  const FONT_FAMILY =
+    "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -92,6 +112,13 @@ function Dashboard() {
   };
 
   useEffect(() => {
+    // Load Inter font from Google Fonts
+    const link = document.createElement("link");
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap";
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+
     const randomIndex = Math.floor(Math.random() * QUOTES.length);
     setQuote(QUOTES[randomIndex]);
   }, []);
@@ -168,13 +195,16 @@ function Dashboard() {
   };
 
   const pieData = [
-    { name: "Borrowed", value: stats.borrowed },
-    { name: "Returned", value: stats.returned },
-    { name: "Overdue", value: stats.overdue },
+    { name: "Borrowed", value: stats.borrowed, icon: <FaBookOpen /> },
+    { name: "Returned", value: stats.returned, icon: <FaCheckCircle /> },
+    { name: "Overdue", value: stats.overdue, icon: <FaClock /> },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div
+      className="min-h-screen bg-gray-50 flex"
+      style={{ fontFamily: FONT_FAMILY }}
+    >
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
@@ -188,12 +218,13 @@ function Dashboard() {
         />
 
         <div className="p-6">
-          <div className="relative float-right">
+          {/* Notification Bell */}
+          <div className="relative float-right mb-6">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 text-gray-600 hover:text-blue-600 relative"
+              className="p-3 bg-white rounded-full shadow-sm hover:shadow-md transition-all relative"
             >
-              <FaBell size={20} />
+              <FaBell size={20} className="text-indigo-600" />
               {notifications.filter((n) => !n.is_read).length > 0 && (
                 <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
                   {notifications.filter((n) => !n.is_read).length}
@@ -201,61 +232,59 @@ function Dashboard() {
               )}
             </button>
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10">
-                <div className="p-2 border-b flex justify-between items-center">
-                  <h3 className="font-semibold">Notifications</h3>
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-10 border border-gray-100">
+                <div className="p-3 border-b border-gray-100 flex justify-between items-center bg-indigo-50 rounded-t-lg">
+                  <h3 className="font-semibold text-indigo-700">
+                    Notifications
+                  </h3>
                   <button
                     onClick={markAllAsRead}
-                    className="text-xs text-blue-600 hover:underline"
+                    className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
                   >
                     Mark all as read
                   </button>
                 </div>
-                <div className="max-h-60 overflow-y-auto">
+                <div className="max-h-96 overflow-y-auto">
                   {notifications.length > 0 ? (
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${
+                        className={`p-3 border-b border-gray-100 hover:bg-indigo-50 cursor-pointer transition-colors ${
                           !notification.is_read ? "bg-blue-50" : ""
                         }`}
                         onClick={() => handleNotificationClick(notification)}
                       >
-                        <p className="text-sm font-medium">
-                          {notification.title}
-                        </p>
-                        <p className="text-sm">{notification.message}</p>
-                        {/* {notification.type === "renewal_date_changed" && (
-                          <div className="mt-2 flex gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRenewalResponse(true);
-                              }}
-                              className="px-2 py-1 bg-green-500 text-white rounded text-sm"
-                              disabled={processing}
-                            >
-                              Accept
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRenewalResponse(false);
-                              }}
-                              className="px-2 py-1 bg-red-500 text-white rounded text-sm"
-                              disabled={processing}
-                            >
-                              Decline
-                            </button>
+                        <div className="flex items-start">
+                          <div
+                            className={`p-2 rounded-full mr-3 ${
+                              notification.type === "renewal_date_changed"
+                                ? "bg-purple-100 text-purple-600"
+                                : "bg-blue-100 text-blue-600"
+                            }`}
+                          >
+                            <FaExchangeAlt size={14} />
                           </div>
-                        )} */}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-800">
+                              {notification.title}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-2">
+                              {new Date(
+                                notification.created_at
+                              ).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
                         <p className="text-xs text-gray-500">
                           {new Date(notification.created_at).toLocaleString()}
                         </p>
                       </div>
                     ))
                   ) : (
-                    <div className="p-3 text-sm text-gray-500">
+                    <div className="p-4 text-center text-gray-500">
                       No new notifications
                     </div>
                   )}
@@ -264,91 +293,208 @@ function Dashboard() {
             )}
           </div>
 
-          <h2 className="text-xl font-semibold mb-6">
-            Welcome to the Dashboard
-          </h2>
+          {/* Welcome Section */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Welcome to Your Library
+            </h2>
+            <p className="text-gray-600">
+              Track your reading journey and discover new books
+            </p>
+          </div>
 
-          <blockquote className="italic text-lg mb-6 text-gray-700">
-            "{quote.text}" <br />
-            <span className="text-sm">– {quote.author}</span>
-          </blockquote>
+          {/* Quote Card */}
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white mb-8 shadow-lg">
+            <blockquote className="text-lg italic mb-2">
+              "{quote.text}"
+            </blockquote>
+            <p className="text-sm opacity-80">– {quote.author}</p>
+          </div>
 
-          {/* Chart + Policy Info */}
-          <div className="flex flex-wrap md:flex-nowrap gap-6 mb-10">
-            <div className="w-full md:w-2/3 h-72">
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="mt-4 flex justify-center space-x-4 text-sm">
-                <span className="text-blue-900 font-medium">■ Borrowed</span>
-                <span className="text-sky-600 font-medium">■ Returned</span>
-                <span className="text-slate-400 font-medium">■ Overdue</span>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="p-3 bg-indigo-100 rounded-full mr-4 text-indigo-600">
+                  <FaBookOpen size={20} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Books Borrowed</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {stats.borrowed}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-slate-100 to-slate-200 p-6 rounded-xl shadow-md w-full md:w-1/3 hover:shadow-lg transition duration-300 flex flex-col items-center justify-center">
-              <h3 className="text-lg font-semibold text-gray-700 mb-8 text-center">
-                Borrowing Policy
-              </h3>
-              <div className="space-y-3 text-sm text-gray-700 w-full max-w-xs">
-                <div className="flex justify-between border-b pb-2">
-                  <span className="font-medium">Borrow Limit:</span>
-                  <span className="text-gray-900">{stats.borrowLimit}</span>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="p-3 bg-emerald-100 rounded-full mr-4 text-emerald-600">
+                  <FaCheckCircle size={20} />
                 </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="font-medium">Keep Duration:</span>
-                  <span className="text-gray-900">{stats.borrowDuration}</span>
+                <div>
+                  <p className="text-sm text-gray-500">Books Returned</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {stats.returned}
+                  </p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Fine per Day:</span>
-                  <span className="text-red-600 font-semibold">
-                    Rs.{stats.finePerDay}
-                  </span>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="p-3 bg-amber-100 rounded-full mr-4 text-amber-600">
+                  <FaClock size={20} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Books Overdue</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {stats.overdue}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Charts Section */}
+          <div className="flex flex-col lg:flex-row gap-6 mb-8">
+            {/* Pie Chart */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 w-full lg:w-1/2">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Your Reading Activity
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      innerRadius={50}
+                      label={({ name, percent }) =>
+                        `${name} ${(percent * 100).toFixed(0)}%`
+                      }
+                      labelLine={false}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [`${value} books`, "Count"]}
+                      contentStyle={{
+                        borderRadius: "8px",
+                        border: "none",
+                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Bar Chart - Monthly Activity */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 w-full lg:w-1/2">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Monthly Reading
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={stats.monthlyStats}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "8px",
+                        border: "none",
+                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="borrowed" fill="#4F46E5" name="Borrowed" />
+                    <Bar dataKey="returned" fill="#10B981" name="Returned" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Policy Card */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Borrowing Policy
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-indigo-50 p-4 rounded-lg">
+                <p className="text-sm text-indigo-600 font-medium">
+                  Borrow Limit
+                </p>
+                <p className="text-2xl font-bold text-indigo-800">
+                  {stats.borrowLimit} books
+                </p>
+              </div>
+              <div className="bg-emerald-50 p-4 rounded-lg">
+                <p className="text-sm text-emerald-600 font-medium">
+                  Borrow Duration
+                </p>
+                <p className="text-2xl font-bold text-emerald-800">
+                  {stats.borrowDuration}
+                </p>
+              </div>
+              <div className="bg-amber-50 p-4 rounded-lg">
+                <p className="text-sm text-amber-600 font-medium">
+                  Fine per Day
+                </p>
+                <p className="text-2xl font-bold text-amber-800">
+                  Rs.{stats.finePerDay}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Latest Books */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Latest Books</h3>
-            <div className="flex overflow-x-auto space-x-4">
-              {stats.latestBooks.map((book, index) => (
-                <div key={index} className="w-64 flex-shrink-0">
-                  <img
-                    src={book.image || "/default-book-cover.png"}
-                    alt={book.name}
-                    className="w-full h-48 object-cover rounded"
-                  />
-                  <p className="mt-2 text-center text-sm font-medium">
-                    {book.name}
-                  </p>
-                </div>
-              ))}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Recently Added Books
+              </h3>
               <Link
                 to="/books"
-                className="w-60 flex-shrink-0 bg-gray-100 flex items-center justify-center text-sm text-gray-600 rounded hover:bg-gray-200 transition"
+                className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline flex items-center"
               >
-                see more
+                View all books
               </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {stats.latestBooks.map((book, index) => (
+                <div
+                  key={index}
+                  className="group cursor-pointer transition-all hover:-translate-y-1"
+                  onClick={() => navigate(`/books/${book.id}`)}
+                >
+                  <div className="relative pb-[150%] rounded-lg overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+                    <img
+                      src={book.image || "/default-book-cover.png"}
+                      alt={book.name}
+                      className="absolute h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                      <p className="text-white text-sm font-medium truncate w-full">
+                        {book.name}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -357,40 +503,44 @@ function Dashboard() {
         {showConfirmationModal &&
           selectedNotification?.type === "renewal_date_changed" && (
             <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+              <div className="bg-white p-6 rounded-xl shadow-xl w-96 max-w-full mx-4">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">Renewal Date Change</h2>
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Renewal Request
+                  </h2>
                   <button
                     onClick={() => setShowConfirmationModal(false)}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-gray-500 hover:text-gray-700 text-xl"
                   >
-                    ×
+                    &times;
                   </button>
                 </div>
-                <div className="mb-4">
-                  <p>{selectedNotification.message}</p>
-                  <p className="mt-4 font-medium">
+                <div className="mb-6">
+                  <p className="text-gray-600 mb-4">
+                    {selectedNotification.message}
+                  </p>
+                  <p className="font-medium text-gray-800">
                     Do you accept this new renewal date?
                   </p>
                 </div>
-                <div className="flex justify-end gap-4">
+                <div className="flex justify-end gap-3">
                   <button
                     onClick={() => handleRenewalResponse(false)}
-                    className={`px-4 py-2 bg-red-500 text-white rounded ${
+                    className={`px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors ${
                       processing ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                     disabled={processing}
                   >
-                    {processing ? "Processing..." : "No, Decline"}
+                    {processing ? "Processing..." : "Decline"}
                   </button>
                   <button
                     onClick={() => handleRenewalResponse(true)}
-                    className={`px-4 py-2 bg-green-500 text-white rounded ${
+                    className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors ${
                       processing ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                     disabled={processing}
                   >
-                    {processing ? "Processing..." : "Yes, Accept"}
+                    {processing ? "Processing..." : "Accept"}
                   </button>
                 </div>
               </div>
