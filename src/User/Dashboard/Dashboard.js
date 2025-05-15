@@ -479,7 +479,7 @@ function Dashboard() {
                 <div
                   key={index}
                   className="group cursor-pointer transition-all hover:-translate-y-1"
-                  onClick={() => navigate(`/books/${book.id}`)}
+                  // onClick={() => navigate(`/books/${book.id}`)}
                 >
                   <div className="relative pb-[150%] rounded-lg overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
                     <img
