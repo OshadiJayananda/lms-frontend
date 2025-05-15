@@ -278,9 +278,6 @@ function Dashboard() {
                             </p>
                           </div>
                         </div>
-                        <p className="text-xs text-gray-500">
-                          {new Date(notification.created_at).toLocaleString()}
-                        </p>
                       </div>
                     ))
                   ) : (
