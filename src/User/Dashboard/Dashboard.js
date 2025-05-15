@@ -4,7 +4,51 @@ import ClientSidebar from "../../Components/ClientSidebar";
 import { FaBell } from "react-icons/fa";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+
+const QUOTES = [
+  {
+    text: "A reader lives a thousand lives before he dies.",
+    author: "George R.R. Martin",
+  },
+  {
+    text: "So many books, so little time.",
+    author: "Frank Zappa",
+  },
+  {
+    text: "Until I feared I would lose it, I never loved to read. One does not love breathing.",
+    author: "Harper Lee",
+  },
+  {
+    text: "Reading is essential for those who seek to rise above the ordinary.",
+    author: "Jim Rohn",
+  },
+  {
+    text: "Books are a uniquely portable magic.",
+    author: "Stephen King",
+  },
+  {
+    text: "Once you learn to read, you will be forever free.",
+    author: "Frederick Douglass",
+  },
+  {
+    text: "There is no friend as loyal as a book.",
+    author: "Ernest Hemingway",
+  },
+  {
+    text: "The only thing that you absolutely have to know, is the location of the library.",
+    author: "Albert Einstein",
+  },
+  {
+    text: "I do believe something very magical can happen when you read a good book.",
+    author: "J.K. Rowling",
+  },
+  {
+    text: "That’s the thing about books. They let you travel without moving your feet.",
+    author: "Jhumpa Lahiri",
+  },
+];
 
 function Dashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -13,9 +57,20 @@ function Dashboard() {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [stats, setStats] = useState({
+    borrowed: 0,
+    returned: 0,
+    overdue: 0,
+    borrowLimit: 5,
+    borrowDuration: "2 weeks",
+    finePerDay: 50,
+    latestBooks: [],
+  });
+  const [quote, setQuote] = useState(QUOTES[0]);
   const navigate = useNavigate();
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const COLORS = ["#1E3A8A", "#0284C7", "#94A3B8"];
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -23,14 +78,27 @@ function Dashboard() {
       setNotifications(response.data);
     } catch (error) {
       console.error("Error fetching notifications:", error);
-      if (error.response?.status === 401) {
-        navigate("/login");
-      }
+      if (error.response?.status === 401) navigate("/login");
     }
   }, [navigate]);
 
+  const fetchStats = async () => {
+    try {
+      const res = await api.get("/user/dashboard-stats");
+      setStats(res.data);
+    } catch (err) {
+      toast.error("Failed to load dashboard data");
+    }
+  };
+
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * QUOTES.length);
+    setQuote(QUOTES[randomIndex]);
+  }, []);
+
   useEffect(() => {
     fetchNotifications();
+    fetchStats();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
@@ -99,17 +167,22 @@ function Dashboard() {
     }
   };
 
+  const pieData = [
+    { name: "Borrowed", value: stats.borrowed },
+    { name: "Returned", value: stats.returned },
+    { name: "Overdue", value: stats.overdue },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
-
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
           isSidebarCollapsed ? "ml-20" : "ml-64"
         }`}
       >
         <HeaderBanner
-          book={"Dashboard"}
+          book="Dashboard"
           heading_pic={heading_pic}
           className="w-full"
         />
@@ -152,7 +225,7 @@ function Dashboard() {
                           {notification.title}
                         </p>
                         <p className="text-sm">{notification.message}</p>
-                        {notification.type === "renewal_date_changed" && (
+                        {/* {notification.type === "renewal_date_changed" && (
                           <div className="mt-2 flex gap-2">
                             <button
                               onClick={(e) => {
@@ -175,7 +248,7 @@ function Dashboard() {
                               Decline
                             </button>
                           </div>
-                        )}
+                        )} */}
                         <p className="text-xs text-gray-500">
                           {new Date(notification.created_at).toLocaleString()}
                         </p>
@@ -191,7 +264,93 @@ function Dashboard() {
             )}
           </div>
 
-          <h2 className="text-xl font-semibold">Welcome to the Dashboard</h2>
+          <h2 className="text-xl font-semibold mb-6">
+            Welcome to the Dashboard
+          </h2>
+
+          <blockquote className="italic text-lg mb-6 text-gray-700">
+            "{quote.text}" <br />
+            <span className="text-sm">– {quote.author}</span>
+          </blockquote>
+
+          {/* Chart + Policy Info */}
+          <div className="flex flex-wrap md:flex-nowrap gap-6 mb-10">
+            <div className="w-full md:w-2/3 h-72">
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-4 flex justify-center space-x-4 text-sm">
+                <span className="text-blue-900 font-medium">■ Borrowed</span>
+                <span className="text-sky-600 font-medium">■ Returned</span>
+                <span className="text-slate-400 font-medium">■ Overdue</span>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-slate-100 to-slate-200 p-6 rounded-xl shadow-md w-full md:w-1/3 hover:shadow-lg transition duration-300 flex flex-col items-center justify-center">
+              <h3 className="text-lg font-semibold text-gray-700 mb-8 text-center">
+                Borrowing Policy
+              </h3>
+              <div className="space-y-3 text-sm text-gray-700 w-full max-w-xs">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">Borrow Limit:</span>
+                  <span className="text-gray-900">{stats.borrowLimit}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">Keep Duration:</span>
+                  <span className="text-gray-900">{stats.borrowDuration}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Fine per Day:</span>
+                  <span className="text-red-600 font-semibold">
+                    Rs.{stats.finePerDay}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Latest Books */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Latest Books</h3>
+            <div className="flex overflow-x-auto space-x-4">
+              {stats.latestBooks.map((book, index) => (
+                <div key={index} className="w-64 flex-shrink-0">
+                  <img
+                    src={book.image || "/default-book-cover.png"}
+                    alt={book.name}
+                    className="w-full h-48 object-cover rounded"
+                  />
+                  <p className="mt-2 text-center text-sm font-medium">
+                    {book.name}
+                  </p>
+                </div>
+              ))}
+              <Link
+                to="/books"
+                className="w-60 flex-shrink-0 bg-gray-100 flex items-center justify-center text-sm text-gray-600 rounded hover:bg-gray-200 transition"
+              >
+                see more
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Renewal Confirmation Modal */}
