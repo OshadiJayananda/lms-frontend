@@ -237,12 +237,14 @@ function Dashboard() {
                   <h3 className="font-semibold text-indigo-700">
                     Notifications
                   </h3>
-                  <button
-                    onClick={markAllAsRead}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
-                  >
-                    Mark all as read
-                  </button>
+                  {notifications.filter((n) => !n.is_read).length > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
                 </div>
                 <div className="max-h-96 overflow-y-auto">
                   {notifications.length > 0 ? (
