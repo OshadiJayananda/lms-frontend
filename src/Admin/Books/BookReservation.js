@@ -2,14 +2,7 @@ import React, { useState, useEffect } from "react";
 import SideBar from "../../Components/SideBar";
 import HeaderBanner from "../../Components/HeaderBanner";
 import Header from "../../Components/Header";
-import {
-  FaCheck,
-  FaTimes,
-  FaBell,
-  FaBook,
-  FaUser,
-  FaSearch,
-} from "react-icons/fa";
+import { FaCheck, FaTimes, FaBook, FaUser, FaSearch } from "react-icons/fa";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -18,8 +11,6 @@ function BookReservation() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
@@ -28,15 +19,6 @@ function BookReservation() {
     try {
       const response = await api.get("/admin/book-reservations");
       setReservations(response.data);
-
-      // Check for declined reservation notifications
-      const declinedNotifications = await api.get("/admin/notifications", {
-        params: { type: "reservation_declined" },
-      });
-
-      if (declinedNotifications.data.length > 0) {
-        toast.info("Some reservations have been declined by users");
-      }
     } catch (error) {
       console.error("Error fetching reservations:", error);
       toast.error("Failed to load reservations");
@@ -45,22 +27,8 @@ function BookReservation() {
     }
   };
 
-  const fetchNotifications = async () => {
-    try {
-      const response = await api.get("/admin/notifications");
-      setNotifications(response.data);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  };
-
   useEffect(() => {
     fetchReservations();
-    fetchNotifications();
-
-    // Set up polling for new notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   const handleToggle = () => {
@@ -86,7 +54,6 @@ function BookReservation() {
       await api.post(`/admin/book-reservations/${reservationId}/reject`);
       toast.success("Reservation rejected");
       fetchReservations();
-      fetchNotifications();
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Failed to reject reservation"
@@ -147,70 +114,17 @@ function BookReservation() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="relative w-full md:w-64">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaSearch className="text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search reservations..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+              <div className="relative w-full md:w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaSearch className="text-gray-400" />
                 </div>
-
-                <div className="relative">
-                  <button
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className="p-2 text-gray-600 hover:text-blue-600 relative"
-                  >
-                    <FaBell size={20} />
-                    {notifications.length > 0 && (
-                      <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                        {notifications.length}
-                      </span>
-                    )}
-                  </button>
-                  {showNotifications && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                      <div className="p-3 border-b bg-gray-50">
-                        <h3 className="font-semibold text-gray-800">
-                          Notifications
-                        </h3>
-                      </div>
-                      <div className="max-h-60 overflow-y-auto">
-                        {notifications.length > 0 ? (
-                          notifications.map((notification) => (
-                            <div
-                              key={notification.id}
-                              className="p-3 border-b hover:bg-gray-50"
-                            >
-                              <div className="flex items-start">
-                                <FaBook className="mt-1 mr-2 text-blue-500" />
-                                <div>
-                                  <p className="text-sm text-gray-800">
-                                    {notification.message}
-                                  </p>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {new Date(
-                                      notification.created_at
-                                    ).toLocaleString()}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-3 text-sm text-gray-500 text-center">
-                            No new notifications
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="text"
+                  placeholder="Search reservations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
             </div>
           </div>

@@ -144,7 +144,9 @@ function Books() {
     try {
       const response = await api.post(
         `/books/${bookId}/reserve`,
-        { reservation_date: new Date().toISOString().split("T")[0] },
+        {
+          reservation_date: new Date().toISOString().split("T")[0],
+        },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -153,12 +155,18 @@ function Books() {
         }
       );
       toast.success(response.data.message);
+      return response.data; // Optional: return data for further processing
     } catch (error) {
       console.error(
         "Reservation error:",
         error.response?.data || error.message
       );
-      toast.error(error.response?.data?.message || "Failed to reserve book");
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Failed to reserve book";
+      toast.error(errorMessage);
+      throw error; // Re-throw the error if you want to handle it elsewhere
     }
   };
 

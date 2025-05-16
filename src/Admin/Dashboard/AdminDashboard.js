@@ -9,6 +9,8 @@ import {
   FaBook,
   FaClipboardCheck,
   FaClock,
+  FaCheck,
+  FaTimes,
 } from "react-icons/fa";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
@@ -42,6 +44,19 @@ function AdminDashboard() {
     try {
       const response = await api.get("/admin/notifications");
       setNotifications(response.data);
+
+      // Check for specific notification types to show toasts
+      response.data.forEach((notification) => {
+        if (!notification.is_read) {
+          if (notification.type === "reservation_declined") {
+            toast.warning(notification.message);
+          } else if (notification.type === "reservation_approved") {
+            toast.success(notification.message);
+          } else if (notification.type === "reservation_created") {
+            toast.info(notification.message);
+          }
+        }
+      });
     } catch (error) {
       if (error.response?.status === 401) navigate("/login");
       else toast.error("Failed to load notifications");
@@ -78,6 +93,26 @@ function AdminDashboard() {
     }
   };
 
+  const handleReservationAction = async (notificationId, action) => {
+    try {
+      // First mark the notification as read
+      await api.post(`/notifications/${notificationId}/read`);
+
+      // Then perform the reservation action
+      const response = await api.post(
+        `/admin/book-reservations/${notificationId}/${action}`
+      );
+
+      toast.success(response.data.message);
+      fetchNotifications();
+      fetchDashboardStats();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || `Failed to ${action} reservation`
+      );
+    }
+  };
+
   useEffect(() => {
     fetchDashboardStats();
     fetchNotifications();
@@ -108,6 +143,19 @@ function AdminDashboard() {
     },
   ];
 
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case "reservation_created":
+        return <FaBook className="text-blue-500 mr-2" />;
+      case "reservation_approved":
+        return <FaCheck className="text-green-500 mr-2" />;
+      case "reservation_declined":
+        return <FaTimes className="text-red-500 mr-2" />;
+      default:
+        return <FaBell className="text-yellow-500 mr-2" />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <SideBar
@@ -135,7 +183,7 @@ function AdminDashboard() {
                 <FaBell size={20} className={loading ? "animate-spin" : ""} />
                 {notifications.length > 0 && (
                   <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                    {notifications.length}
+                    {notifications.filter((n) => !n.is_read).length}
                   </span>
                 )}
               </button>
@@ -170,15 +218,40 @@ function AdminDashboard() {
                           }`}
                           onClick={() => markNotificationAsRead(n.id)}
                         >
-                          <p className="text-sm font-medium text-gray-800">
-                            {n.title}
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {n.message}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {new Date(n.created_at).toLocaleString()}
-                          </p>
+                          <div className="flex items-start">
+                            {getNotificationIcon(n.type)}
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-800">
+                                {n.title}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {n.message}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {new Date(n.created_at).toLocaleString()}
+                              </p>
+                              {n.type === "reservation_created" && (
+                                <div className="flex space-x-2 mt-2">
+                                  <button
+                                    onClick={() =>
+                                      handleReservationAction(n.id, "approve")
+                                    }
+                                    className="flex items-center bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700"
+                                  >
+                                    <FaCheck className="mr-1" /> Approve
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleReservationAction(n.id, "reject")
+                                    }
+                                    className="flex items-center bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700"
+                                  >
+                                    <FaTimes className="mr-1" /> Reject
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       ))
                     ) : (
@@ -192,7 +265,7 @@ function AdminDashboard() {
             </div>
           </div>
 
-          {/* Dashboard Cards */}
+          {/* Rest of the dashboard content remains the same */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             {cards.map((card, index) => (
               <div
