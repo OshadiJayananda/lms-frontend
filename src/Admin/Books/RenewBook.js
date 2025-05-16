@@ -8,6 +8,7 @@ import {
   FaCalendarAlt,
   FaInfoCircle,
   FaUser,
+  FaSearch,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import api from "../../Components/Api";
@@ -17,10 +18,12 @@ import "react-datepicker/dist/react-datepicker.css";
 function RenewBook() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [renewRequests, setRenewRequests] = useState([]);
+  const [filteredRequests, setFilteredRequests] = useState([]);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [newDueDate, setNewDueDate] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   const fetchRenewRequests = async () => {
@@ -28,6 +31,7 @@ function RenewBook() {
       setLoading(true);
       const response = await api.get("/admin/renew-requests");
       setRenewRequests(response.data);
+      setFilteredRequests(response.data); // Initialize filtered requests with all data
     } catch (error) {
       console.error("Error details:", {
         message: error.message,
@@ -47,6 +51,26 @@ function RenewBook() {
     fetchRenewRequests();
   }, []);
 
+  // Search functionality
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredRequests(renewRequests);
+    } else {
+      const filtered = renewRequests.filter((request) => {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          request.book.name.toLowerCase().includes(searchLower) ||
+          request.book.isbn.toLowerCase().includes(searchLower) ||
+          request.book.id.toString().includes(searchQuery) ||
+          request.user.name.toLowerCase().includes(searchLower) ||
+          request.user.id.toString().includes(searchQuery) ||
+          request.status.toLowerCase().includes(searchLower)
+        );
+      });
+      setFilteredRequests(filtered);
+    }
+  }, [searchQuery, renewRequests]);
+
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
   };
@@ -56,15 +80,11 @@ function RenewBook() {
       let response;
 
       if (directApprove) {
-        // Direct approval without date change
         response = await api.post(
           `/admin/renew-requests/${requestId}/approve`,
-          {
-            admin_proposed_date: null, // Explicitly set to null for direct approval
-          }
+          { admin_proposed_date: null }
         );
       } else {
-        // Approval with date change
         const formattedDate =
           newDueDate.getFullYear() +
           "-" +
@@ -73,9 +93,7 @@ function RenewBook() {
           String(newDueDate.getDate()).padStart(2, "0");
         response = await api.post(
           `/admin/renew-requests/${requestId}/approve`,
-          {
-            admin_proposed_date: formattedDate,
-          }
+          { admin_proposed_date: formattedDate }
         );
       }
 
@@ -103,7 +121,6 @@ function RenewBook() {
 
   const openDateModal = (request) => {
     setSelectedRequest(request);
-    // Set initial date to the requested date or current due date if not available
     setNewDueDate(new Date(request.requested_date || request.current_due_date));
     setIsDateModalOpen(true);
   };
@@ -134,6 +151,20 @@ function RenewBook() {
                   Manage all book renewal requests from library patrons
                 </p>
               </div>
+
+              {/* Search Bar */}
+              <div className="relative w-full md:w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaSearch className="text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search requests..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
             </div>
           </div>
 
@@ -141,20 +172,25 @@ function RenewBook() {
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
             </div>
-          ) : renewRequests.length === 0 ? (
+          ) : filteredRequests.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-xl shadow-md">
               <FaInfoCircle className="mx-auto text-gray-400 text-4xl mb-3" />
               <h3 className="text-lg font-medium text-gray-900">
-                No renewal requests found
+                {searchQuery
+                  ? "No matching requests found"
+                  : "No renewal requests found"}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                There are currently no book renewal requests
+                {searchQuery
+                  ? "Try adjusting your search query"
+                  : "There are currently no book renewal requests"}
               </p>
             </div>
           ) : (
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
+                  {/* Table headers remain the same */}
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
@@ -177,9 +213,12 @@ function RenewBook() {
                       </th>
                     </tr>
                   </thead>
+
+                  {/* Table body with filteredRequests */}
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {renewRequests.map((request) => (
+                    {filteredRequests.map((request) => (
                       <tr key={request.id}>
+                        {/* Table row content remains the same */}
                         <td className="px-6 py-4">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-16 w-12">
@@ -195,6 +234,9 @@ function RenewBook() {
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
                                 {request.book.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                ID: {request.book.id}
                               </div>
                               <div className="text-sm text-gray-500">
                                 ISBN: {request.book.isbn}
@@ -293,7 +335,7 @@ function RenewBook() {
           )}
         </div>
 
-        {/* Date Adjustment Modal */}
+        {/* Date Adjustment Modal (remains the same) */}
         {isDateModalOpen && selectedRequest && (
           <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
