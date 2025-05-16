@@ -22,6 +22,7 @@ import {
   XAxis,
   YAxis,
   Legend,
+  CartesianGrid,
 } from "recharts";
 
 const QUOTES = [
@@ -402,25 +403,59 @@ function Dashboard() {
                 Monthly Reading
               </h3>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={stats.monthlyStats}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: "8px",
-                        border: "none",
-                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                      }}
-                    />
-                    <Legend />
-                    <Bar dataKey="borrowed" fill="#4F46E5" name="Borrowed" />
-                    <Bar dataKey="returned" fill="#10B981" name="Returned" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {stats.monthlyStats && stats.monthlyStats.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={stats.monthlyStats}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis
+                        dataKey="month"
+                        tick={{ fill: "#6b7280" }}
+                        axisLine={{ stroke: "#d1d5db" }}
+                      />
+                      <YAxis
+                        tick={{ fill: "#6b7280" }}
+                        axisLine={{ stroke: "#d1d5db" }}
+                        tickCount={5} // Adjust the number of ticks
+                        domain={[0, "dataMax + 1"]} // Ensure the axis starts at 0 and adds padding
+                        allowDecimals={false} // This prevents decimal values
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: "8px",
+                          border: "none",
+                          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                          background: "#ffffff",
+                        }}
+                        formatter={(value) => [
+                          `${value} books`,
+                          value === 1 ? "book" : "books",
+                        ]}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                      <Bar
+                        dataKey="borrowed"
+                        fill="#4F46E5"
+                        name="Borrowed"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="returned"
+                        fill="#10B981"
+                        name="Returned"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-500">
+                    {stats.monthlyStats
+                      ? "No monthly data available"
+                      : "Loading monthly data..."}
+                  </div>
+                )}
               </div>
             </div>
           </div>
