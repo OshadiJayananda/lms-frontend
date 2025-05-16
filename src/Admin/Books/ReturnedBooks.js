@@ -4,13 +4,21 @@ import SideBar from "../../Components/SideBar";
 import HeaderBanner from "../../Components/HeaderBanner";
 import Header from "../../Components/Header";
 import { toast } from "react-toastify";
-import { FaCheckCircle, FaBook, FaUser, FaCalendarAlt } from "react-icons/fa";
+import {
+  FaCheckCircle,
+  FaBook,
+  FaUser,
+  FaCalendarAlt,
+  FaSearch,
+} from "react-icons/fa";
 
 function ReturnedBooks() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [returnedBooks, setReturnedBooks] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
@@ -19,6 +27,7 @@ function ReturnedBooks() {
       setLoading(true);
       const response = await api.get("/admin/returned-books");
       setReturnedBooks(response.data);
+      setFilteredBooks(response.data); // Initialize filtered books with all data
       setError(null);
     } catch (error) {
       console.error("Error fetching returned books:", error);
@@ -31,6 +40,26 @@ function ReturnedBooks() {
   useEffect(() => {
     fetchReturnedBooks();
   }, []);
+
+  // Search functionality
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredBooks(returnedBooks);
+    } else {
+      const filtered = returnedBooks.filter((borrow) => {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          borrow.book.name.toLowerCase().includes(searchLower) ||
+          borrow.book.isbn.toLowerCase().includes(searchLower) ||
+          borrow.user.name.toLowerCase().includes(searchLower) ||
+          borrow.user.id.toString().includes(searchQuery) ||
+          borrow.book.id.toString().includes(searchQuery) ||
+          new Date(borrow.updated_at).toLocaleDateString().includes(searchQuery)
+        );
+      });
+      setFilteredBooks(filtered);
+    }
+  }, [searchQuery, returnedBooks]);
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
@@ -77,6 +106,20 @@ function ReturnedBooks() {
                   Manage and confirm all returned books from library patrons
                 </p>
               </div>
+
+              {/* Search Bar */}
+              <div className="relative w-full md:w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaSearch className="text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search returned books..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
             </div>
           </div>
 
@@ -106,14 +149,18 @@ function ReturnedBooks() {
                 </div>
               </div>
             </div>
-          ) : returnedBooks.length === 0 ? (
+          ) : filteredBooks.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-xl shadow-md">
               <FaBook className="mx-auto text-gray-400 text-4xl mb-3" />
               <h3 className="text-lg font-medium text-gray-900">
-                No returned books found
+                {searchQuery
+                  ? "No matching books found"
+                  : "No returned books found"}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                There are currently no books waiting to be confirmed as returned
+                {searchQuery
+                  ? "Try adjusting your search query"
+                  : "There are currently no books waiting to be confirmed as returned"}
               </p>
             </div>
           ) : (
@@ -137,7 +184,7 @@ function ReturnedBooks() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {returnedBooks.map((borrow) => (
+                    {filteredBooks.map((borrow) => (
                       <tr
                         key={borrow.id}
                         className="hover:bg-gray-50 transition"
@@ -157,11 +204,11 @@ function ReturnedBooks() {
                               <div className="text-sm font-medium text-gray-900">
                                 {borrow.book.name}
                               </div>
+                              <div className="text-xs text-gray-500">
+                                ID: {borrow.book.id}
+                              </div>
                               <div className="text-sm text-gray-500">
                                 ISBN: {borrow.book.isbn}
-                              </div>
-                              <div className="text-xs text-gray-400 mt-1">
-                                ID: {borrow.book.id}
                               </div>
                             </div>
                           </div>
