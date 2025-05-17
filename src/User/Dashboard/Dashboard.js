@@ -79,6 +79,7 @@ function Dashboard() {
     borrowed: 0,
     returned: 0,
     overdue: 0,
+    active_borrowed: 0,
     borrowLimit: 5,
     borrowDuration: "2 weeks",
     finePerDay: 50,
@@ -196,10 +197,12 @@ function Dashboard() {
   };
 
   const pieData = [
-    { name: "Borrowed", value: stats.borrowed, icon: <FaBookOpen /> },
-    { name: "Returned", value: stats.returned, icon: <FaCheckCircle /> },
+    { name: "Total Borrowed", value: stats.borrowed, icon: <FaBookOpen /> },
+    { name: "Total Returned", value: stats.returned, icon: <FaCheckCircle /> },
     { name: "Overdue", value: stats.overdue, icon: <FaClock /> },
   ];
+
+  const filteredPieData = pieData.filter((entry) => entry.value > 0);
 
   return (
     <div
@@ -319,9 +322,9 @@ function Dashboard() {
                   <FaBookOpen size={20} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Books Borrowed</p>
+                  <p className="text-sm text-gray-500">Active Borrowed Books</p>
                   <p className="text-2xl font-bold text-gray-800">
-                    {stats.borrowed}
+                    {stats.active_borrowed}
                   </p>
                 </div>
               </div>
@@ -367,7 +370,7 @@ function Dashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={pieData}
+                      data={filteredPieData}
                       dataKey="value"
                       nameKey="name"
                       cx="50%"
@@ -379,7 +382,7 @@ function Dashboard() {
                       }
                       labelLine={false}
                     >
-                      {pieData.map((entry, index) => (
+                      {filteredPieData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={COLORS[index % COLORS.length]}
@@ -420,9 +423,9 @@ function Dashboard() {
                       <YAxis
                         tick={{ fill: "#6b7280" }}
                         axisLine={{ stroke: "#d1d5db" }}
-                        tickCount={5} // Adjust the number of ticks
-                        domain={[0, "dataMax + 1"]} // Ensure the axis starts at 0 and adds padding
-                        allowDecimals={false} // This prevents decimal values
+                        tickCount={5}
+                        domain={[0, "dataMax + 1"]}
+                        allowDecimals={false}
                       />
                       <Tooltip
                         contentStyle={{
@@ -431,10 +434,12 @@ function Dashboard() {
                           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
                           background: "#ffffff",
                         }}
-                        formatter={(value) => [
-                          `${value} books`,
-                          value === 1 ? "book" : "books",
-                        ]}
+                        formatter={(value, name) => {
+                          const label = value === 1 ? "book" : "books";
+                          const action =
+                            name === "Borrowed" ? "Borrowed" : "Returned";
+                          return [`${value} ${label}`, action];
+                        }}
                       />
                       <Legend wrapperStyle={{ paddingTop: "20px" }} />
                       <Bar
