@@ -36,6 +36,7 @@ function AdminDashboard() {
     borrowedBooks: 0,
     overdueBooks: 0,
   });
+  const [borrowingPolicy, setBorrowingPolicy] = useState([]);
 
   const navigate = useNavigate();
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
@@ -70,6 +71,19 @@ function AdminDashboard() {
       setStats(res.data);
     } catch (err) {
       toast.error("Failed to fetch dashboard stats");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBorrowingPolicy = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/borrowing-policies");
+      // setStats(res.data);
+      setBorrowingPolicy(res.data);
+    } catch (err) {
+      toast.error("Failed to fetch /borrowing policies");
     } finally {
       setLoading(false);
     }
@@ -116,6 +130,7 @@ function AdminDashboard() {
   useEffect(() => {
     fetchDashboardStats();
     fetchNotifications();
+    fetchBorrowingPolicy();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -265,6 +280,54 @@ function AdminDashboard() {
             </div>
           </div>
 
+          <div className="bg-white p-6 rounded-lg shadow mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Borrowing Policy
+              </h3>
+              <div className="flex space-x-2">
+                <button
+                  // onClick={openModal}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  Update Policy
+                </button>
+                <button
+                  // onClick={handleReset}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                >
+                  Reset to Default
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-indigo-50 p-4 rounded-lg">
+                <p className="text-sm text-indigo-600 font-medium">
+                  Borrow Limit
+                </p>
+                <p className="text-2xl font-bold text-indigo-800">
+                  {borrowingPolicy.borrow_limit} books
+                </p>
+              </div>
+              <div className="bg-emerald-50 p-4 rounded-lg">
+                <p className="text-sm text-emerald-600 font-medium">
+                  Borrow Duration
+                </p>
+                <p className="text-2xl font-bold text-emerald-800">
+                  {borrowingPolicy.borrow_duration_days} days
+                </p>
+              </div>
+              <div className="bg-amber-50 p-4 rounded-lg">
+                <p className="text-sm text-amber-600 font-medium">
+                  Fine per Day
+                </p>
+                <p className="text-2xl font-bold text-amber-800">
+                  Rs.{borrowingPolicy.fine_per_day}
+                </p>
+              </div>
+            </div>
+          </div>
           {/* Rest of the dashboard content remains the same */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             {cards.map((card, index) => (
