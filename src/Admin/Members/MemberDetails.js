@@ -231,7 +231,7 @@ function MemberDetails() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredMembers.map((member) => (
                       <tr
-                        key={member.mid}
+                        key={member.id}
                         className="hover:bg-gray-50 transition"
                       >
                         <td className="px-6 py-4">
@@ -244,12 +244,12 @@ function MemberDetails() {
                                 {member.name}
                               </div>
                               <div className="text-xs text-gray-500">
-                                ID: {member.mid}
+                                ID: {member.id}
                               </div>
                               <div className="text-xs text-gray-500 mt-1">
                                 Joined:{" "}
                                 {new Date(
-                                  member.join_date
+                                  member.created_at
                                 ).toLocaleDateString()}
                               </div>
                             </div>
