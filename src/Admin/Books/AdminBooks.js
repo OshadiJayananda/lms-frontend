@@ -200,7 +200,7 @@ function AdminBooks() {
     setSearchQuery(query);
 
     try {
-      const response = await api.get(`/books/search?q=${query}`);
+      const response = await api.get(`/books/?q=${query}`);
       setFilteredBooks(response.data);
     } catch (error) {
       console.error("Error searching books:", error);
