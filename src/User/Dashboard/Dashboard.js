@@ -74,6 +74,7 @@ function Dashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [stats, setStats] = useState({
     borrowed: 0,
@@ -85,6 +86,11 @@ function Dashboard() {
     finePerDay: 50,
     latestBooks: [],
     monthlyStats: [],
+  });
+  const [borrowingPolicy, setBorrowingPolicy] = useState({
+    borrow_limit: 0,
+    borrow_duration_days: 0,
+    fine_per_day: 0,
   });
   const [quote, setQuote] = useState(QUOTES[0]);
   const navigate = useNavigate();
@@ -103,6 +109,18 @@ function Dashboard() {
       if (error.response?.status === 401) navigate("/login");
     }
   }, [navigate]);
+
+  const fetchBorrowingPolicy = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/borrowing-policies");
+      setBorrowingPolicy(res.data);
+    } catch (err) {
+      toast.error("Failed to fetch borrowing policies");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -127,6 +145,7 @@ function Dashboard() {
 
   useEffect(() => {
     fetchNotifications();
+    fetchBorrowingPolicy();
     fetchStats();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
@@ -478,7 +497,7 @@ function Dashboard() {
                   Borrow Limit
                 </p>
                 <p className="text-2xl font-bold text-indigo-800">
-                  {stats.borrowLimit} books
+                  {borrowingPolicy.borrow_limit} books
                 </p>
               </div>
               <div className="bg-emerald-50 p-4 rounded-lg">
@@ -486,7 +505,7 @@ function Dashboard() {
                   Borrow Duration
                 </p>
                 <p className="text-2xl font-bold text-emerald-800">
-                  {stats.borrowDuration}
+                  {borrowingPolicy.borrow_duration_days} days
                 </p>
               </div>
               <div className="bg-amber-50 p-4 rounded-lg">
@@ -494,7 +513,7 @@ function Dashboard() {
                   Fine per Day
                 </p>
                 <p className="text-2xl font-bold text-amber-800">
-                  Rs.{stats.finePerDay}
+                  Rs.{borrowingPolicy.fine_per_day}
                 </p>
               </div>
             </div>
