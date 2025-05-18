@@ -36,7 +36,17 @@ function AdminDashboard() {
     borrowedBooks: 0,
     overdueBooks: 0,
   });
-  const [borrowingPolicy, setBorrowingPolicy] = useState([]);
+  const [borrowingPolicy, setBorrowingPolicy] = useState({
+    borrow_limit: 0,
+    borrow_duration_days: 0,
+    fine_per_day: 0,
+  });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    borrow_limit: 0,
+    borrow_duration_days: 0,
+    fine_per_day: 0,
+  });
 
   const navigate = useNavigate();
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
@@ -80,10 +90,14 @@ function AdminDashboard() {
     setLoading(true);
     try {
       const res = await api.get("/borrowing-policies");
-      // setStats(res.data);
       setBorrowingPolicy(res.data);
+      setFormData({
+        borrow_limit: res.data.borrow_limit,
+        borrow_duration_days: res.data.borrow_duration_days,
+        fine_per_day: res.data.fine_per_day,
+      });
     } catch (err) {
-      toast.error("Failed to fetch /borrowing policies");
+      toast.error("Failed to fetch borrowing policies");
     } finally {
       setLoading(false);
     }
@@ -123,6 +137,49 @@ function AdminDashboard() {
     } catch (error) {
       toast.error(
         error.response?.data?.message || `Failed to ${action} reservation`
+      );
+    }
+  };
+
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.put("/borrowing-policies", formData);
+      setBorrowingPolicy(response.data);
+      toast.success("Borrowing policy updated successfully!");
+      closeModal();
+      fetchBorrowingPolicy();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to update borrowing policy"
+      );
+    }
+  };
+
+  const handleReset = async () => {
+    try {
+      const response = await api.delete("/borrowing-policies");
+      toast.success("Borrowing policy reset to default values!");
+      fetchBorrowingPolicy();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to reset borrowing policy"
       );
     }
   };
@@ -248,17 +305,19 @@ function AdminDashboard() {
                               {n.type === "reservation_created" && (
                                 <div className="flex space-x-2 mt-2">
                                   <button
-                                    onClick={() =>
-                                      handleReservationAction(n.id, "approve")
-                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReservationAction(n.id, "approve");
+                                    }}
                                     className="flex items-center bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700"
                                   >
                                     <FaCheck className="mr-1" /> Approve
                                   </button>
                                   <button
-                                    onClick={() =>
-                                      handleReservationAction(n.id, "reject")
-                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReservationAction(n.id, "reject");
+                                    }}
                                     className="flex items-center bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700"
                                   >
                                     <FaTimes className="mr-1" /> Reject
@@ -287,13 +346,13 @@ function AdminDashboard() {
               </h3>
               <div className="flex space-x-2">
                 <button
-                  // onClick={openModal}
+                  onClick={openModal}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
                   Update Policy
                 </button>
                 <button
-                  // onClick={handleReset}
+                  onClick={handleReset}
                   className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 >
                   Reset to Default
@@ -328,7 +387,93 @@ function AdminDashboard() {
               </div>
             </div>
           </div>
-          {/* Rest of the dashboard content remains the same */}
+
+          {/* Update Policy Modal */}
+          {isModalOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    Update Borrowing Policy
+                  </h3>
+                  <form onSubmit={handleSubmit}>
+                    <div className="mb-4">
+                      <label
+                        htmlFor="borrow_limit"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Borrow Limit (books)
+                      </label>
+                      <input
+                        type="number"
+                        id="borrow_limit"
+                        name="borrow_limit"
+                        min="1"
+                        value={formData.borrow_limit}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <label
+                        htmlFor="borrow_duration_days"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Borrow Duration (days)
+                      </label>
+                      <input
+                        type="number"
+                        id="borrow_duration_days"
+                        name="borrow_duration_days"
+                        min="1"
+                        value={formData.borrow_duration_days}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                    <div className="mb-6">
+                      <label
+                        htmlFor="fine_per_day"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Fine per Day (Rs.)
+                      </label>
+                      <input
+                        type="number"
+                        id="fine_per_day"
+                        name="fine_per_day"
+                        min="0"
+                        step="0.01"
+                        value={formData.fine_per_day}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        type="button"
+                        onClick={closeModal}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Rest of the dashboard content */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             {cards.map((card, index) => (
               <div
