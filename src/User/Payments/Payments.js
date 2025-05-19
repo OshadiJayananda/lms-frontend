@@ -137,7 +137,7 @@ function Payments() {
                       <h4 className="font-medium">{book.book.name}</h4>
                       <p className="text-sm text-gray-600">
                         Due: {new Date(book.due_date).toLocaleDateString()} |
-                        Fine: ${book.fine_amount.toFixed(2)}
+                        Fine: Rs.{book.fine_amount.toFixed(2)}
                       </p>
                     </div>
                     <button
@@ -264,7 +264,7 @@ function Payments() {
                                 : "text-yellow-600"
                             }`}
                           >
-                            ${parseFloat(payment.amount || 0).toFixed(2)}
+                            Rs.{parseFloat(payment.amount || 0).toFixed(2)}
                           </div>
                           <div className="text-xs text-gray-500 capitalize">
                             {payment.status}
