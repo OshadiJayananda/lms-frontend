@@ -189,7 +189,14 @@ function App() {
               </UserAuthMiddleware>
             }
           />
-          <Route path="/payments" element={<Payments />} />
+          <Route
+            path="/payments"
+            element={
+              <UserAuthMiddleware>
+                <Payments />
+              </UserAuthMiddleware>
+            }
+          />
         </Routes>
       </div>
     </Router>
