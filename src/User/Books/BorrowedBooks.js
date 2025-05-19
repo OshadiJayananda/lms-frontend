@@ -313,20 +313,20 @@ function BorrowedBooks() {
                               <div className="text-sm font-medium text-gray-900">
                                 {borrow.book.name}
                               </div>
-                              <div className="text-sm text-gray-500">
-                                ID: {borrow.book.id}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                ISBN: {borrow.book.isbn}
-                              </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
-                            <div className="flex items-center">
-                              <FaUserAlt className="mr-2 text-gray-400" />
-                              {borrow.book.author}
+                            <div className="text-sm text-gray-500">
+                              ID: {borrow.book.id}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ISBN: {borrow.book.isbn}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              Author:{" "}
+                              {borrow.book.author?.name || "Unknown Author"}
                             </div>
                           </div>
                         </td>
