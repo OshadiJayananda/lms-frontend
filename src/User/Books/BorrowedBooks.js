@@ -15,6 +15,7 @@ import { toast } from "react-toastify";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import HeaderBanner from "../../Components/HeaderBanner";
+import { loadStripe } from "@stripe/stripe-js";
 
 function BorrowedBooks() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -31,6 +32,9 @@ function BorrowedBooks() {
   const [selectedBookIdInput, setSelectedBookIdInput] = useState("");
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const stripePromise = loadStripe(
+    process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
+  );
 
   const fetchBorrowedBooks = async () => {
     try {
@@ -151,6 +155,27 @@ function BorrowedBooks() {
     }
   };
 
+  const handlePayFine = async (borrowId) => {
+    try {
+      const response = await api.post(
+        `/payments/create-checkout-session/${borrowId}`
+      );
+      const { id } = response.data;
+
+      const stripe = await stripePromise;
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: id,
+      });
+
+      if (error) {
+        toast.error(error.message);
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to initiate payment"
+      );
+    }
+  };
   return (
     <div className="flex min-h-screen bg-gray-50">
       <ClientSidebar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
@@ -354,12 +379,22 @@ function BorrowedBooks() {
                                 : borrow.status === "Expired"
                                 ? "bg-red-100 text-red-800"
                                 : borrow.status === "Renewed"
-                                ? "bg-blue-100 text-blue-800" // New status color
+                                ? "bg-blue-100 text-blue-800"
+                                : borrow.isOverdue
+                                ? "bg-red-100 text-red-800"
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
                           >
-                            {borrow.status}
+                            {borrow.isOverdue ? "Overdue" : borrow.status}
                           </span>
+                          {borrow.isOverdue && !borrow.fine_paid && (
+                            <button
+                              onClick={() => handlePayFine(borrow.id)}
+                              className="mt-2 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                            >
+                              Pay Fine
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
