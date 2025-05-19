@@ -24,6 +24,8 @@ import ResetPassword from "./Components/ResetPassword";
 import AdminProfile from "./Admin/Profile/AdminProfile";
 import Authors from "./Admin/Books/Authors";
 import MemberDetails from "./Admin/Members/MemberDetails";
+import PaymentSuccess from "./User/Payments/PaymentSuccess";
+import PaymentCancel from "./User/Payments/PaymentCancel";
 // import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
@@ -194,6 +196,23 @@ function App() {
             element={
               <UserAuthMiddleware>
                 <Payments />
+              </UserAuthMiddleware>
+            }
+          />
+
+          <Route
+            path="/payment-success"
+            element={
+              <UserAuthMiddleware>
+                <PaymentSuccess />
+              </UserAuthMiddleware>
+            }
+          />
+          <Route
+            path="/payment-cancel"
+            element={
+              <UserAuthMiddleware>
+                <PaymentCancel />
               </UserAuthMiddleware>
             }
           />
