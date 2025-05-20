@@ -24,6 +24,9 @@ function BorrowedBooks() {
   const [selectedBookIdInput, setSelectedBookIdInput] = useState("");
   const [borrowLimit, setBorrowLimit] = useState(5);
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [perPage] = useState(10);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
   const stripePromise = loadStripe(
@@ -32,8 +35,16 @@ function BorrowedBooks() {
 
   const fetchBorrowedBooks = async () => {
     try {
-      const response = await api.get("/borrowed-books");
-      setBorrowedBooks(response.data);
+      const params = new URLSearchParams({
+        page: currentPage,
+        per_page: perPage,
+        search: searchQuery,
+        status: selectedStatus,
+      });
+
+      const response = await api.get(`/borrowed-books?${params}`);
+      setBorrowedBooks(response.data.data);
+      setTotalPages(response.data.last_page);
     } catch (error) {
       setError("Failed to fetch borrowed books. Please try again later.");
       toast.error("Failed to load your borrowed books");
@@ -43,8 +54,13 @@ function BorrowedBooks() {
   };
 
   useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filters change
     fetchBorrowedBooks();
-  }, []);
+  }, [searchQuery, selectedStatus]);
+
+  useEffect(() => {
+    fetchBorrowedBooks();
+  }, [currentPage]);
 
   useEffect(() => {
     const fetchBorrowPolicy = async () => {
@@ -144,6 +160,18 @@ function BorrowedBooks() {
     }
   };
 
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+  };
+
+  const handleStatusChange = (status) => {
+    setSelectedStatus(status);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <ClientSidebar
@@ -160,13 +188,13 @@ function BorrowedBooks() {
           <BookSearchSection
             borrowLimit={borrowLimit}
             searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
+            setSearchQuery={handleSearch}
             selectedBookIdInput={selectedBookIdInput}
             setSelectedBookIdInput={setSelectedBookIdInput}
             handleReturnBook={handleReturnBook}
             handleRenewBook={handleRenewBook}
             selectedStatus={selectedStatus}
-            setSelectedStatus={setSelectedStatus}
+            setSelectedStatus={handleStatusChange}
           />
           <BorrowedBooksTable
             borrowedBooks={borrowedBooks}
@@ -176,6 +204,36 @@ function BorrowedBooks() {
             handlePayFine={handlePayFine}
             selectedStatus={selectedStatus}
           />
+
+          {/* Pagination Controls */}
+          <div className="mt-4 flex justify-center items-center space-x-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded ${
+                currentPage === 1
+                  ? "bg-gray-300 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
+              }`}
+            >
+              Previous
+            </button>
+            <span className="text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded ${
+                currentPage === totalPages
+                  ? "bg-gray-300 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
+              }`}
+            >
+              Next
+            </button>
+          </div>
+
           {isModalOpen && (
             <RenewModal
               exactReturnDate={exactReturnDate}
