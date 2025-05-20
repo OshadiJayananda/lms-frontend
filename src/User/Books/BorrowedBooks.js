@@ -394,6 +394,10 @@ function BorrowedBooks() {
                                 ? "bg-red-100 text-red-800"
                                 : borrow.status === "Renewed"
                                 ? "bg-blue-100 text-blue-800"
+                                : borrow.status === "Confirmed"
+                                ? "bg-green-100 text-green-800"
+                                : borrow.status === "Overdue"
+                                ? "bg-red-100 text-red-800"
                                 : borrow.isOverdue
                                 ? "bg-red-100 text-red-800"
                                 : "bg-yellow-100 text-yellow-800"
@@ -401,7 +405,7 @@ function BorrowedBooks() {
                           >
                             {borrow.isOverdue ? "Overdue" : borrow.status}
                           </span>
-                          {borrow.isOverdue && !borrow.fine_paid && (
+                          {borrow.status === "Overdue" && !borrow.fine_paid && (
                             <button
                               onClick={() => handlePayFine(borrow.id)}
                               className="mt-2 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
