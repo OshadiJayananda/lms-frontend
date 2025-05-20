@@ -30,6 +30,7 @@ function BorrowedBooks() {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [bookAvailability] = useState(null);
   const [selectedBookIdInput, setSelectedBookIdInput] = useState("");
+  const [borrowLimit, setBorrowLimit] = useState(5);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
   const stripePromise = loadStripe(
@@ -50,6 +51,19 @@ function BorrowedBooks() {
 
   useEffect(() => {
     fetchBorrowedBooks();
+  }, []);
+
+  useEffect(() => {
+    const fetchBorrowPolicy = async () => {
+      try {
+        const response = await api.get("/borrowing-policies"); // Note: singular "policy" to match your controller
+        setBorrowLimit(response.data.borrow_limit);
+      } catch (error) {
+        console.error("Error fetching borrowing policy:", error);
+      }
+    };
+
+    fetchBorrowPolicy();
   }, []);
 
   const handleToggle = () => {
@@ -196,7 +210,7 @@ function BorrowedBooks() {
                 </h2>
                 <div className="flex items-center text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
                   <FaInfoCircle className="mr-2 text-blue-500" />
-                  You can borrow up to 5 books at a time
+                  You can borrow up to {borrowLimit} books at a time
                 </div>
               </div>
 
