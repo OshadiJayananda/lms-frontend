@@ -139,7 +139,7 @@ const BorrowedBooksTable = ({
                     <span
                       className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}`}
                     >
-                      {borrow.is_overdue ? "Overdue" : borrow.status}
+                      {borrow.status}
                     </span>
                     {borrow.is_overdue && !borrow.fine_paid && (
                       <button
