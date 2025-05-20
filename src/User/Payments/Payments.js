@@ -49,6 +49,7 @@ function Payments() {
 
   const handlePayFine = async (borrowId) => {
     try {
+      setLoading(true);
       const response = await api.post(
         `/payments/create-checkout-session/${borrowId}`
       );
@@ -66,6 +67,8 @@ function Payments() {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to initiate payment");
+    } finally {
+      setLoading(false);
     }
   };
 
