@@ -46,7 +46,7 @@ const BookSearchSection = ({
               options={statusOptions}
               value={statusOptions.find((opt) => opt.value === selectedStatus)}
               onChange={(selected) => setSelectedStatus(selected.value)}
-              isSearchable={false}
+              isSearchable={true}
               styles={{
                 control: (base) => ({
                   ...base,
