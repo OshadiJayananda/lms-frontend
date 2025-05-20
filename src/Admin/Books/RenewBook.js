@@ -25,13 +25,17 @@ function RenewBook() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
-
+  const [statusFilter, setStatusFilter] = useState("all"); // 'all' will show all statuses
+  const STATUS_PENDING = "pending";
+  const STATUS_PENDING_USER_CONFIRMATION = "pending_user_confirmation";
+  const STATUS_APPROVED = "approved";
+  const STATUS_REJECTED = "rejected";
   const fetchRenewRequests = async () => {
     try {
       setLoading(true);
       const response = await api.get("/admin/renew-requests");
       setRenewRequests(response.data);
-      setFilteredRequests(response.data); // Initialize filtered requests with all data
+      setFilteredRequests(response.data);
     } catch (error) {
       console.error("Error details:", {
         message: error.message,
@@ -53,10 +57,11 @@ function RenewBook() {
 
   // Search functionality
   useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredRequests(renewRequests);
-    } else {
-      const filtered = renewRequests.filter((request) => {
+    let filtered = renewRequests;
+
+    // Apply search filter
+    if (searchQuery.trim() !== "") {
+      filtered = filtered.filter((request) => {
         const searchLower = searchQuery.toLowerCase();
         return (
           request.book.name.toLowerCase().includes(searchLower) ||
@@ -67,9 +72,15 @@ function RenewBook() {
           request.status.toLowerCase().includes(searchLower)
         );
       });
-      setFilteredRequests(filtered);
     }
-  }, [searchQuery, renewRequests]);
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((request) => request.status === statusFilter);
+    }
+
+    setFilteredRequests(filtered);
+  }, [searchQuery, statusFilter, renewRequests]);
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
@@ -152,18 +163,40 @@ function RenewBook() {
                 </p>
               </div>
 
-              {/* Search Bar */}
-              <div className="relative w-full md:w-1/3">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaSearch className="text-gray-400" />
+              <div className="flex flex-col md:flex-row gap-4 w-full md:w-2/3">
+                {/* Search Bar */}
+                <div className="relative w-full md:w-1/2">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaSearch className="text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search requests..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Search requests..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+
+                {/* Status Filter */}
+                <div className="relative w-full md:w-1/2">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="block w-full pl-4 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value={STATUS_PENDING}>Pending</option>
+                    <option value={STATUS_PENDING_USER_CONFIRMATION}>
+                      Pending User Confirmation
+                    </option>
+                    <option value={STATUS_APPROVED}>Approved</option>
+                    <option value={STATUS_REJECTED}>Rejected</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <FaInfoCircle className="text-gray-400" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

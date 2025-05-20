@@ -215,7 +215,6 @@ function BookReservation() {
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             <div className="flex items-center">
-                              <span className="font-medium">Copies:</span>{" "}
                               <span
                                 className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${
                                   reservation.book.no_of_copies > 0

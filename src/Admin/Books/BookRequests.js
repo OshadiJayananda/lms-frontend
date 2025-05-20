@@ -232,10 +232,13 @@ function BookRequests() {
                           <div className="text-sm text-gray-900">
                             <div className="flex items-center">
                               <FaUser className="mr-2 text-gray-400" />
-                              <span className="font-medium">
-                                Patron ID:
-                              </span>{" "}
+                              <span className="font-medium">ID: </span>{" "}
                               {request.user.id}
+                            </div>
+                            <div className="flex items-center">
+                              <FaCheck className="mr-2 text-gray-400" />
+                              <span className="font-medium">Name: </span>{" "}
+                              {request.user.name}
                             </div>
                           </div>
                         </td>
