@@ -86,7 +86,7 @@ const BorrowedBooksTable = ({
               } else if (
                 borrow.status === "Expired" ||
                 borrow.status === "Overdue" ||
-                borrow.isOverdue
+                borrow.is_overdue
               ) {
                 statusClass = "bg-red-100 text-red-800";
               } else if (borrow.status === "Renewed") {
@@ -134,12 +134,12 @@ const BorrowedBooksTable = ({
                     <span
                       className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}`}
                     >
-                      {borrow.isOverdue ? "Overdue" : borrow.status}
+                      {borrow.is_overdue ? "Overdue" : borrow.status}
                     </span>
-                    {borrow.status === "Overdue" && !borrow.fine_paid && (
+                    {borrow.is_overdue && !borrow.fine_paid && (
                       <button
                         onClick={() => handlePayFine(borrow.id)}
-                        className="mt-2 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                        className="ml-2 mt-2 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
                       >
                         Pay Fine
                       </button>
