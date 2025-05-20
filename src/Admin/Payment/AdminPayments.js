@@ -4,7 +4,7 @@ import HeaderBanner from "../../Components/HeaderBanner";
 import Header from "../../Components/Header";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 function AdminPayments() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -12,13 +12,16 @@ function AdminPayments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const response = await api.get("/admin/payments");
-        setPayments(response.data);
+        const response = await api.get(`/admin/payments?page=${currentPage}`);
+        setPayments(response.data.data);
+        setTotalPages(response.data.last_page);
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load payments");
         toast.error("Failed to load payment information");
@@ -28,7 +31,13 @@ function AdminPayments() {
     };
 
     fetchPayments();
-  }, []);
+  }, [currentPage]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   const filteredPayments = payments.filter(
     (payment) =>
@@ -39,6 +48,38 @@ function AdminPayments() {
         .toLowerCase()
         .includes(searchQuery.toLowerCase())
   );
+
+  const renderPagination = () => {
+    return (
+      <div className="flex justify-center items-center space-x-2 mt-4">
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={`px-3 py-1 rounded ${
+            currentPage === 1
+              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600"
+          }`}
+        >
+          <FaChevronLeft />
+        </button>
+        <span className="text-gray-600">
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={`px-3 py-1 rounded ${
+            currentPage === totalPages
+              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600"
+          }`}
+        >
+          <FaChevronRight />
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
@@ -101,84 +142,89 @@ function AdminPayments() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Book
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Details
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredPayments.map((payment) => (
-                      <tr
-                        key={payment.id}
-                        className="hover:bg-gray-50 transition"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-12 w-10">
-                              <img
-                                className="h-full w-full object-cover rounded"
-                                src={
-                                  payment.borrow?.book?.image ||
-                                  "/default-book-cover.png"
-                                }
-                                alt={payment.borrow?.book?.name}
-                              />
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {payment.borrow?.book?.name || "Unknown Book"}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                ID: {payment.borrow?.book?.id || "N/A"}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">
-                            {payment.description || "Overdue fine payment"}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {payment.stripe_payment_id}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div
-                            className={`text-sm font-medium ${
-                              payment.status === "completed"
-                                ? "text-green-600"
-                                : "text-yellow-600"
-                            }`}
-                          >
-                            Rs.{parseFloat(payment.amount || 0).toFixed(2)}
-                          </div>
-                          <div className="text-xs text-gray-500 capitalize">
-                            {payment.status}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">
-                            {new Date(payment.created_at).toLocaleDateString()}
-                          </div>
-                        </td>
+              <>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Book
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredPayments.map((payment) => (
+                        <tr
+                          key={payment.id}
+                          className="hover:bg-gray-50 transition"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-12 w-10">
+                                <img
+                                  className="h-full w-full object-cover rounded"
+                                  src={
+                                    payment.borrow?.book?.image ||
+                                    "/default-book-cover.png"
+                                  }
+                                  alt={payment.borrow?.book?.name}
+                                />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {payment.borrow?.book?.name || "Unknown Book"}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  ID: {payment.borrow?.book?.id || "N/A"}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              {payment.description || "Overdue fine payment"}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {payment.stripe_payment_id}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div
+                              className={`text-sm font-medium ${
+                                payment.status === "completed"
+                                  ? "text-green-600"
+                                  : "text-yellow-600"
+                              }`}
+                            >
+                              Rs.{parseFloat(payment.amount || 0).toFixed(2)}
+                            </div>
+                            <div className="text-xs text-gray-500 capitalize">
+                              {payment.status}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              {new Date(
+                                payment.created_at
+                              ).toLocaleDateString()}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {renderPagination()}
+              </>
             )}
           </div>
         </div>
