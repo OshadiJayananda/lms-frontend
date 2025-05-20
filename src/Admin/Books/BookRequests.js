@@ -21,25 +21,28 @@ function BookRequests() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
+  const fetchPendingRequests = async (page = 1) => {
+    try {
+      const response = await api.get(`/admin/book-requests?page=${page}`);
+      setPendingRequests(response.data.data);
+      setTotalPages(response.data.last_page);
+      setCurrentPage(response.data.current_page);
+    } catch (error) {
+      setError("Failed to fetch pending requests. Please try again later.");
+      toast.error("Failed to fetch pending requests. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchPendingRequests = async () => {
-      try {
-        const response = await api.get("/admin/book-requests");
-        setPendingRequests(response.data);
-      } catch (error) {
-        setError("Failed to fetch pending requests. Please try again later.");
-        toast.error(
-          "Failed to fetch pending requests. Please try again later."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPendingRequests();
-  }, []);
+    fetchPendingRequests(currentPage);
+  }, [currentPage]);
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
@@ -304,6 +307,43 @@ function BookRequests() {
                   </tbody>
                 </table>
               </div>
+              {filteredRequests.length > 0 && (
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                  <div className="text-sm text-gray-500">
+                    Showing page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        const prevPage = Math.max(currentPage - 1, 1);
+                        setCurrentPage(prevPage);
+                      }}
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1 rounded-md ${
+                        currentPage === 1
+                          ? "bg-gray-100 text-gray-400"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => {
+                        const nextPage = Math.min(currentPage + 1, totalPages);
+                        setCurrentPage(nextPage);
+                      }}
+                      disabled={currentPage === totalPages}
+                      className={`px-3 py-1 rounded-md ${
+                        currentPage === totalPages
+                          ? "bg-gray-100 text-gray-400"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

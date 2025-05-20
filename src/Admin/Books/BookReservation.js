@@ -12,13 +12,17 @@ function BookReservation() {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
-  const fetchReservations = async () => {
+  const fetchReservations = async (page = 1) => {
     try {
-      const response = await api.get("/admin/book-reservations");
-      setReservations(response.data);
+      const response = await api.get(`/admin/book-reservations?page=${page}`);
+      setReservations(response.data.data);
+      setTotalPages(response.data.last_page);
+      setCurrentPage(response.data.current_page);
     } catch (error) {
       console.error("Error fetching reservations:", error);
       toast.error("Failed to load reservations");
@@ -28,8 +32,8 @@ function BookReservation() {
   };
 
   useEffect(() => {
-    fetchReservations();
-  }, []);
+    fetchReservations(currentPage);
+  }, [currentPage]);
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
@@ -278,6 +282,43 @@ function BookReservation() {
                   </tbody>
                 </table>
               </div>
+              {filteredReservations.length > 0 && (
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                  <div className="text-sm text-gray-500">
+                    Showing page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        const prevPage = Math.max(currentPage - 1, 1);
+                        setCurrentPage(prevPage);
+                      }}
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1 rounded-md ${
+                        currentPage === 1
+                          ? "bg-gray-100 text-gray-400"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => {
+                        const nextPage = Math.min(currentPage + 1, totalPages);
+                        setCurrentPage(nextPage);
+                      }}
+                      disabled={currentPage === totalPages}
+                      className={`px-3 py-1 rounded-md ${
+                        currentPage === totalPages
+                          ? "bg-gray-100 text-gray-400"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

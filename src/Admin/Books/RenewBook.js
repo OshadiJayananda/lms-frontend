@@ -30,12 +30,17 @@ function RenewBook() {
   const STATUS_PENDING_USER_CONFIRMATION = "pending_user_confirmation";
   const STATUS_APPROVED = "approved";
   const STATUS_REJECTED = "rejected";
-  const fetchRenewRequests = async () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const fetchRenewRequests = async (page = 1) => {
     try {
       setLoading(true);
-      const response = await api.get("/admin/renew-requests");
-      setRenewRequests(response.data);
-      setFilteredRequests(response.data);
+      const response = await api.get(`/admin/renew-requests?page=${page}`);
+      setRenewRequests(response.data.data);
+      setFilteredRequests(response.data.data);
+      setTotalPages(response.data.last_page);
+      setCurrentPage(response.data.current_page);
     } catch (error) {
       console.error("Error details:", {
         message: error.message,
@@ -52,8 +57,8 @@ function RenewBook() {
   };
 
   useEffect(() => {
-    fetchRenewRequests();
-  }, []);
+    fetchRenewRequests(currentPage);
+  }, [currentPage]);
 
   // Search functionality
   useEffect(() => {
@@ -363,6 +368,44 @@ function RenewBook() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {filteredRequests.length > 0 && (
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                Showing page {currentPage} of {totalPages}
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    const prevPage = Math.max(currentPage - 1, 1);
+                    setCurrentPage(prevPage);
+                  }}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-md ${
+                    currentPage === 1
+                      ? "bg-gray-100 text-gray-400"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => {
+                    const nextPage = Math.min(currentPage + 1, totalPages);
+                    setCurrentPage(nextPage);
+                  }}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-md ${
+                    currentPage === totalPages
+                      ? "bg-gray-100 text-gray-400"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  Next
+                </button>
               </div>
             </div>
           )}

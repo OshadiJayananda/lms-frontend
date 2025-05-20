@@ -51,32 +51,34 @@ function AdminPayments() {
 
   const renderPagination = () => {
     return (
-      <div className="flex justify-center items-center space-x-2 mt-4">
-        <button
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className={`px-3 py-1 rounded ${
-            currentPage === 1
-              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600"
-          }`}
-        >
-          <FaChevronLeft />
-        </button>
-        <span className="text-gray-600">
-          Page {currentPage} of {totalPages}
-        </span>
-        <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className={`px-3 py-1 rounded ${
-            currentPage === totalPages
-              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600"
-          }`}
-        >
-          <FaChevronRight />
-        </button>
+      <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+        <div className="text-sm text-gray-500">
+          Showing page {currentPage} of {totalPages}
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`px-3 py-1 rounded-md ${
+              currentPage === 1
+                ? "bg-gray-100 text-gray-400"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-1 rounded-md ${
+              currentPage === totalPages
+                ? "bg-gray-100 text-gray-400"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            Next
+          </button>
+        </div>
       </div>
     );
   };

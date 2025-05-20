@@ -19,15 +19,19 @@ function ReturnedBooks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
-  const fetchReturnedBooks = async () => {
+  const fetchReturnedBooks = async (page = 1) => {
     try {
       setLoading(true);
-      const response = await api.get("/admin/returned-books");
-      setReturnedBooks(response.data);
-      setFilteredBooks(response.data); // Initialize filtered books with all data
+      const response = await api.get(`/admin/returned-books?page=${page}`);
+      setReturnedBooks(response.data.data);
+      setFilteredBooks(response.data.data);
+      setTotalPages(response.data.last_page);
+      setCurrentPage(response.data.current_page);
       setError(null);
     } catch (error) {
       console.error("Error fetching returned books:", error);
@@ -38,8 +42,8 @@ function ReturnedBooks() {
   };
 
   useEffect(() => {
-    fetchReturnedBooks();
-  }, []);
+    fetchReturnedBooks(currentPage);
+  }, [currentPage]);
 
   // Search functionality
   useEffect(() => {
@@ -259,6 +263,43 @@ function ReturnedBooks() {
                   </tbody>
                 </table>
               </div>
+              {filteredBooks.length > 0 && (
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                  <div className="text-sm text-gray-500">
+                    Showing page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        const prevPage = Math.max(currentPage - 1, 1);
+                        setCurrentPage(prevPage);
+                      }}
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1 rounded-md ${
+                        currentPage === 1
+                          ? "bg-gray-100 text-gray-400"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => {
+                        const nextPage = Math.min(currentPage + 1, totalPages);
+                        setCurrentPage(nextPage);
+                      }}
+                      disabled={currentPage === totalPages}
+                      className={`px-3 py-1 rounded-md ${
+                        currentPage === totalPages
+                          ? "bg-gray-100 text-gray-400"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
