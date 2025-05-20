@@ -81,9 +81,12 @@ function Books() {
     const fetchBorrowedBooks = async () => {
       try {
         const response = await api.get("/borrowed-books");
-        setBorrowedBooks(response.data || []);
+        // Handle both paginated and non-paginated responses
+        const booksData = response.data?.data || response.data || [];
+        setBorrowedBooks(booksData);
       } catch (error) {
         console.error("Error fetching borrowed books:", error);
+        setBorrowedBooks([]); // Set empty array on error
       }
     };
     fetchBorrowedBooks();
@@ -106,13 +109,14 @@ function Books() {
   const requestBook = async (bookId) => {
     if (
       requesting ||
-      borrowedBooks.some(
-        (book) =>
-          book.book_id === bookId &&
-          (book.status === "Pending" ||
-            book.status === "Approved" ||
-            book.status === "Issued")
-      )
+      (Array.isArray(borrowedBooks) &&
+        borrowedBooks.some(
+          (book) =>
+            book.book_id === bookId &&
+            (book.status === "Pending" ||
+              book.status === "Approved" ||
+              book.status === "Issued")
+        ))
     ) {
       toast.info(
         "This book is already requested. Confirmation is still pending."
@@ -124,7 +128,7 @@ function Books() {
     try {
       const response = await api.post(`/books/${bookId}/request`);
       setBorrowedBooks([
-        ...borrowedBooks,
+        ...(Array.isArray(borrowedBooks) ? borrowedBooks : []),
         { book_id: bookId, status: "Pending" },
       ]);
       toast.success(response.data.message || "Book requested successfully!");
@@ -275,13 +279,15 @@ function Books() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {filteredBooks.map((book) => {
-                const isBorrowed = borrowedBooks.some(
-                  (borrowedBook) =>
-                    borrowedBook.book_id === book.id &&
-                    ["pending", "approved", "issued"].includes(
-                      borrowedBook.status?.toLowerCase()
-                    )
-                );
+                const isBorrowed =
+                  Array.isArray(borrowedBooks) &&
+                  borrowedBooks.some(
+                    (borrowedBook) =>
+                      borrowedBook.book_id === book.id &&
+                      ["pending", "approved", "issued"].includes(
+                        borrowedBook.status?.toLowerCase()
+                      )
+                  );
 
                 const isReserved = reservedBooks.some(
                   (resBook) =>

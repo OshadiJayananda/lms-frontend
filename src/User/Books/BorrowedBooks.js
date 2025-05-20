@@ -26,6 +26,7 @@ function BorrowedBooks() {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [perPage] = useState(10);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
@@ -45,6 +46,7 @@ function BorrowedBooks() {
       const response = await api.get(`/borrowed-books?${params}`);
       setBorrowedBooks(response.data.data);
       setTotalPages(response.data.last_page);
+      setTotalCount(response.data.total);
     } catch (error) {
       setError("Failed to fetch borrowed books. Please try again later.");
       toast.error("Failed to load your borrowed books");
@@ -203,36 +205,11 @@ function BorrowedBooks() {
             searchQuery={searchQuery}
             handlePayFine={handlePayFine}
             selectedStatus={selectedStatus}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            totalCount={totalCount}
           />
-
-          {/* Pagination Controls */}
-          <div className="mt-4 flex justify-center items-center space-x-2">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 rounded ${
-                currentPage === 1
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-blue-500 hover:bg-blue-600 text-white"
-              }`}
-            >
-              Previous
-            </button>
-            <span className="text-gray-600">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded ${
-                currentPage === totalPages
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-blue-500 hover:bg-blue-600 text-white"
-              }`}
-            >
-              Next
-            </button>
-          </div>
 
           {isModalOpen && (
             <RenewModal

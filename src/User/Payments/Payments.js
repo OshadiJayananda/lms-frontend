@@ -24,6 +24,7 @@ function Payments() {
   const [selectedBook, setSelectedBook] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalPayments, setTotalPayments] = useState(0);
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   const handleToggle = () => {
@@ -38,6 +39,7 @@ function Payments() {
           `/payments/history?page=${currentPage}`
         );
         setPayments(paymentsResponse.data.data);
+        setTotalPayments(paymentsResponse.data.total);
         setTotalPages(
           Math.ceil(
             paymentsResponse.data.total / paymentsResponse.data.per_page
@@ -178,8 +180,8 @@ function Payments() {
                   Payment History
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Showing {filteredPayments.length} payment
-                  {filteredPayments.length !== 1 ? "s" : ""}
+                  Showing {totalPayments} payment
+                  {totalPayments !== 1 ? "s" : ""}
                 </p>
               </div>
               <div className="relative w-64">
