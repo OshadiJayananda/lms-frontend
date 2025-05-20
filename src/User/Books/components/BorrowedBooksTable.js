@@ -76,72 +76,78 @@ const BorrowedBooksTable = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredBooks.map((borrow) => (
-              <tr key={borrow.id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-16 w-12">
-                      <img
-                        className="h-full w-full object-cover rounded"
-                        src={borrow.book.image || "/default-book-cover.png"}
-                        alt={borrow.book.name}
-                      />
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {borrow.book.name}
+            {filteredBooks.map((borrow) => {
+              let statusClass = "bg-yellow-100 text-yellow-800";
+              if (
+                borrow.status === "Returned" ||
+                borrow.status === "Confirmed"
+              ) {
+                statusClass = "bg-green-100 text-green-800";
+              } else if (
+                borrow.status === "Expired" ||
+                borrow.status === "Overdue" ||
+                borrow.isOverdue
+              ) {
+                statusClass = "bg-red-100 text-red-800";
+              } else if (borrow.status === "Renewed") {
+                statusClass = "bg-blue-100 text-blue-800";
+              }
+
+              return (
+                <tr key={borrow.id} className="hover:bg-gray-50 transition">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-16 w-12">
+                        <img
+                          className="h-full w-full object-cover rounded"
+                          src={borrow.book.image || "/default-book-cover.png"}
+                          alt={borrow.book.name}
+                        />
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {borrow.book.name}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  <div>ID: {borrow.book.id}</div>
-                  <div>ISBN: {borrow.book.isbn}</div>
-                  <div>
-                    Author: {borrow.book.author?.name || "Unknown Author"}
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  <div className="flex items-center mb-1">
-                    <FaCalendarAlt className="mr-2 text-gray-400" />
-                    <span className="font-medium">Issued:</span>{" "}
-                    {new Date(borrow.issued_date).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center">
-                    <FaCalendarAlt className="mr-2 text-gray-400" />
-                    <span className="font-medium">Due:</span>{" "}
-                    {new Date(borrow.due_date).toLocaleDateString()}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      borrow.status === "Returned"
-                        ? "bg-green-100 text-green-800"
-                        : borrow.status === "Expired" ||
-                          borrow.status === "Overdue" ||
-                          borrow.isOverdue
-                        ? "bg-red-100 text-red-800"
-                        : borrow.status === "Renewed"
-                        ? "bg-blue-100 text-blue-800"
-                        : borrow.status === "Confirmed"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {borrow.isOverdue ? "Overdue" : borrow.status}
-                  </span>
-                  {borrow.status === "Overdue" && !borrow.fine_paid && (
-                    <button
-                      onClick={() => handlePayFine(borrow.id)}
-                      className="mt-2 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    <div>ID: {borrow.book.id}</div>
+                    <div>ISBN: {borrow.book.isbn}</div>
+                    <div>
+                      Author: {borrow.book.author?.name || "Unknown Author"}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    <div className="flex items-center mb-1">
+                      <FaCalendarAlt className="mr-2 text-gray-400" />
+                      <span className="font-medium">Issued:</span>{" "}
+                      {new Date(borrow.issued_date).toLocaleDateString()}
+                    </div>
+                    <div className="flex items-center">
+                      <FaCalendarAlt className="mr-2 text-gray-400" />
+                      <span className="font-medium">Due:</span>{" "}
+                      {new Date(borrow.due_date).toLocaleDateString()}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}`}
                     >
-                      Pay Fine
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                      {borrow.isOverdue ? "Overdue" : borrow.status}
+                    </span>
+                    {borrow.status === "Overdue" && !borrow.fine_paid && (
+                      <button
+                        onClick={() => handlePayFine(borrow.id)}
+                        className="mt-2 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                      >
+                        Pay Fine
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
