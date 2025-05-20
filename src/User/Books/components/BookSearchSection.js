@@ -1,5 +1,19 @@
 import React from "react";
 import { FaSearch, FaUndo, FaSyncAlt, FaInfoCircle } from "react-icons/fa";
+import Select from "react-select";
+
+const statusOptions = [
+  { value: "", label: "All Statuses" },
+  { value: "borrowed", label: "Borrowed" },
+  { value: "returned", label: "Returned" },
+  { value: "overdue", label: "Overdue" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "issued", label: "Issued" },
+  { value: "expired", label: "Expired" },
+  { value: "rejected", label: "Rejected" },
+];
 
 const BookSearchSection = ({
   borrowLimit,
@@ -9,6 +23,8 @@ const BookSearchSection = ({
   setSelectedBookIdInput,
   handleReturnBook,
   handleRenewBook,
+  selectedStatus,
+  setSelectedStatus,
 }) => {
   return (
     <div className="bg-white rounded-xl shadow-md p-6 mb-8">
@@ -20,6 +36,25 @@ const BookSearchSection = ({
           <div className="flex items-center text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
             <FaInfoCircle className="mr-2 text-blue-500" />
             You can borrow up to {borrowLimit} books at a time
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Filter by Status:
+            </label>
+            <Select
+              options={statusOptions}
+              value={statusOptions.find((opt) => opt.value === selectedStatus)}
+              onChange={(selected) => setSelectedStatus(selected.value)}
+              isSearchable={false}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  fontSize: "0.875rem",
+                  borderColor: "#D1D5DB",
+                }),
+              }}
+            />
           </div>
         </div>
 
@@ -36,7 +71,6 @@ const BookSearchSection = ({
               className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

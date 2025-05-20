@@ -7,12 +7,17 @@ const BorrowedBooksTable = ({
   error,
   searchQuery,
   handlePayFine,
+  selectedStatus,
 }) => {
   const filteredBooks = borrowedBooks.filter(
     (borrow) =>
-      borrow.book.name.toLowerCase().includes(searchQuery) ||
-      borrow.book.isbn.toLowerCase().includes(searchQuery) ||
-      borrow.book.id.toString().includes(searchQuery)
+      (borrow.book.name.toLowerCase().includes(searchQuery) ||
+        borrow.book.isbn.toLowerCase().includes(searchQuery) ||
+        borrow.book.id.toString().includes(searchQuery)) &&
+      (selectedStatus === "" ||
+        (selectedStatus === "overdue"
+          ? borrow.is_overdue || borrow.status.toLowerCase() === "overdue"
+          : borrow.status.toLowerCase() === selectedStatus))
   );
 
   if (loading) {

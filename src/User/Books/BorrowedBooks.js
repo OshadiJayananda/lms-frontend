@@ -23,6 +23,7 @@ function BorrowedBooks() {
   const [bookAvailability] = useState(null);
   const [selectedBookIdInput, setSelectedBookIdInput] = useState("");
   const [borrowLimit, setBorrowLimit] = useState(5);
+  const [selectedStatus, setSelectedStatus] = useState("");
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
   const stripePromise = loadStripe(
@@ -164,6 +165,8 @@ function BorrowedBooks() {
             setSelectedBookIdInput={setSelectedBookIdInput}
             handleReturnBook={handleReturnBook}
             handleRenewBook={handleRenewBook}
+            selectedStatus={selectedStatus}
+            setSelectedStatus={setSelectedStatus}
           />
           <BorrowedBooksTable
             borrowedBooks={borrowedBooks}
@@ -171,6 +174,7 @@ function BorrowedBooks() {
             error={error}
             searchQuery={searchQuery}
             handlePayFine={handlePayFine}
+            selectedStatus={selectedStatus}
           />
           {isModalOpen && (
             <RenewModal
