@@ -26,6 +26,7 @@ import Authors from "./Admin/Books/Authors";
 import MemberDetails from "./Admin/Members/MemberDetails";
 import PaymentSuccess from "./User/Payments/PaymentSuccess";
 import PaymentCancel from "./User/Payments/PaymentCancel";
+import AdminPayments from "./Admin/Payment/AdminPayments";
 // import useBackButtonHandler from "./hooks/useBackButtonHandler";
 
 function App() {
@@ -155,6 +156,14 @@ function App() {
             element={
               <AdminAuthMiddleware>
                 <AdminProfile />
+              </AdminAuthMiddleware>
+            }
+          />
+          <Route
+            path="/admin/payments"
+            element={
+              <AdminAuthMiddleware>
+                <AdminPayments />
               </AdminAuthMiddleware>
             }
           />
