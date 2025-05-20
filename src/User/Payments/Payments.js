@@ -9,6 +9,8 @@ import {
   FaCalendarAlt,
   FaSearch,
   FaInfoCircle,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
 import { loadStripe } from "@stripe/stripe-js";
 
@@ -20,6 +22,8 @@ function Payments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [overdueBooks, setOverdueBooks] = useState([]);
   const [selectedBook, setSelectedBook] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   const handleToggle = () => {
@@ -29,9 +33,16 @@ function Payments() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch payment history
-        const paymentsResponse = await api.get("/payments/history");
-        setPayments(paymentsResponse.data);
+        // Fetch payment history with pagination
+        const paymentsResponse = await api.get(
+          `/payments/history?page=${currentPage}`
+        );
+        setPayments(paymentsResponse.data.data);
+        setTotalPages(
+          Math.ceil(
+            paymentsResponse.data.total / paymentsResponse.data.per_page
+          )
+        );
 
         // Fetch overdue books
         const overdueResponse = await api.get("/borrows/overdue");
@@ -45,7 +56,7 @@ function Payments() {
     };
 
     fetchData();
-  }, []);
+  }, [currentPage]);
 
   const handlePayFine = async (borrowId) => {
     try {
@@ -200,94 +211,164 @@ function Payments() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Book
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Details
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredPayments.map((payment) => (
-                      <tr
-                        key={payment.id}
-                        className="hover:bg-gray-50 transition"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-12 w-10">
-                              <img
-                                className="h-full w-full object-cover rounded"
-                                src={
-                                  payment.borrow?.book?.image ||
-                                  "/default-book-cover.png"
-                                }
-                                alt={payment.borrow?.book?.name}
-                              />
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {payment.borrow?.book?.name || "Unknown Book"}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                ID: {payment.borrow?.book?.id || "N/A"}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <FaReceipt className="mr-2 text-gray-400" />
-                            <div>
-                              <div className="text-sm text-gray-900">
-                                {payment.description || "Overdue fine payment"}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {payment.stripe_payment_id}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div
-                            className={`text-sm font-medium ${
-                              payment.status === "completed"
-                                ? "text-green-600"
-                                : "text-yellow-600"
-                            }`}
-                          >
-                            Rs.{parseFloat(payment.amount || 0).toFixed(2)}
-                          </div>
-                          <div className="text-xs text-gray-500 capitalize">
-                            {payment.status}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <FaCalendarAlt className="mr-2 text-gray-400" />
-                            <div className="text-sm text-gray-900">
-                              {new Date(
-                                payment.created_at
-                              ).toLocaleDateString()}
-                            </div>
-                          </div>
-                        </td>
+              <>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Book
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredPayments.map((payment) => (
+                        <tr
+                          key={payment.id}
+                          className="hover:bg-gray-50 transition"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-12 w-10">
+                                <img
+                                  className="h-full w-full object-cover rounded"
+                                  src={
+                                    payment.borrow?.book?.image ||
+                                    "/default-book-cover.png"
+                                  }
+                                  alt={payment.borrow?.book?.name}
+                                />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {payment.borrow?.book?.name || "Unknown Book"}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  ID: {payment.borrow?.book?.id || "N/A"}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <FaReceipt className="mr-2 text-gray-400" />
+                              <div>
+                                <div className="text-sm text-gray-900">
+                                  {payment.description ||
+                                    "Overdue fine payment"}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {payment.stripe_payment_id}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div
+                              className={`text-sm font-medium ${
+                                payment.status === "completed"
+                                  ? "text-green-600"
+                                  : "text-yellow-600"
+                              }`}
+                            >
+                              Rs.{parseFloat(payment.amount || 0).toFixed(2)}
+                            </div>
+                            <div className="text-xs text-gray-500 capitalize">
+                              {payment.status}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <FaCalendarAlt className="mr-2 text-gray-400" />
+                              <div className="text-sm text-gray-900">
+                                {new Date(
+                                  payment.created_at
+                                ).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {/* Pagination Controls */}
+                <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                  <div className="flex-1 flex justify-between sm:hidden">
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                      disabled={currentPage === totalPages}
+                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing page{" "}
+                        <span className="font-medium">{currentPage}</span> of{" "}
+                        <span className="font-medium">{totalPages}</span>
+                      </p>
+                    </div>
+                    <div>
+                      <nav
+                        className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                        aria-label="Pagination"
+                      >
+                        <button
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
+                          disabled={currentPage === 1}
+                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          <span className="sr-only">Previous</span>
+                          <FaChevronLeft
+                            className="h-5 w-5"
+                            aria-hidden="true"
+                          />
+                        </button>
+                        <button
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(prev + 1, totalPages)
+                            )
+                          }
+                          disabled={currentPage === totalPages}
+                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          <span className="sr-only">Next</span>
+                          <FaChevronRight
+                            className="h-5 w-5"
+                            aria-hidden="true"
+                          />
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
