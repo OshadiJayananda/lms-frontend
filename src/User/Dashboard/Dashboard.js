@@ -8,6 +8,12 @@ import {
   FaExchangeAlt,
   FaCheckCircle,
   FaCheck,
+  FaArrowRight,
+  FaSearch,
+  FaBook,
+  FaChartBar,
+  FaTimes,
+  FaInfoCircle,
 } from "react-icons/fa";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
@@ -25,6 +31,7 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
+import { motion } from "framer-motion";
 
 const QUOTES = [
   {
@@ -64,7 +71,7 @@ const QUOTES = [
     author: "J.K. Rowling",
   },
   {
-    text: "That’s the thing about books. They let you travel without moving your feet.",
+    text: "That's the thing about books. They let you travel without moving your feet.",
     author: "Jhumpa Lahiri",
   },
 ];
@@ -94,10 +101,12 @@ function Dashboard() {
     fine_per_day: 0,
   });
   const [quote, setQuote] = useState(QUOTES[0]);
+  const [isNewUser, setIsNewUser] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const navigate = useNavigate();
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
-  const COLORS = ["#4F46E5", "#10B981", "#F59E0B"]; // Purple, Emerald, Amber
+  const COLORS = ["#4F46E5", "#10B981", "#F59E0B"];
   const FONT_FAMILY =
     "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
@@ -127,13 +136,24 @@ function Dashboard() {
     try {
       const res = await api.get("/user/dashboard-stats");
       setStats(res.data);
+
+      const isNew =
+        res.data.borrowed === 0 &&
+        res.data.returned === 0 &&
+        res.data.overdue === 0;
+      setIsNewUser(isNew);
+
+      // Show welcome modal only if it's a new user and we haven't shown it before
+      if (isNew && !localStorage.getItem("welcomeModalShown")) {
+        setShowWelcomeModal(true);
+        localStorage.setItem("welcomeModalShown", "true");
+      }
     } catch (err) {
       toast.error("Failed to load dashboard data");
     }
   };
 
   useEffect(() => {
-    // Load Inter font from Google Fonts
     const link = document.createElement("link");
     link.href =
       "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap";
@@ -219,14 +239,6 @@ function Dashboard() {
     }
   };
 
-  const pieData = [
-    { name: "Total Borrowed", value: stats.borrowed, icon: <FaBookOpen /> },
-    { name: "Total Returned", value: stats.returned, icon: <FaCheckCircle /> },
-    { name: "Overdue", value: stats.overdue, icon: <FaClock /> },
-  ];
-
-  const filteredPieData = pieData.filter((entry) => entry.value > 0);
-
   const handleReservationResponse = async (confirm) => {
     if (!selectedNotification?.reservation_id) {
       toast.error("Reservation information is missing");
@@ -255,6 +267,15 @@ function Dashboard() {
       setProcessing(false);
     }
   };
+
+  const pieData = [
+    { name: "Total Borrowed", value: stats.borrowed, icon: <FaBookOpen /> },
+    { name: "Total Returned", value: stats.returned, icon: <FaCheckCircle /> },
+    { name: "Overdue", value: stats.overdue, icon: <FaClock /> },
+  ];
+
+  const filteredPieData = pieData.filter((entry) => entry.value > 0);
+
   return (
     <div
       className="min-h-screen bg-gray-50 flex"
@@ -278,6 +299,7 @@ function Dashboard() {
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="p-3 bg-white rounded-full shadow-sm hover:shadow-md transition-all relative"
+              aria-label="Notifications"
             >
               <FaBell size={20} className="text-indigo-600" />
               {notifications.filter((n) => !n.is_read).length > 0 && (
@@ -303,7 +325,6 @@ function Dashboard() {
                 </div>
                 <div className="max-h-96 overflow-y-auto">
                   {notifications.length > 0 ? (
-                    // In the notification dropdown
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
@@ -357,15 +378,43 @@ function Dashboard() {
           {/* Welcome Section */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Welcome to Your Library
+              {isNewUser
+                ? "Welcome to Your Library Journey!"
+                : "Welcome Back to Your Library"}
             </h2>
             <p className="text-gray-600">
-              Track your reading journey and discover new books
+              {isNewUser
+                ? "Get started by exploring our collection and borrowing your first book"
+                : "Track your reading journey and discover new books"}
             </p>
+
+            {isNewUser && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-4"
+              >
+                <div className="flex items-start">
+                  <FaInfoCircle className="text-blue-500 mt-1 mr-2 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-medium text-blue-800 mb-2">
+                      Quick Start Guide
+                    </h3>
+                    <button
+                      onClick={() => setShowWelcomeModal(true)}
+                      className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
+                    >
+                      View detailed guide
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
 
           {/* Quote Card */}
-          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white mb-8 shadow-lg">
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white mb-8 shadow-lg hover:shadow-xl transition-shadow">
             <blockquote className="text-lg italic mb-2">
               "{quote.text}"
             </blockquote>
@@ -374,9 +423,9 @@ function Dashboard() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
               <div className="flex items-center">
-                <div className="p-3 bg-indigo-100 rounded-full mr-4 text-indigo-600">
+                <div className="p-3 bg-indigo-100 rounded-full mr-4 text-indigo-600 group-hover:bg-indigo-200 transition-colors">
                   <FaBookOpen size={20} />
                 </div>
                 <div>
@@ -386,11 +435,19 @@ function Dashboard() {
                   </p>
                 </div>
               </div>
+              <div className="mt-2 text-xs text-gray-500">
+                {stats.active_borrowed === 0
+                  ? "No books currently borrowed"
+                  : `You can borrow ${Math.max(
+                      0,
+                      borrowingPolicy.borrow_limit - stats.active_borrowed
+                    )} more`}
+              </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
               <div className="flex items-center">
-                <div className="p-3 bg-emerald-100 rounded-full mr-4 text-emerald-600">
+                <div className="p-3 bg-emerald-100 rounded-full mr-4 text-emerald-600 group-hover:bg-emerald-200 transition-colors">
                   <FaCheckCircle size={20} />
                 </div>
                 <div>
@@ -400,11 +457,16 @@ function Dashboard() {
                   </p>
                 </div>
               </div>
+              <div className="mt-2 text-xs text-gray-500">
+                {stats.returned === 0
+                  ? "No books returned yet"
+                  : `Great job returning books on time!`}
+              </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
               <div className="flex items-center">
-                <div className="p-3 bg-amber-100 rounded-full mr-4 text-amber-600">
+                <div className="p-3 bg-amber-100 rounded-full mr-4 text-amber-600 group-hover:bg-amber-200 transition-colors">
                   <FaClock size={20} />
                 </div>
                 <div>
@@ -414,59 +476,92 @@ function Dashboard() {
                   </p>
                 </div>
               </div>
+              <div className="mt-2 text-xs text-gray-500">
+                {stats.overdue === 0
+                  ? "All books returned on time"
+                  : `Please return overdue books to avoid fines`}
+              </div>
             </div>
           </div>
 
           {/* Charts Section */}
           <div className="flex flex-col lg:flex-row gap-6 mb-8">
             {/* Pie Chart */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 w-full lg:w-1/2">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 w-full lg:w-1/2 hover:shadow-md transition-shadow">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
                 Your Reading Activity
               </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={filteredPieData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      innerRadius={50}
-                      label={({ name, percent }) =>
-                        `${name} ${(percent * 100).toFixed(0)}%`
-                      }
-                      labelLine={false}
+              <div className="h-64 flex items-center justify-center">
+                {filteredPieData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={filteredPieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        innerRadius={50}
+                        label={({ name, percent }) =>
+                          `${name} ${(percent * 100).toFixed(0)}%`
+                        }
+                        labelLine={false}
+                      >
+                        {filteredPieData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value) => [`${value} books`, "Count"]}
+                        contentStyle={{
+                          borderRadius: "8px",
+                          border: "none",
+                          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center p-4">
+                    <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                      <FaBook className="text-gray-400 text-xl" />
+                    </div>
+                    <h4 className="font-medium text-gray-700 mb-1">
+                      No Reading Activity Yet
+                    </h4>
+                    <p className="text-sm text-gray-500 mb-3">
+                      {isNewUser
+                        ? "Borrow your first book to see your reading activity"
+                        : "Your reading history will appear here"}
+                    </p>
+                    <Link
+                      to="/books"
+                      className="inline-flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                     >
-                      {filteredPieData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value) => [`${value} books`, "Count"]}
-                      contentStyle={{
-                        borderRadius: "8px",
-                        border: "none",
-                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                      Browse books <FaSearch className="ml-1" />
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Bar Chart - Monthly Activity */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 w-full lg:w-1/2">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 w-full lg:w-1/2 hover:shadow-md transition-shadow">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
                 Monthly Reading
               </h3>
-              <div className="h-64">
-                {stats.monthlyStats && stats.monthlyStats.length > 0 ? (
+              <div className="h-64 flex items-center justify-center">
+                {stats.monthlyStats &&
+                stats.monthlyStats.length > 0 &&
+                !(
+                  stats.monthlyStats.length === 1 &&
+                  stats.monthlyStats[0].borrowed === 0 &&
+                  stats.monthlyStats[0].returned === 0
+                ) ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={stats.monthlyStats}
@@ -515,10 +610,26 @@ function Dashboard() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    {stats.monthlyStats
-                      ? "No monthly data available"
-                      : "Loading monthly data..."}
+                  <div className="text-center p-4">
+                    <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                      <FaChartBar className="text-gray-400 text-xl" />
+                    </div>
+                    <h4 className="font-medium text-gray-700 mb-1">
+                      No Monthly Data
+                    </h4>
+                    <p className="text-sm text-gray-500 mb-3">
+                      {isNewUser
+                        ? "Your monthly reading stats will appear after you borrow books"
+                        : "No reading activity recorded for recent months"}
+                    </p>
+                    {isNewUser && (
+                      <Link
+                        to="/books"
+                        className="inline-flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                      >
+                        Start reading <FaBookOpen className="ml-1" />
+                      </Link>
+                    )}
                   </div>
                 )}
               </div>
@@ -526,75 +637,239 @@ function Dashboard() {
           </div>
 
           {/* Policy Card */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 hover:shadow-md transition-shadow">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
               Borrowing Policy
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-indigo-50 p-4 rounded-lg">
+              <div className="bg-indigo-50 p-4 rounded-lg hover:bg-indigo-100 transition-colors">
                 <p className="text-sm text-indigo-600 font-medium">
                   Borrow Limit
                 </p>
                 <p className="text-2xl font-bold text-indigo-800">
                   {borrowingPolicy.borrow_limit} books
                 </p>
+                <p className="text-xs text-indigo-500 mt-1">
+                  Maximum at one time
+                </p>
               </div>
-              <div className="bg-emerald-50 p-4 rounded-lg">
+              <div className="bg-emerald-50 p-4 rounded-lg hover:bg-emerald-100 transition-colors">
                 <p className="text-sm text-emerald-600 font-medium">
                   Borrow Duration
                 </p>
                 <p className="text-2xl font-bold text-emerald-800">
                   {borrowingPolicy.borrow_duration_days} days
                 </p>
+                <p className="text-xs text-emerald-500 mt-1">Per book</p>
               </div>
-              <div className="bg-amber-50 p-4 rounded-lg">
+              <div className="bg-amber-50 p-4 rounded-lg hover:bg-amber-100 transition-colors">
                 <p className="text-sm text-amber-600 font-medium">
                   Fine per Day
                 </p>
                 <p className="text-2xl font-bold text-amber-800">
                   Rs.{borrowingPolicy.fine_per_day}
                 </p>
+                <p className="text-xs text-amber-500 mt-1">For overdue books</p>
               </div>
             </div>
+            {isNewUser && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-sm text-gray-600">
+                  As a new member, you can borrow up to{" "}
+                  {borrowingPolicy.borrow_limit} books at a time. Each book can
+                  be kept for {borrowingPolicy.borrow_duration_days} days.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Latest Books */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
-                Recently Added Books
+                {isNewUser
+                  ? "Popular Books to Get You Started"
+                  : "Recently Added Books"}
               </h3>
               <Link
                 to="/books"
                 className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline flex items-center"
               >
-                View all books
+                View all books <FaArrowRight className="ml-1" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {stats.latestBooks.map((book, index) => (
-                <div
-                  key={index}
-                  className="group cursor-pointer transition-all hover:-translate-y-1"
-                  // onClick={() => navigate(/books/${book.id})}
-                >
-                  <div className="relative pb-[150%] rounded-lg overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
-                    <img
-                      src={book.image || "/default-book-cover.png"}
-                      alt={book.name}
-                      className="absolute h-full w-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                      <p className="text-white text-sm font-medium truncate w-full">
-                        {book.name}
-                      </p>
+            {stats.latestBooks.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {stats.latestBooks.map((book, index) => (
+                  <Link
+                    to={`/books/${book.id}`}
+                    key={index}
+                    className="group cursor-pointer transition-all hover:-translate-y-1"
+                  >
+                    <div className="relative pb-[150%] rounded-lg overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+                      <img
+                        src={book.image || "/default-book-cover.png"}
+                        alt={book.name}
+                        className="absolute h-full w-full object-cover"
+                        onError={(e) => {
+                          e.target.src = "/default-book-cover.png";
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                        <p className="text-white text-sm font-medium truncate w-full">
+                          {book.name}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                  <FaBook className="text-gray-400 text-xl" />
                 </div>
-              ))}
-            </div>
+                <h4 className="font-medium text-gray-700 mb-1">
+                  No Books Available
+                </h4>
+                <p className="text-sm text-gray-500 mb-3">
+                  We're currently updating our collection
+                </p>
+                <Link
+                  to="/books"
+                  className="inline-flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                >
+                  Check back later <FaArrowRight className="ml-1" />
+                </Link>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Welcome Modal for New Users */}
+        {showWelcomeModal && (
+          <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Welcome to Our Library!
+                  </h2>
+                  <button
+                    onClick={() => setShowWelcomeModal(false)}
+                    className="text-gray-500 hover:text-gray-700 text-xl"
+                    aria-label="Close welcome modal"
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                    <h3 className="font-semibold text-blue-800 mb-3 text-lg">
+                      Getting Started Guide
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-start">
+                        <div className="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                          1
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-800">
+                            Browse Our Collection
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Explore thousands of books in our digital library.
+                            Use the search feature to find specific titles or
+                            browse by categories.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start">
+                        <div className="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                          2
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-800">
+                            Borrowing Books
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Click "Borrow" on any available book. You can borrow
+                            up to {borrowingPolicy.borrow_limit} books at a time
+                            for {borrowingPolicy.borrow_duration_days} days
+                            each.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start">
+                        <div className="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                          3
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-800">
+                            Reading Your Books
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Access your borrowed books from "My Books" section.
+                            Some books may be available for online reading while
+                            others are physical copies.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start">
+                        <div className="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                          4
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-800">
+                            Returning Books
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Return books on time to avoid fines. You can renew
+                            books if no one else has reserved them.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+                    <h3 className="font-semibold text-indigo-800 mb-3 text-lg">
+                      Quick Tips
+                    </h3>
+                    <ul className="space-y-2 list-disc list-inside text-sm text-gray-700">
+                      <li>
+                        Check your dashboard regularly for updates on your
+                        borrowed books
+                      </li>
+                      <li>Set up notifications to remind you of due dates</li>
+                      <li>
+                        Explore our recommendations based on your reading
+                        history
+                      </li>
+                      <li>
+                        Create reading lists to organize books you want to read
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="flex justify-center mt-6">
+                    <Link
+                      to="/books"
+                      className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center"
+                      onClick={() => setShowWelcomeModal(false)}
+                    >
+                      Start Exploring Books <FaArrowRight className="ml-2" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Renewal Confirmation Modal */}
         {showConfirmationModal && selectedNotification && (
@@ -609,6 +884,7 @@ function Dashboard() {
                 <button
                   onClick={() => setShowConfirmationModal(false)}
                   className="text-gray-500 hover:text-gray-700 text-xl"
+                  aria-label="Close modal"
                 >
                   &times;
                 </button>
