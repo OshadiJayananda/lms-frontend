@@ -26,7 +26,7 @@ function Books() {
   const [requestingBookId, setRequestingBookId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [perPage, setPerPage] = useState(12);
+  const [perPage, setPerPage] = useState(10);
   const [totalBooks, setTotalBooks] = useState(0);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
@@ -68,15 +68,20 @@ function Books() {
 
   useEffect(() => {
     const fetchBooks = async () => {
+      setLoading(true);
       try {
-        let url = selectedCategory
-          ? `/books?category=${selectedCategory}&q=${searchQuery}`
-          : `/books?q=${searchQuery}`;
+        let url = `/books?page=${currentPage}&per_page=${perPage}`;
 
-        url += `&page=${currentPage}&per_page=${perPage}`;
+        if (selectedCategory) {
+          url += `&category=${selectedCategory}`;
+        }
+        if (searchQuery) {
+          url += `&q=${searchQuery}`;
+        }
 
         const response = await api.get(url);
         console.log("API Response:", response.data);
+
         setFilteredBooks(response.data.data || []);
         setTotalPages(response.data.last_page || 1);
         setTotalBooks(response.data.total || 0);
@@ -109,15 +114,13 @@ function Books() {
   };
 
   const handleCategoryChange = (event) => {
-    const category = event.target.value;
-    setSelectedCategory(category);
-    setCurrentPage(1); // Reset to first page when changing category
+    setSelectedCategory(event.target.value);
+    setCurrentPage(1);
   };
 
-  const handleSearch = async (event) => {
-    const query = event.target.value.toLowerCase();
-    setSearchQuery(query);
-    setCurrentPage(1); // Reset to first page when searching
+  const handleSearch = (event) => {
+    setSearchQuery(event.target.value);
+    setCurrentPage(1);
   };
 
   const handlePageChange = (newPage) => {
@@ -197,59 +200,22 @@ function Books() {
   };
 
   const renderPagination = () => {
-    if (totalPages <= 0) return null;
-
-    const pageButtons = [];
-    const maxVisiblePages = 5;
-    let startPage, endPage;
-
-    if (totalPages <= maxVisiblePages) {
-      startPage = 1;
-      endPage = totalPages;
-    } else {
-      const halfVisible = Math.floor(maxVisiblePages / 2);
-      if (currentPage <= halfVisible + 1) {
-        startPage = 1;
-        endPage = maxVisiblePages;
-      } else if (currentPage >= totalPages - halfVisible) {
-        startPage = totalPages - maxVisiblePages + 1;
-        endPage = totalPages;
-      } else {
-        startPage = currentPage - halfVisible;
-        endPage = currentPage + halfVisible;
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pageButtons.push(
-        <button
-          key={i}
-          onClick={() => handlePageChange(i)}
-          className={`px-3 py-1 rounded-md ${
-            currentPage === i
-              ? "bg-blue-600 text-white"
-              : "text-blue-600 hover:bg-blue-50"
-          }`}
-        >
-          {i}
-        </button>
-      );
-    }
+    if (totalPages <= 1 && filteredBooks.length <= perPage) return null;
 
     return (
-      <div className="flex justify-between items-center mt-8 bg-white p-4 rounded-lg shadow-md">
-        <div className="flex items-center space-x-2">
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-8 bg-white p-4 rounded-lg shadow-md gap-4">
+        <div className="flex items-center">
           <span className="text-sm text-gray-700">
             Showing {(currentPage - 1) * perPage + 1} to{" "}
             {Math.min(currentPage * perPage, totalBooks)} of {totalBooks} books
           </span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className={`px-3 py-1 rounded-md ${
+            className={`p-2 rounded-md ${
               currentPage === 1
                 ? "text-gray-400 cursor-not-allowed"
                 : "text-blue-600 hover:bg-blue-50"
@@ -258,36 +224,24 @@ function Books() {
             <FaChevronLeft />
           </button>
 
-          {startPage > 1 && (
-            <>
-              <button
-                onClick={() => handlePageChange(1)}
-                className="px-3 py-1 rounded-md text-blue-600 hover:bg-blue-50"
-              >
-                1
-              </button>
-              {startPage > 2 && <span className="px-1">...</span>}
-            </>
-          )}
-
-          {pageButtons}
-
-          {endPage < totalPages && (
-            <>
-              {endPage < totalPages - 1 && <span className="px-1">...</span>}
-              <button
-                onClick={() => handlePageChange(totalPages)}
-                className="px-3 py-1 rounded-md text-blue-600 hover:bg-blue-50"
-              >
-                {totalPages}
-              </button>
-            </>
-          )}
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => handlePageChange(page)}
+              className={`px-3 py-1 rounded-md ${
+                currentPage === page
+                  ? "bg-blue-600 text-white"
+                  : "text-blue-600 hover:bg-blue-50"
+              }`}
+            >
+              {page}
+            </button>
+          ))}
 
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className={`px-3 py-1 rounded-md ${
+            className={`p-2 rounded-md ${
               currentPage === totalPages
                 ? "text-gray-400 cursor-not-allowed"
                 : "text-blue-600 hover:bg-blue-50"
@@ -297,20 +251,21 @@ function Books() {
           </button>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <span className="text-sm text-gray-700">Items per page:</span>
           <select
             value={perPage}
             onChange={(e) => {
-              setPerPage(Number(e.target.value));
+              const newPerPage = Number(e.target.value);
+              setPerPage(newPerPage);
               setCurrentPage(1);
             }}
             className="border rounded-md px-2 py-1 text-sm"
           >
-            <option value="12">12</option>
-            <option value="24">24</option>
-            <option value="48">48</option>
-            <option value="96">96</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="50">50</option>
           </select>
         </div>
       </div>
