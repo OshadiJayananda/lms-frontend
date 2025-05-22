@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { FaSearch, FaBook, FaUserAlt } from "react-icons/fa";
+import {
+  FaSearch,
+  FaBook,
+  FaUserAlt,
+  FaChevronLeft,
+  FaChevronRight,
+} from "react-icons/fa";
 import api from "../../Components/Api";
 import ClientSidebar from "../../Components/ClientSidebar";
 import { toast } from "react-toastify";
@@ -18,6 +24,10 @@ function Books() {
   const [reservedBooks, setReservedBooks] = useState([]);
   const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
   const [requestingBookId, setRequestingBookId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [perPage, setPerPage] = useState(12);
+  const [totalBooks, setTotalBooks] = useState(0);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
@@ -26,14 +36,11 @@ function Books() {
       setIsCategoriesLoading(true);
       try {
         const response = await api.get("/categories");
-
-        // Handle Laravel paginated response
         const categoriesData = Array.isArray(response.data?.data)
           ? response.data.data
           : Array.isArray(response.data)
           ? response.data
           : [];
-
         setCategories(categoriesData);
         setError(null);
       } catch (err) {
@@ -62,12 +69,17 @@ function Books() {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const url = selectedCategory
+        let url = selectedCategory
           ? `/books?category=${selectedCategory}&q=${searchQuery}`
           : `/books?q=${searchQuery}`;
 
+        url += `&page=${currentPage}&per_page=${perPage}`;
+
         const response = await api.get(url);
-        setFilteredBooks(response.data || []);
+        console.log("API Response:", response.data);
+        setFilteredBooks(response.data.data || []);
+        setTotalPages(response.data.last_page || 1);
+        setTotalBooks(response.data.total || 0);
       } catch (error) {
         console.error("Error fetching books:", error);
         setError("Failed to fetch books. Please try again later.");
@@ -76,18 +88,17 @@ function Books() {
       }
     };
     fetchBooks();
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, currentPage, perPage]);
 
   useEffect(() => {
     const fetchBorrowedBooks = async () => {
       try {
         const response = await api.get("/borrowed-books");
-        // Handle both paginated and non-paginated responses
         const booksData = response.data?.data || response.data || [];
         setBorrowedBooks(booksData);
       } catch (error) {
         console.error("Error fetching borrowed books:", error);
-        setBorrowedBooks([]); // Set empty array on error
+        setBorrowedBooks([]);
       }
     };
     fetchBorrowedBooks();
@@ -100,11 +111,19 @@ function Books() {
   const handleCategoryChange = (event) => {
     const category = event.target.value;
     setSelectedCategory(category);
+    setCurrentPage(1); // Reset to first page when changing category
   };
 
   const handleSearch = async (event) => {
     const query = event.target.value.toLowerCase();
     setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
   };
 
   const requestBook = async (bookId) => {
@@ -162,7 +181,7 @@ function Books() {
         }
       );
       toast.success(response.data.message);
-      return response.data; // Optional: return data for further processing
+      return response.data;
     } catch (error) {
       console.error(
         "Reservation error:",
@@ -173,8 +192,129 @@ function Books() {
         error.response?.data?.error ||
         "Failed to reserve book";
       toast.error(errorMessage);
-      throw error; // Re-throw the error if you want to handle it elsewhere
+      throw error;
     }
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 0) return null;
+
+    const pageButtons = [];
+    const maxVisiblePages = 5;
+    let startPage, endPage;
+
+    if (totalPages <= maxVisiblePages) {
+      startPage = 1;
+      endPage = totalPages;
+    } else {
+      const halfVisible = Math.floor(maxVisiblePages / 2);
+      if (currentPage <= halfVisible + 1) {
+        startPage = 1;
+        endPage = maxVisiblePages;
+      } else if (currentPage >= totalPages - halfVisible) {
+        startPage = totalPages - maxVisiblePages + 1;
+        endPage = totalPages;
+      } else {
+        startPage = currentPage - halfVisible;
+        endPage = currentPage + halfVisible;
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageButtons.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-1 rounded-md ${
+            currentPage === i
+              ? "bg-blue-600 text-white"
+              : "text-blue-600 hover:bg-blue-50"
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex justify-between items-center mt-8 bg-white p-4 rounded-lg shadow-md">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-700">
+            Showing {(currentPage - 1) * perPage + 1} to{" "}
+            {Math.min(currentPage * perPage, totalBooks)} of {totalBooks} books
+          </span>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`px-3 py-1 rounded-md ${
+              currentPage === 1
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <FaChevronLeft />
+          </button>
+
+          {startPage > 1 && (
+            <>
+              <button
+                onClick={() => handlePageChange(1)}
+                className="px-3 py-1 rounded-md text-blue-600 hover:bg-blue-50"
+              >
+                1
+              </button>
+              {startPage > 2 && <span className="px-1">...</span>}
+            </>
+          )}
+
+          {pageButtons}
+
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <span className="px-1">...</span>}
+              <button
+                onClick={() => handlePageChange(totalPages)}
+                className="px-3 py-1 rounded-md text-blue-600 hover:bg-blue-50"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-1 rounded-md ${
+              currentPage === totalPages
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <FaChevronRight />
+          </button>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-700">Items per page:</span>
+          <select
+            value={perPage}
+            onChange={(e) => {
+              setPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="border rounded-md px-2 py-1 text-sm"
+          >
+            <option value="12">12</option>
+            <option value="24">24</option>
+            <option value="48">48</option>
+            <option value="96">96</option>
+          </select>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -280,86 +420,89 @@ function Books() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredBooks.map((book) => {
-                const isBorrowed =
-                  Array.isArray(borrowedBooks) &&
-                  borrowedBooks.some(
-                    (borrowedBook) =>
-                      borrowedBook.book_id === book.id &&
-                      ["pending", "approved", "issued"].includes(
-                        borrowedBook.status?.toLowerCase()
-                      )
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {filteredBooks.map((book) => {
+                  const isBorrowed =
+                    Array.isArray(borrowedBooks) &&
+                    borrowedBooks.some(
+                      (borrowedBook) =>
+                        borrowedBook.book_id === book.id &&
+                        ["pending", "approved", "issued"].includes(
+                          borrowedBook.status?.toLowerCase()
+                        )
+                    );
+
+                  const isReserved = reservedBooks.some(
+                    (resBook) =>
+                      resBook.book_id === book.id &&
+                      resBook.status?.toLowerCase() === "pending"
                   );
 
-                const isReserved = reservedBooks.some(
-                  (resBook) =>
-                    resBook.book_id === book.id &&
-                    resBook.status?.toLowerCase() === "pending"
-                );
+                  const isUnavailable = isBorrowed || isReserved;
 
-                const isUnavailable = isBorrowed || isReserved;
-
-                return (
-                  <div
-                    key={book.id}
-                    className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
-                  >
-                    <div className="relative pb-[150%]">
-                      <img
-                        src={book.image || "/default-book-cover.png"}
-                        alt={book.name}
-                        className="absolute h-full w-full object-cover"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-900 truncate">
-                        {book.name}
-                      </h3>
-                      <div className="flex items-center mt-1 text-sm text-gray-600">
-                        <FaUserAlt className="mr-1 text-gray-400" />
-                        <span className="truncate">{book.author?.name}</span>
+                  return (
+                    <div
+                      key={book.id}
+                      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                    >
+                      <div className="relative pb-[150%]">
+                        <img
+                          src={book.image || "/default-book-cover.png"}
+                          alt={book.name}
+                          className="absolute h-full w-full object-cover"
+                        />
                       </div>
-                      <div className="mt-2 flex justify-between items-center">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          <FaBook className="mr-1" />
-                          {book.no_of_copies > 0
-                            ? `${book.no_of_copies} available`
-                            : "Not available"}
-                        </span>
-                        <button
-                          onClick={() =>
-                            book.no_of_copies > 0
-                              ? requestBook(book.id)
-                              : reserveBook(book.id)
-                          }
-                          disabled={
-                            requestingBookId === book.id || isUnavailable
-                          }
-                          className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
-                            requestingBookId === book.id || isUnavailable
-                              ? "bg-gray-200 text-gray-600 cursor-not-allowed"
+                      <div className="p-4">
+                        <h3 className="text-lg font-semibold text-gray-900 truncate">
+                          {book.name}
+                        </h3>
+                        <div className="flex items-center mt-1 text-sm text-gray-600">
+                          <FaUserAlt className="mr-1 text-gray-400" />
+                          <span className="truncate">{book.author?.name}</span>
+                        </div>
+                        <div className="mt-2 flex justify-between items-center">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <FaBook className="mr-1" />
+                            {book.no_of_copies > 0
+                              ? `${book.no_of_copies} available`
+                              : "Not available"}
+                          </span>
+                          <button
+                            onClick={() =>
+                              book.no_of_copies > 0
+                                ? requestBook(book.id)
+                                : reserveBook(book.id)
+                            }
+                            disabled={
+                              requestingBookId === book.id || isUnavailable
+                            }
+                            className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+                              requestingBookId === book.id || isUnavailable
+                                ? "bg-gray-200 text-gray-600 cursor-not-allowed"
+                                : book.no_of_copies > 0
+                                ? "bg-blue-600 text-white hover:bg-blue-700"
+                                : "bg-purple-600 text-white hover:bg-purple-700"
+                            }`}
+                          >
+                            {isBorrowed
+                              ? "Requested"
+                              : isReserved
+                              ? "Reserved"
+                              : requestingBookId === book.id
+                              ? "Processing..."
                               : book.no_of_copies > 0
-                              ? "bg-blue-600 text-white hover:bg-blue-700"
-                              : "bg-purple-600 text-white hover:bg-purple-700"
-                          }`}
-                        >
-                          {isBorrowed
-                            ? "Requested"
-                            : isReserved
-                            ? "Reserved"
-                            : requestingBookId === book.id
-                            ? "Processing..."
-                            : book.no_of_copies > 0
-                            ? "Borrow"
-                            : "Reserve"}
-                        </button>
+                              ? "Borrow"
+                              : "Reserve"}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+              {renderPagination()}
+            </>
           )}
         </div>
       </div>
