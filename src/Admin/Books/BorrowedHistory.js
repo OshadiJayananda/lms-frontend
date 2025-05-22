@@ -201,31 +201,42 @@ function BorrowedHistory() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">
-                              {new Date(
-                                borrow.issued_date
-                              ).toLocaleDateString()}
+                              {borrow.issued_date
+                                ? new Date(
+                                    borrow.issued_date
+                                  ).toLocaleDateString()
+                                : "Not Issued Yet"}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {new Date(
-                                borrow.issued_date
-                              ).toLocaleTimeString()}
+                              {borrow.issued_date
+                                ? new Date(
+                                    borrow.issued_date
+                                  ).toLocaleTimeString()
+                                : ""}
                             </div>
                           </td>
+
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div
                               className={`text-sm ${
+                                borrow.due_date &&
                                 new Date(borrow.due_date) < new Date() &&
                                 borrow.status !== "Returned"
                                   ? "text-red-600 font-medium"
                                   : "text-gray-900"
                               }`}
                             >
-                              {new Date(borrow.due_date).toLocaleDateString()}
+                              {borrow.due_date
+                                ? new Date(borrow.due_date).toLocaleDateString()
+                                : "No Due Date"}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {new Date(borrow.due_date).toLocaleTimeString()}
+                              {borrow.due_date
+                                ? new Date(borrow.due_date).toLocaleTimeString()
+                                : ""}
                             </div>
                           </td>
+
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
                               className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${

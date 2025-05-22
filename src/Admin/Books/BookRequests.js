@@ -250,14 +250,20 @@ function BookRequests() {
                             <div className="flex items-center mb-1">
                               <FaCalendarAlt className="mr-2 text-gray-400" />
                               <span className="font-medium">Issued:</span>{" "}
-                              {new Date(
-                                request.issued_date
-                              ).toLocaleDateString()}
+                              {request.issued_date
+                                ? new Date(
+                                    request.issued_date
+                                  ).toLocaleDateString()
+                                : "Not Issued Yet"}
                             </div>
                             <div className="flex items-center">
                               <FaCalendarAlt className="mr-2 text-gray-400" />
                               <span className="font-medium">Due:</span>{" "}
-                              {new Date(request.due_date).toLocaleDateString()}
+                              {request.due_date
+                                ? new Date(
+                                    request.due_date
+                                  ).toLocaleDateString()
+                                : "Not Issued Yet"}
                             </div>
                           </div>
                         </td>
