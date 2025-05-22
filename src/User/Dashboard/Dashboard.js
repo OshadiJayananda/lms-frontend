@@ -134,6 +134,7 @@ function Dashboard() {
 
   const fetchStats = async () => {
     try {
+      setLoading(true);
       const res = await api.get("/user/dashboard-stats");
       setStats(res.data);
 
@@ -150,6 +151,8 @@ function Dashboard() {
       }
     } catch (err) {
       toast.error("Failed to load dashboard data");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -511,7 +514,11 @@ function Dashboard() {
                 Your Reading Activity
               </h3>
               <div className="h-64 flex items-center justify-center">
-                {filteredPieData.length > 0 ? (
+                {loading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <span className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+                  </div>
+                ) : filteredPieData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -574,13 +581,17 @@ function Dashboard() {
                 Monthly Reading
               </h3>
               <div className="h-64 flex items-center justify-center">
-                {stats.monthlyStats &&
-                stats.monthlyStats.length > 0 &&
-                !(
-                  stats.monthlyStats.length === 1 &&
-                  stats.monthlyStats[0].borrowed === 0 &&
-                  stats.monthlyStats[0].returned === 0
-                ) ? (
+                {loading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <span className="animate-spin h-8 w-8 border-4 border-green-500 border-t-transparent rounded-full" />
+                  </div>
+                ) : stats.monthlyStats &&
+                  stats.monthlyStats.length > 0 &&
+                  !(
+                    stats.monthlyStats.length === 1 &&
+                    stats.monthlyStats[0].borrowed === 0 &&
+                    stats.monthlyStats[0].returned === 0
+                  ) ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={stats.monthlyStats}
