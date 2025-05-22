@@ -2,7 +2,14 @@ import React, { useState, useEffect } from "react";
 import SideBar from "../../Components/SideBar";
 import HeaderBanner from "../../Components/HeaderBanner";
 import Header from "../../Components/Header";
-import { FaCheck, FaTimes, FaBook, FaUser, FaSearch } from "react-icons/fa";
+import {
+  FaCheck,
+  FaTimes,
+  FaBook,
+  FaUser,
+  FaSearch,
+  FaInfoCircle,
+} from "react-icons/fa";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -12,6 +19,7 @@ function BookReservation() {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // 'all', 'pending', 'approved', 'rejected'
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -19,6 +27,7 @@ function BookReservation() {
 
   const fetchReservations = async (page = 1) => {
     try {
+      setLoading(true);
       const response = await api.get(`/admin/book-reservations?page=${page}`);
       setReservations(response.data.data);
       setTotalPages(response.data.last_page);
@@ -71,10 +80,7 @@ function BookReservation() {
       const response = await api.post(
         `/admin/book-reservations/${reservationId}/confirm-given`
       );
-
       toast.success(response.data.message);
-
-      // Refresh reservations
       await fetchReservations(currentPage);
     } catch (error) {
       console.error("Confirm given error:", error);
@@ -83,10 +89,7 @@ function BookReservation() {
         : error.response?.data?.message
         ? error.response.data.message
         : "Failed to confirm book given";
-
       toast.error(errorMessage);
-
-      // If there's a specific error about reservation status, refresh to get latest data
       if (error.response?.status === 400) {
         await fetchReservations(currentPage);
       }
@@ -95,12 +98,18 @@ function BookReservation() {
     }
   };
 
-  const filteredReservations = reservations.filter(
-    (reservation) =>
+  const filteredReservations = reservations.filter((reservation) => {
+    const matchesSearch =
       reservation.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reservation.book.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      reservation.status.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      reservation.status.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      reservation.status.toLowerCase() === statusFilter.toLowerCase();
+
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -119,7 +128,7 @@ function BookReservation() {
         <div className="p-6">
           {/* Dashboard Header */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-800 font-serif">
                   Reservations Dashboard
@@ -129,17 +138,56 @@ function BookReservation() {
                 </p>
               </div>
 
-              <div className="relative w-full md:w-64">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaSearch className="text-gray-400" />
+              <div className="flex flex-col md:flex-row gap-4 w-full md:w-2/3">
+                {/* Search Bar */}
+                <div className="relative w-full md:w-1/2">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaSearch className="text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search reservations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      <FaTimes />
+                    </button>
+                  )}
                 </div>
-                <input
-                  type="text"
-                  placeholder="Search reservations..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+
+                {/* Status Filter */}
+                <div className="relative w-full md:w-1/2">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="block w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
