@@ -184,10 +184,35 @@ function AdminDashboard() {
     }
   };
 
+  const fetchPendingReservations = async (bookId) => {
+    try {
+      const response = await api.get(
+        `/admin/book-reservations/pending/${bookId}`
+      );
+
+      if (response.data.count > 0) {
+        toast.info(
+          `There are ${response.data.count} pending reservations for this book`
+        );
+        return response.data.count;
+      } else {
+        toast.info("No pending reservations for this book");
+        return 0;
+      }
+    } catch (error) {
+      console.error("Error fetching pending reservations:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to check pending reservations"
+      );
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchDashboardStats();
     fetchNotifications();
     fetchBorrowingPolicy();
+    fetchPendingReservations();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -223,6 +248,8 @@ function AdminDashboard() {
         return <FaCheck className="text-green-500 mr-2" />;
       case "reservation_declined":
         return <FaTimes className="text-red-500 mr-2" />;
+      case "reservation_confirmed":
+        return <FaCheck className="text-green-500 mr-2" />;
       default:
         return <FaBell className="text-yellow-500 mr-2" />;
     }
@@ -302,7 +329,7 @@ function AdminDashboard() {
                               <p className="text-xs text-gray-400 mt-1">
                                 {new Date(n.created_at).toLocaleString()}
                               </p>
-                              {n.type === "reservation_created" && (
+                              {/* {n.type === "reservation_created" && (
                                 <div className="flex space-x-2 mt-2">
                                   <button
                                     onClick={(e) => {
@@ -321,6 +348,19 @@ function AdminDashboard() {
                                     className="flex items-center bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700"
                                   >
                                     <FaTimes className="mr-1" /> Reject
+                                  </button>
+                                </div>
+                              )} */}
+                              {n.type === "reservation_declined" && (
+                                <div className="mt-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      fetchPendingReservations(n.book_id);
+                                    }}
+                                    className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200"
+                                  >
+                                    Check for pending reservations
                                   </button>
                                 </div>
                               )}
