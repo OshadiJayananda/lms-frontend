@@ -13,6 +13,7 @@ import {
   FaBook,
   FaUser,
   FaCalendarAlt,
+  FaInfoCircle,
 } from "react-icons/fa";
 
 function BookRequests() {
@@ -23,12 +24,15 @@ function BookRequests() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
+  const [statusFilter, setStatusFilter] = useState("all"); // 'all', 'Pending', 'Approved'
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   const fetchPendingRequests = async (page = 1) => {
     try {
-      const response = await api.get(`/admin/book-requests?page=${page}`);
+      setLoading(true);
+      const response = await api.get(
+        `/admin/book-requests?page=${page}&status=${statusFilter}`
+      );
       setPendingRequests(response.data.data);
       setTotalPages(response.data.last_page);
       setCurrentPage(response.data.current_page);
@@ -42,7 +46,7 @@ function BookRequests() {
 
   useEffect(() => {
     fetchPendingRequests(currentPage);
-  }, [currentPage]);
+  }, [currentPage, statusFilter]);
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
@@ -90,9 +94,10 @@ function BookRequests() {
 
   const filteredRequests = pendingRequests.filter(
     (request) =>
-      request.book.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.book.isbn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.user.id.toString().includes(searchQuery.toLowerCase())
+      (request.book.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.book.isbn.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.user.id.toString().includes(searchQuery.toLowerCase())) &&
+      (statusFilter === "all" || request.status === statusFilter)
   );
 
   return (
@@ -110,8 +115,9 @@ function BookRequests() {
         <Header />
 
         <div className="p-6">
+          {/* Updated Dashboard Header with consistent search/filter */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-800 font-serif">
                   Book Requests Dashboard
@@ -121,8 +127,9 @@ function BookRequests() {
                 </p>
               </div>
 
-              <div className="w-full md:w-1/3">
-                <div className="relative">
+              <div className="flex flex-col md:flex-row gap-4 w-full md:w-2/3">
+                {/* Search Bar - matching RenewBook style */}
+                <div className="relative w-full md:w-1/2">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <FaSearch className="text-gray-400" />
                   </div>
@@ -133,11 +140,51 @@ function BookRequests() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      <FaTimes />
+                    </button>
+                  )}
+                </div>
+
+                {/* Status Filter - matching RenewBook style */}
+                <div className="relative w-full md:w-1/2">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="block w-full pl-4 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <FaInfoCircle className="text-gray-400" />
+                  </div>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Rest of the component remains the same */}
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
