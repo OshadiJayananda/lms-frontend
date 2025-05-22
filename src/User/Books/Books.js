@@ -298,7 +298,7 @@ function Books() {
                     resBook.status?.toLowerCase() === "pending"
                 );
 
-                const isUnavailable = isBorrowed || isReserved || requesting;
+                const isUnavailable = isBorrowed || isReserved;
 
                 return (
                   <div
@@ -334,10 +334,10 @@ function Books() {
                               : reserveBook(book.id)
                           }
                           disabled={
-                            isUnavailable || requestingBookId === book.id
+                            requestingBookId === book.id || isUnavailable
                           }
                           className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
-                            isUnavailable
+                            requestingBookId === book.id || isUnavailable
                               ? "bg-gray-200 text-gray-600 cursor-not-allowed"
                               : book.no_of_copies > 0
                               ? "bg-blue-600 text-white hover:bg-blue-700"
