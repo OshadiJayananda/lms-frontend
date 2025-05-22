@@ -247,7 +247,9 @@ function BorrowedHistory() {
                                   : "bg-yellow-100 text-yellow-800"
                               }`}
                             >
-                              {borrow.status}
+                              {borrow.status === "Confirmed"
+                                ? "Return Confirmed"
+                                : borrow.status}
                             </span>
                           </td>
                         </tr>

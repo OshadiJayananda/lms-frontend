@@ -136,19 +136,25 @@ const BorrowedBooksTable = ({
                     <div className="flex items-center mb-1">
                       <FaCalendarAlt className="mr-2 text-gray-400" />
                       <span className="font-medium">Issued:</span>{" "}
-                      {new Date(borrow.issued_date).toLocaleDateString()}
+                      {borrow.issued_date
+                        ? new Date(borrow.issued_date).toLocaleDateString()
+                        : "Not Issued Yet"}
                     </div>
                     <div className="flex items-center">
                       <FaCalendarAlt className="mr-2 text-gray-400" />
                       <span className="font-medium">Due:</span>{" "}
-                      {new Date(borrow.due_date).toLocaleDateString()}
+                      {borrow.due_date
+                        ? new Date(borrow.due_date).toLocaleDateString()
+                        : "Not Issued Yet"}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span
                       className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}`}
                     >
-                      {borrow.status}
+                      {borrow.status === "Confirmed"
+                        ? "Return Confirmed"
+                        : borrow.status}
                     </span>
                     {borrow.is_overdue && !borrow.fine_paid && (
                       <button
