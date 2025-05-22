@@ -110,7 +110,7 @@ function BorrowedBooks() {
   const handleRenewSubmit = async () => {
     if (!renewDate) return toast.error("Please select a renewal date.");
 
-    const formattedDate = renewDate.toISOString().split("T")[0];
+    const formattedDate = renewDate.toLocaleDateString().split("T")[0];
     try {
       const response = await api.post(
         `/borrowed-books/${selectedBookId}/renew-request`,
@@ -123,6 +123,10 @@ function BorrowedBooks() {
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Failed to send renewal request."
+      );
+      console.error(
+        "Error during renewal request:",
+        error.response?.data?.message
       );
     }
   };
