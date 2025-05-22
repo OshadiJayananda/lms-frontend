@@ -4,14 +4,14 @@ import Select from "react-select";
 
 const statusOptions = [
   { value: "", label: "All Statuses" },
-  { value: "borrowed", label: "Borrowed" },
+  // { value: "borrowed", label: "Borrowed" },
   { value: "returned", label: "Returned" },
   { value: "overdue", label: "Overdue" },
   { value: "confirmed", label: "Confirmed" },
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
   { value: "issued", label: "Issued" },
-  { value: "expired", label: "Expired" },
+  // { value: "expired", label: "Expired" },
   { value: "rejected", label: "Rejected" },
 ];
 
