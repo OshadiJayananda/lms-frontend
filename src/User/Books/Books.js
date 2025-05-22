@@ -17,6 +17,7 @@ function Books() {
   const [borrowedBooks, setBorrowedBooks] = useState([]);
   const [reservedBooks, setReservedBooks] = useState([]);
   const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
+  const [requestingBookId, setRequestingBookId] = useState(null);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
@@ -125,6 +126,7 @@ function Books() {
     }
 
     setRequesting(true);
+    setRequestingBookId(bookId);
     try {
       const response = await api.post(`/books/${bookId}/request`);
       setBorrowedBooks([
@@ -141,6 +143,7 @@ function Books() {
       }
     } finally {
       setRequesting(false);
+      setRequestingBookId(null);
     }
   };
 
@@ -330,7 +333,9 @@ function Books() {
                               ? requestBook(book.id)
                               : reserveBook(book.id)
                           }
-                          disabled={isUnavailable}
+                          disabled={
+                            isUnavailable || requestingBookId === book.id
+                          }
                           className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
                             isUnavailable
                               ? "bg-gray-200 text-gray-600 cursor-not-allowed"
@@ -343,7 +348,7 @@ function Books() {
                             ? "Requested"
                             : isReserved
                             ? "Reserved"
-                            : requesting
+                            : requestingBookId === book.id
                             ? "Processing..."
                             : book.no_of_copies > 0
                             ? "Borrow"
