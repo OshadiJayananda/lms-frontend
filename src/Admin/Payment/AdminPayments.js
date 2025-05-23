@@ -183,23 +183,14 @@ function AdminPayments() {
         <Header />
 
         <div className="p-6">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2 font-serif">
-              Payment Center
-            </h2>
-            <p className="text-gray-600 text-lg">
-              Manage and view all payment transactions
-            </p>
-          </div>
-
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div>
-                <h3 className="text-xl font-semibold text-gray-800">
-                  Payment History
-                </h3>
-                <p className="text-gray-500 text-sm">
-                  All financial transactions processed through the system
+                <h2 className="text-3xl font-bold text-gray-800 mb-2 font-serif">
+                  Payment Center
+                </h2>
+                <p className="text-gray-600 text-lg">
+                  Manage and view all payment transactions
                 </p>
               </div>
               <div className="relative w-full md:w-80">
