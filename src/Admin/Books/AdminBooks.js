@@ -6,6 +6,8 @@ import {
   FaTimes,
   FaSearch,
   FaBook,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
 import SideBar from "../../Components/SideBar";
 import Header from "../../Components/Header";
@@ -38,6 +40,10 @@ function AdminBooks() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
   const [authorOptions, setAuthorOptions] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [totalBooks, setTotalBooks] = useState(0);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
@@ -106,10 +112,7 @@ function AdminBooks() {
           toast.success("Book added successfully!");
         }
 
-        const booksResponse = await api.get("/books");
-        if (booksResponse.data) {
-          setFilteredBooks(booksResponse.data);
-        }
+        fetchBooks();
         closeModal();
       } catch (error) {
         console.error("Error saving book:", error);
@@ -124,10 +127,36 @@ function AdminBooks() {
     },
   });
 
+  const fetchBooks = async () => {
+    setLoading(true);
+    try {
+      let url = `/books?page=${currentPage}&per_page=${perPage}`;
+
+      if (selectedCategory) {
+        url += `&category=${selectedCategory}`;
+      }
+      if (searchQuery) {
+        url += `&q=${searchQuery}`;
+      }
+
+      const response = await api.get(url);
+      console.log("API Response:", response.data);
+
+      setFilteredBooks(response.data.data || []);
+      setTotalPages(response.data.last_page || 1);
+      setTotalBooks(response.data.total || 0);
+    } catch (error) {
+      console.error("Error fetching books:", error);
+      setError("Failed to fetch books. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchAuthors = async () => {
       try {
-        const response = await api.get("/authors"); // Adjust endpoint if needed
+        const response = await api.get("/authors");
         const options = response.data.map((author) => ({
           value: author.id,
           label: author.name,
@@ -147,7 +176,6 @@ function AdminBooks() {
       try {
         const response = await api.get("/categories");
 
-        // Handle Laravel paginated response
         const categoriesData = Array.isArray(response.data?.data)
           ? response.data.data
           : Array.isArray(response.data)
@@ -169,46 +197,146 @@ function AdminBooks() {
     fetchCategories();
   }, []);
 
-  // Fetch books from API
   useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const url = selectedCategory
-          ? `/books?category=${selectedCategory}&q=${searchQuery}`
-          : `/books?q=${searchQuery}`;
-
-        const response = await api.get(url);
-        setFilteredBooks(response.data || []);
-      } catch (error) {
-        console.error("Error fetching books:", error);
-        setError("Failed to fetch books. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchBooks();
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, currentPage, perPage]);
 
   const handleCategoryChange = (event) => {
-    const category = event.target.value;
-    setSelectedCategory(category);
+    setSelectedCategory(event.target.value);
+    setCurrentPage(1);
   };
 
-  // Handle search
-  const handleSearch = async (event) => {
-    const query = event.target.value.toLowerCase();
-    setSearchQuery(query);
+  const handleSearch = (event) => {
+    setSearchQuery(event.target.value);
+    setCurrentPage(1);
+  };
 
-    try {
-      const response = await api.get(`/books/?q=${query}`);
-      setFilteredBooks(response.data);
-    } catch (error) {
-      console.error("Error searching books:", error);
-      toast.error("Failed to search books. Please try again later.");
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1 && filteredBooks.length <= perPage) return null;
+
+    const pageButtons = [];
+    const maxVisiblePages = 5;
+    let startPage, endPage;
+
+    if (totalPages <= maxVisiblePages) {
+      startPage = 1;
+      endPage = totalPages;
+    } else {
+      const halfVisible = Math.floor(maxVisiblePages / 2);
+      if (currentPage <= halfVisible + 1) {
+        startPage = 1;
+        endPage = maxVisiblePages;
+      } else if (currentPage >= totalPages - halfVisible) {
+        startPage = totalPages - maxVisiblePages + 1;
+        endPage = totalPages;
+      } else {
+        startPage = currentPage - halfVisible;
+        endPage = currentPage + halfVisible;
+      }
     }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageButtons.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-1 rounded-md ${
+            currentPage === i
+              ? "bg-blue-600 text-white"
+              : "text-blue-600 hover:bg-blue-50"
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-8 bg-white p-4 rounded-lg shadow-md gap-4">
+        <div className="flex items-center">
+          <span className="text-sm text-gray-700">
+            Showing {(currentPage - 1) * perPage + 1} to{" "}
+            {Math.min(currentPage * perPage, totalBooks)} of {totalBooks} books
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-md ${
+              currentPage === 1
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <FaChevronLeft />
+          </button>
+
+          {startPage > 1 && (
+            <>
+              <button
+                onClick={() => handlePageChange(1)}
+                className="px-3 py-1 rounded-md text-blue-600 hover:bg-blue-50"
+              >
+                1
+              </button>
+              {startPage > 2 && <span className="px-1">...</span>}
+            </>
+          )}
+
+          {pageButtons}
+
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <span className="px-1">...</span>}
+              <button
+                onClick={() => handlePageChange(totalPages)}
+                className="px-3 py-1 rounded-md text-blue-600 hover:bg-blue-50"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-md ${
+              currentPage === totalPages
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <FaChevronRight />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-700">Items per page:</span>
+          <select
+            value={perPage}
+            onChange={(e) => {
+              const newPerPage = Number(e.target.value);
+              setPerPage(newPerPage);
+              setCurrentPage(1);
+            }}
+            className="border rounded-md px-2 py-1 text-sm"
+          >
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+      </div>
+    );
   };
 
-  // Find parent category for a given category ID
   const findParentCategory = (categoryId) => {
     const category = categories.find((cat) => cat.id === categoryId);
     if (!category) return null;
@@ -219,12 +347,9 @@ function AdminBooks() {
     return categoryId;
   };
 
-  // Open modal for adding or updating a book
   const openModal = (book = null) => {
     if (book) {
       setSelectedBook(book);
-
-      // First set the form values
       formik.setValues({
         name: book.name,
         author_id: book.author_id,
@@ -235,11 +360,9 @@ function AdminBooks() {
         category_id: book.category_id,
       });
 
-      // Then find and set the parent category
       const parentId = findParentCategory(book.category_id);
       setSelectedParent(parentId || "");
 
-      // If we have a parent ID, find its subcategories
       if (parentId) {
         const children = categories.filter((cat) => cat.parent_id === parentId);
         setSubCategories(children);
@@ -258,7 +381,6 @@ function AdminBooks() {
     setIsModalOpen(true);
   };
 
-  // Close modal
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedBook(null);
@@ -268,27 +390,20 @@ function AdminBooks() {
     setImagePreview(null);
   };
 
-  // Handle file input change
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     formik.setFieldValue("image", file);
     setImagePreview(URL.createObjectURL(file));
   };
 
-  // Handle parent category selection
   const handleParentChange = (e) => {
     const parentId = Number(e.target.value);
     setSelectedParent(parentId);
-
-    // Reset the category_id when parent changes
     formik.setFieldValue("category_id", "");
-
-    // Find subcategories of selected parent
     const children = categories.filter((cat) => cat.parent_id === parentId);
     setSubCategories(children);
   };
 
-  // Handle delete
   const handleDelete = (bookId) => {
     setSelectedBookToDelete(bookId);
     setIsModalOpenDelete(true);
@@ -300,11 +415,7 @@ function AdminBooks() {
     try {
       await api.delete(`/books/${selectedBookToDelete}`);
       toast.success("Book deleted successfully!");
-
-      setFilteredBooks((prevBooks) =>
-        prevBooks.filter((book) => book.id !== selectedBookToDelete)
-      );
-
+      fetchBooks();
       setIsModalOpenDelete(false);
     } catch (error) {
       console.error("Error deleting book:", error);
@@ -411,56 +522,59 @@ function AdminBooks() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {filteredBooks.map((book) => (
-                <div
-                  key={book.id}
-                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition"
-                >
-                  <div className="h-48 bg-gray-100 flex items-center justify-center">
-                    <img
-                      src={book.image || "/default-book-cover.png"}
-                      alt={book.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-1">
-                      {book.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-2 line-clamp-1">
-                      {book.author?.name || "Unknown Author"}
-                    </p>
-                    <div className="flex justify-between items-center text-xs text-gray-500 mb-3">
-                      <span>ISBN: {book.isbn}</span>
-                      <span
-                        className={`px-2 py-1 rounded-full ${
-                          book.no_of_copies > 0
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {book.no_of_copies} available
-                      </span>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {filteredBooks.map((book) => (
+                  <div
+                    key={book.id}
+                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition"
+                  >
+                    <div className="h-48 bg-gray-100 flex items-center justify-center">
+                      <img
+                        src={book.image || "/default-book-cover.png"}
+                        alt={book.name}
+                        className="h-full w-full object-cover"
+                      />
                     </div>
-                    <div className="flex justify-between border-t pt-3">
-                      <button
-                        onClick={() => openModal(book)}
-                        className="text-blue-600 hover:text-blue-800 flex items-center"
-                      >
-                        <FaEdit className="mr-1" /> Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(book.id)}
-                        className="text-red-600 hover:text-red-800 flex items-center"
-                      >
-                        <FaTrash className="mr-1" /> Delete
-                      </button>
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-1">
+                        {book.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2 line-clamp-1">
+                        {book.author?.name || "Unknown Author"}
+                      </p>
+                      <div className="flex justify-between items-center text-xs text-gray-500 mb-3">
+                        <span>ISBN: {book.isbn}</span>
+                        <span
+                          className={`px-2 py-1 rounded-full ${
+                            book.no_of_copies > 0
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {book.no_of_copies} available
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-t pt-3">
+                        <button
+                          onClick={() => openModal(book)}
+                          className="text-blue-600 hover:text-blue-800 flex items-center"
+                        >
+                          <FaEdit className="mr-1" /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(book.id)}
+                          className="text-red-600 hover:text-red-800 flex items-center"
+                        >
+                          <FaTrash className="mr-1" /> Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              {renderPagination()}
+            </>
           )}
         </div>
       </div>
