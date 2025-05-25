@@ -4,11 +4,19 @@ import * as Yup from "yup";
 import api from "../../Components/Api";
 import Modal from "react-modal";
 import { toast } from "react-toastify";
-import { FaUserCircle, FaTrash } from "react-icons/fa";
+import {
+  FaUserCircle,
+  FaTrash,
+  FaCamera,
+  FaLock,
+  FaUser,
+  FaEnvelope,
+  FaPhone,
+} from "react-icons/fa";
 import HeaderBanner from "../../Components/HeaderBanner";
 import SideBar from "../../Components/SideBar";
 
-Modal.setAppElement("#root"); // Prevents accessibility issues
+Modal.setAppElement("#root");
 
 function AdminProfile() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -126,8 +134,21 @@ function AdminProfile() {
       .required("Confirm password is required"),
   });
 
-  if (loading) return <p>Loading...</p>;
-  if (!user) return <p>Failed to load user data.</p>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-red-600 text-lg">Failed to load user data.</div>
+      </div>
+    );
+  }
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
@@ -135,160 +156,106 @@ function AdminProfile() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar - width changes based on collapsed state */}
       <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
 
-      {/* Main Content Area - adjusts margin based on sidebar state */}
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
           isSidebarCollapsed ? "ml-20" : "ml-64"
         }`}
       >
-        {/* Header Banner - full width, stays connected to sidebar */}
         <HeaderBanner
           book={"Admin Profile"}
           heading_pic={heading_pic}
           className="w-full"
         />
-        <div
-          style={{ display: "flex", justifyContent: "center", padding: "20px" }}
-        >
-          <div
-            style={{
-              padding: "20px",
-              maxWidth: "400px",
-              margin: "0 auto",
-              backgroundColor: "#f5f5f5",
-              borderRadius: "10px",
-              boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            <div style={{ textAlign: "center", marginBottom: "20px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: "150px",
-                    height: "150px",
-                    borderRadius: "50%",
-                    backgroundColor: "grey",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    border: "3px solid #001f5b",
-                    overflow: "hidden",
-                  }}
-                >
-                  {user.profile_picture ? (
-                    <img
-                      src={user.profile_picture}
-                      alt="Profile"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
+
+        <div className="p-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              {/* Profile Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-8 text-white">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="relative group">
+                    <div className="w-32 h-32 rounded-full border-4 border-white overflow-hidden bg-gray-200">
+                      {user.profile_picture ? (
+                        <img
+                          src={user.profile_picture}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <FaUserCircle className="w-full h-full text-gray-400" />
+                      )}
+                    </div>
+                    <label
+                      htmlFor="profile-picture-upload"
+                      className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
+                    >
+                      <FaCamera className="text-white text-2xl" />
+                    </label>
+                    <input
+                      type="file"
+                      id="profile-picture-upload"
+                      accept="image/*"
+                      onChange={handleProfilePictureChange}
+                      className="hidden"
                     />
-                  ) : (
-                    <FaUserCircle size={100} color="white" />
-                  )}
-                </div>
-                {user.profile_picture && (
-                  <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="mt-2 bg-red-600 text-white border-none py-2 px-3 cursor-pointer rounded flex items-center gap-2"
-                  >
-                    <FaTrash /> Remove Picture
-                  </button>
-                )}
-              </div>
-
-              <br />
-              <input
-                type="file"
-                id="profile-picture-upload"
-                accept="image/*"
-                onChange={handleProfilePictureChange}
-                style={{ display: "none" }}
-              />
-              <label
-                htmlFor="profile-picture-upload"
-                style={{
-                  marginTop: "10px",
-                  border: "1px solid #001f5b",
-                  padding: "8px 12px",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                  display: "inline-block",
-                  backgroundColor: "#f5f5f5",
-                }}
-              >
-                {user.profile_picture ? "Change Picture" : "Upload Picture"}
-              </label>
-
-              {isModalOpen && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                  <div className="bg-white p-5 rounded-lg shadow-lg text-center">
-                    <p className="mb-4">
-                      Are you sure you want to remove your profile picture?
-                    </p>
-                    <div className="flex justify-center gap-4">
+                  </div>
+                  <div className="text-center md:text-left">
+                    <h1 className="text-2xl font-bold">{user.name}</h1>
+                    <p className="text-blue-100 mt-1">{user.email}</p>
+                    <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
                       <button
-                        onClick={handleRemoveProfilePicture}
-                        className="bg-red-600 text-white py-2 px-4 rounded"
+                        onClick={() => setPasswordModalOpen(true)}
+                        className="flex items-center gap-2 bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
                       >
-                        Yes, Remove
+                        <FaLock /> Change Password
                       </button>
-                      <button
-                        onClick={() => setIsModalOpen(false)}
-                        className="bg-gray-300 text-black py-2 px-4 rounded"
-                      >
-                        Cancel
-                      </button>
+                      {user.profile_picture && (
+                        <button
+                          onClick={() => setIsModalOpen(true)}
+                          className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                        >
+                          <FaTrash /> Remove Picture
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div style={{ marginBottom: "15px" }}>
-              <strong>Name:</strong> {user.name}
+              {/* Profile Details */}
+              <div className="p-8">
+                <h2 className="text-xl font-semibold text-gray-800 mb-6">
+                  Profile Information
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 text-gray-600">
+                      <FaUser className="text-blue-600" />
+                      <span>Name:</span>
+                      <span className="font-medium text-gray-800">
+                        {user.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-600">
+                      <FaEnvelope className="text-blue-600" />
+                      <span>Email:</span>
+                      <span className="font-medium text-gray-800">
+                        {user.email}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-600">
+                      <FaPhone className="text-blue-600" />
+                      <span>Phone:</span>
+                      <span className="font-medium text-gray-800">
+                        {user.phone || "Not provided"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div style={{ marginBottom: "15px" }}>
-              <strong>Email:</strong> {user.email}
-            </div>
-            <div style={{ marginBottom: "15px" }}>
-              <strong>Address:</strong> {user.address || "Not provided"}
-            </div>
-            <div style={{ marginBottom: "15px" }}>
-              <strong>Contact:</strong> {user.contact || "Not provided"}
-            </div>
-            <div style={{ marginBottom: "15px" }}>
-              <strong>Role:</strong> {user.role || "User"}
-            </div>
-
-            <button
-              style={{
-                marginTop: "20px",
-                padding: "12px",
-                width: "100%",
-                backgroundColor: "#001f5b",
-                color: "#fff",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-                fontSize: "16px",
-                transition: "background-color 0.3s",
-              }}
-              onClick={() => setPasswordModalOpen(true)}
-            >
-              Change Password
-            </button>
           </div>
         </div>
       </div>
@@ -297,135 +264,124 @@ function AdminProfile() {
       <Modal
         isOpen={isPasswordModalOpen}
         onRequestClose={() => setPasswordModalOpen(false)}
-        style={{
-          content: {
-            top: "50%",
-            left: "50%",
-            right: "auto",
-            bottom: "auto",
-            marginRight: "-50%",
-            transform: "translate(-50%, -50%)",
-            maxWidth: "400px",
-            width: "90%",
-            padding: "25px",
-            borderRadius: "12px",
-            textAlign: "center",
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
-            backgroundColor: "#fff",
-          },
-          overlay: {
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-          },
-        }}
+        className="fixed inset-0 flex items-center justify-center p-4 bg-black bg-opacity-50"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50"
       >
-        <h2
-          style={{ marginBottom: "20px", fontSize: "22px", color: "#001f5b" }}
-        >
-          Change Password
-        </h2>
-        <Formik
-          initialValues={{
-            currentPassword: "",
-            newPassword: "",
-            confirmPassword: "",
-          }}
-          validationSchema={validationSchema}
-          onSubmit={handlePasswordChange}
-        >
-          {({ isSubmitting }) => (
-            <Form>
-              <div>
-                <Field
-                  type="password"
-                  name="currentPassword"
-                  placeholder="Current Password"
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    marginBottom: "10px",
-                    border: "1px solid #ccc",
-                    borderRadius: "6px",
-                    fontSize: "16px",
-                  }}
-                />
-                <ErrorMessage
-                  name="currentPassword"
-                  component="div"
-                  style={{
-                    color: "red",
-                    fontSize: "14px",
-                    marginBottom: "8px",
-                  }}
-                />
-              </div>
-              <div>
-                <Field
-                  type="password"
-                  name="newPassword"
-                  placeholder="New Password"
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    marginBottom: "10px",
-                    border: "1px solid #ccc",
-                    borderRadius: "6px",
-                    fontSize: "16px",
-                  }}
-                />
-                <ErrorMessage
-                  name="newPassword"
-                  component="div"
-                  style={{
-                    color: "red",
-                    fontSize: "14px",
-                    marginBottom: "8px",
-                  }}
-                />
-              </div>
-              <div>
-                <Field
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Confirm Password"
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    marginBottom: "10px",
-                    border: "1px solid #ccc",
-                    borderRadius: "6px",
-                    fontSize: "16px",
-                  }}
-                />
-                <ErrorMessage
-                  name="confirmPassword"
-                  component="div"
-                  style={{
-                    color: "red",
-                    fontSize: "14px",
-                    marginBottom: "8px",
-                  }}
-                />
-              </div>
-              <button
-                type="submit"
-                style={{
-                  padding: "12px",
-                  width: "100%",
-                  backgroundColor: "#001f5b",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "16px",
-                  transition: "background-color 0.3s",
-                }}
-                disabled={isSubmitting}
-              >
-                Update Password
-              </button>
-            </Form>
-          )}
-        </Formik>
+        <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Change Password
+          </h2>
+          <Formik
+            initialValues={{
+              currentPassword: "",
+              newPassword: "",
+              confirmPassword: "",
+            }}
+            validationSchema={validationSchema}
+            onSubmit={handlePasswordChange}
+          >
+            {({ isSubmitting }) => (
+              <Form className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Current Password
+                  </label>
+                  <Field
+                    type="password"
+                    name="currentPassword"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <ErrorMessage
+                    name="currentPassword"
+                    component="div"
+                    className="mt-1 text-sm text-red-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    New Password
+                  </label>
+                  <Field
+                    type="password"
+                    name="newPassword"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <ErrorMessage
+                    name="newPassword"
+                    component="div"
+                    className="mt-1 text-sm text-red-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirm New Password
+                  </label>
+                  <Field
+                    type="password"
+                    name="confirmPassword"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <ErrorMessage
+                    name="confirmPassword"
+                    component="div"
+                    className="mt-1 text-sm text-red-600"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setPasswordModalOpen(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Updating..." : "Update Password"}
+                  </button>
+                </div>
+              </Form>
+            )}
+          </Formik>
+        </div>
+      </Modal>
+
+      {/* Remove Picture Confirmation Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onRequestClose={() => setIsModalOpen(false)}
+        className="fixed inset-0 flex items-center justify-center p-4 bg-black bg-opacity-50"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50"
+      >
+        <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Remove Profile Picture
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Are you sure you want to remove your profile picture? This action
+            cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleRemoveProfilePicture}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              Remove Picture
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
