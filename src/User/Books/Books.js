@@ -169,7 +169,16 @@ function Books() {
     }
   };
 
+  const isBookReserved = (bookId) => {
+    return reservedBooks.some((book) => book.id === bookId);
+  };
+
   const reserveBook = async (bookId) => {
+    if (isBookReserved(bookId)) {
+      toast.info("This book is already reserved.");
+      return;
+    }
+
     try {
       const response = await api.post(
         `/books/${bookId}/reserve`,
@@ -184,6 +193,12 @@ function Books() {
         }
       );
       toast.success(response.data.message);
+      setReservedBooks((prev) => [...prev, { id: bookId }]);
+      setFilteredBooks((prev) =>
+        prev.map((book) =>
+          book.id === bookId ? { ...book, is_reserved: true } : book
+        )
+      );
       return response.data;
     } catch (error) {
       console.error(
@@ -195,7 +210,6 @@ function Books() {
         error.response?.data?.error ||
         "Failed to reserve book";
       toast.error(errorMessage);
-      throw error;
     }
   };
 
