@@ -15,6 +15,7 @@ import {
   FaChartLine,
   FaUserTie,
   FaBookOpen,
+  FaFilePdf,
 } from "react-icons/fa";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
@@ -36,6 +37,7 @@ function AdminDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showReportsDropdown, setShowReportsDropdown] = useState(false);
   const [stats, setStats] = useState({
     totalBooks: 0,
     totalMembers: 0,
@@ -45,6 +47,12 @@ function AdminDashboard() {
     topMembers: [],
     topBooks: [],
     recentRequests: [],
+  });
+  const [reportLoading, setReportLoading] = useState({
+    books: false,
+    members: false,
+    borrowings: false,
+    overdue: false,
   });
   const [borrowingPolicy, setBorrowingPolicy] = useState({
     borrow_limit: 0,
@@ -78,6 +86,56 @@ function AdminDashboard() {
     light: "#F9FAFB", // Gray-50
   };
 
+  const generateReport = async (type) => {
+    try {
+      setReportLoading((prev) => ({ ...prev, [type]: true }));
+
+      // Add responseType: 'blob' to the request config
+      const response = await api.get(`/admin/reports/${type}`, {
+        responseType: "blob", // This is crucial for handling binary data
+      });
+
+      // Create a blob from the PDF data
+      const blob = new Blob([response.data], { type: "application/pdf" });
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Set the filename from response headers or create a default one
+      const contentDisposition = response.headers["content-disposition"];
+      let fileName = `${type}-report-${new Date()
+        .toISOString()
+        .slice(0, 10)}.pdf`;
+
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = fileNameMatch[1];
+        }
+      }
+
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(`Failed to generate ${type} report`);
+      console.error("Report generation error:", error);
+    } finally {
+      setReportLoading((prev) => ({ ...prev, [type]: false }));
+    }
+  };
+
+  // Usage:
+  generateReport("books", {
+    fromDate: "2023-01-01",
+    toDate: "2023-12-31",
+  });
   const fetchNotifications = async () => {
     try {
       const response = await api.get("/admin/notifications");
@@ -281,6 +339,8 @@ function AdminDashboard() {
       icon: <FaBook className="text-blue-500 text-2xl" />,
       bgColor: "bg-blue-50",
       textColor: "text-blue-600",
+      reportType: "books",
+      reportTitle: "Generate Books Report",
     },
     {
       title: "Total Members",
@@ -288,6 +348,8 @@ function AdminDashboard() {
       icon: <FaUsers className="text-green-500 text-2xl" />,
       bgColor: "bg-green-50",
       textColor: "text-green-600",
+      reportType: "members",
+      reportTitle: "Generate Members Report",
     },
     {
       title: "Borrowed Books",
@@ -295,6 +357,8 @@ function AdminDashboard() {
       icon: <FaBookOpen className="text-purple-500 text-2xl" />,
       bgColor: "bg-purple-50",
       textColor: "text-purple-600",
+      reportType: "borrowings",
+      reportTitle: "Generate Borrowings Report",
     },
     {
       title: "Overdue Books",
@@ -302,6 +366,8 @@ function AdminDashboard() {
       icon: <FaClock className="text-red-500 text-2xl" />,
       bgColor: "bg-red-50",
       textColor: "text-red-600",
+      reportType: "overdue",
+      reportTitle: "Generate Overdue Books Report",
     },
   ];
 
@@ -320,6 +386,18 @@ function AdminDashboard() {
     }
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showReportsDropdown && !event.target.closest(".relative")) {
+        setShowReportsDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showReportsDropdown]);
   return (
     <div
       className="min-h-screen bg-gray-50 flex"
@@ -450,7 +528,7 @@ function AdminDashboard() {
             {cards.map((card, index) => (
               <div
                 key={index}
-                className={`${card.bgColor} p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200`}
+                className={`${card.bgColor} p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 relative`}
               >
                 <div className="flex justify-between items-center">
                   <div>
@@ -473,6 +551,29 @@ function AdminDashboard() {
                   >
                     {card.icon}
                   </div>
+                </div>
+
+                {/* Add report button at the bottom of each card */}
+                <div className="mt-4 pt-3 border-t border-gray-200">
+                  <button
+                    onClick={() => generateReport(card.reportType)}
+                    disabled={reportLoading[card.reportType]}
+                    className={`w-full flex items-center justify-center px-3 py-1 text-sm rounded-lg ${
+                      reportLoading[card.reportType]
+                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                        : "bg-white text-gray-700 hover:bg-gray-100"
+                    } transition-colors`}
+                    title={card.reportTitle}
+                  >
+                    {reportLoading[card.reportType] ? (
+                      <span className="inline-block h-4 w-4 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin mr-2"></span>
+                    ) : (
+                      <FaFilePdf className="mr-2" />
+                    )}
+                    {reportLoading[card.reportType]
+                      ? "Generating..."
+                      : "Get Report"}
+                  </button>
                 </div>
               </div>
             ))}
