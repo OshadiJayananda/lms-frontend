@@ -31,6 +31,8 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 function AdminDashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -65,6 +67,9 @@ function AdminDashboard() {
     borrow_duration_days: 0,
     fine_per_day: 0,
   });
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportTypeToGenerate, setReportTypeToGenerate] = useState(null);
+  const [reportDates, setReportDates] = useState({ from: null, to: null });
 
   const navigate = useNavigate();
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
@@ -86,17 +91,32 @@ function AdminDashboard() {
     light: "#F9FAFB", // Gray-50
   };
 
-  const generateReport = async (type) => {
+  const generateReport = async () => {
+    if (!reportTypeToGenerate) return;
     try {
-      setReportLoading((prev) => ({ ...prev, [type]: true }));
+      setReportLoading((prev) => ({ ...prev, [reportTypeToGenerate]: true }));
+
+      const params = new URLSearchParams();
+      if (reportDates.from)
+        params.append(
+          "from_date",
+          reportDates.from.toISOString().split("T")[0]
+        );
+      if (reportDates.to)
+        params.append("to_date", reportDates.to.toISOString().split("T")[0]);
 
       // Add responseType: 'blob' to the request config
-      const response = await api.get(`/admin/reports/${type}`, {
-        responseType: "blob", // This is crucial for handling binary data
-      });
+      const response = await api.get(
+        `/admin/reports/${reportTypeToGenerate}?${params}`,
+        {
+          responseType: "blob", // This is crucial for handling binary data
+        }
+      );
 
       // Create a blob from the PDF data
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = new Blob([response.data], {
+        reportTypeToGenerate: "application/pdf",
+      });
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -105,7 +125,7 @@ function AdminDashboard() {
 
       // Set the filename from response headers or create a default one
       const contentDisposition = response.headers["content-disposition"];
-      let fileName = `${type}-report-${new Date()
+      let fileName = `${reportTypeToGenerate}-report-${new Date()
         .toISOString()
         .slice(0, 10)}.pdf`;
 
@@ -124,18 +144,16 @@ function AdminDashboard() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      toast.error(`Failed to generate ${type} report`);
+      toast.error(`Failed to generate ${reportTypeToGenerate} report`);
       console.error("Report generation error:", error);
     } finally {
-      setReportLoading((prev) => ({ ...prev, [type]: false }));
+      setReportLoading((prev) => ({ ...prev, [reportTypeToGenerate]: false }));
+      setIsReportModalOpen(false);
+      setReportTypeToGenerate(null);
+      setReportDates({ from: null, to: null });
     }
   };
 
-  // Usage:
-  generateReport("books", {
-    fromDate: "2023-01-01",
-    toDate: "2023-12-31",
-  });
   const fetchNotifications = async () => {
     try {
       const response = await api.get("/admin/notifications");
@@ -556,7 +574,10 @@ function AdminDashboard() {
                 {/* Add report button at the bottom of each card */}
                 <div className="mt-4 pt-3 border-t border-gray-200">
                   <button
-                    onClick={() => generateReport(card.reportType)}
+                    onClick={() => {
+                      setReportTypeToGenerate(card.reportType);
+                      setIsReportModalOpen(true);
+                    }}
                     disabled={reportLoading[card.reportType]}
                     className={`w-full flex items-center justify-center px-3 py-1 text-sm rounded-lg ${
                       reportLoading[card.reportType]
@@ -1025,6 +1046,127 @@ function AdminDashboard() {
               </table>
             </div>
           </div>
+
+          {isReportModalOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
+              <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                  Generate Report:{" "}
+                  <span className="capitalize">{reportTypeToGenerate}</span>
+                </h2>
+
+                {/* Preset Buttons */}
+                <div className="mb-4 space-y-2">
+                  <div className="text-sm text-gray-600">Quick Ranges:</div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => {
+                        const today = new Date();
+                        setReportDates({ from: today, to: today });
+                      }}
+                      className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => {
+                        const to = new Date();
+                        const from = new Date();
+                        from.setDate(to.getDate() - 6);
+                        setReportDates({ from, to });
+                      }}
+                      className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                    >
+                      Last 7 Days
+                    </button>
+                    <button
+                      onClick={() => {
+                        const now = new Date();
+                        const from = new Date(
+                          now.getFullYear(),
+                          now.getMonth(),
+                          1
+                        );
+                        const to = new Date(
+                          now.getFullYear(),
+                          now.getMonth() + 1,
+                          0
+                        );
+                        setReportDates({ from, to });
+                      }}
+                      className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                    >
+                      This Month
+                    </button>
+                    <button
+                      onClick={() => {
+                        setReportDates({ from: null, to: null });
+                      }}
+                      className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded text-red-600"
+                    >
+                      Full Report (No Filter)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Manual Picker */}
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      From Date
+                    </label>
+                    <DatePicker
+                      selected={reportDates.from}
+                      onChange={(date) =>
+                        setReportDates((prev) => ({ ...prev, from: date }))
+                      }
+                      selectsStart
+                      startDate={reportDates.from}
+                      endDate={reportDates.to}
+                      className="w-full border px-3 py-2 rounded-md"
+                      dateFormat="yyyy-MM-dd"
+                      placeholderText="Start date"
+                      isClearable
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      To Date
+                    </label>
+                    <DatePicker
+                      selected={reportDates.to}
+                      onChange={(date) =>
+                        setReportDates((prev) => ({ ...prev, to: date }))
+                      }
+                      selectsEnd
+                      startDate={reportDates.from}
+                      endDate={reportDates.to}
+                      minDate={reportDates.from}
+                      className="w-full border px-3 py-2 rounded-md"
+                      dateFormat="yyyy-MM-dd"
+                      placeholderText="End date"
+                      isClearable
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setIsReportModalOpen(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={generateReport}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                  >
+                    Generate PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
