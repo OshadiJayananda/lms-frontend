@@ -3,13 +3,9 @@ import SideBar from "../../Components/SideBar";
 import HeaderBanner from "../../Components/HeaderBanner";
 import Header from "../../Components/Header";
 import {
-  FaBell,
   FaUsers,
   FaBook,
-  FaClipboardCheck,
   FaClock,
-  FaCheck,
-  FaTimes,
   FaCog,
   FaUndo,
   FaChartLine,
@@ -37,7 +33,6 @@ import "react-datepicker/dist/react-datepicker.css";
 function AdminDashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showReportsDropdown, setShowReportsDropdown] = useState(false);
   const [stats, setStats] = useState({
@@ -208,41 +203,6 @@ function AdminDashboard() {
     }
   };
 
-  const markNotificationAsRead = async (id) => {
-    try {
-      await api.post(`/notifications/${id}/read`);
-      fetchNotifications();
-    } catch (err) {
-      console.error("Error marking notification:", err);
-    }
-  };
-
-  const markAllNotificationsAsRead = async () => {
-    try {
-      await api.post("/notifications/read-all");
-      fetchNotifications();
-    } catch (err) {
-      console.error("Error marking all as read:", err);
-    }
-  };
-
-  const handleReservationAction = async (notificationId, action) => {
-    try {
-      await api.post(`/notifications/${notificationId}/read`);
-      const response = await api.post(
-        `/admin/book-reservations/${notificationId}/${action}`
-      );
-      toast.success(response.data.message, { position: "top-right" });
-      fetchNotifications();
-      fetchDashboardStats();
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || `Failed to ${action} reservation`,
-        { position: "top-right" }
-      );
-    }
-  };
-
   const openModal = () => {
     setIsModalOpen(true);
   };
@@ -389,20 +349,20 @@ function AdminDashboard() {
     },
   ];
 
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case "reservation_created":
-        return <FaBook className="text-blue-500 mr-3 text-lg" />;
-      case "reservation_approved":
-        return <FaCheck className="text-green-500 mr-3 text-lg" />;
-      case "reservation_declined":
-        return <FaTimes className="text-red-500 mr-3 text-lg" />;
-      case "reservation_confirmed":
-        return <FaCheck className="text-green-500 mr-3 text-lg" />;
-      default:
-        return <FaBell className="text-yellow-500 mr-3 text-lg" />;
-    }
-  };
+  // const getNotificationIcon = (type) => {
+  //   switch (type) {
+  //     case "reservation_created":
+  //       return <FaBook className="text-blue-500 mr-3 text-lg" />;
+  //     case "reservation_approved":
+  //       return <FaCheck className="text-green-500 mr-3 text-lg" />;
+  //     case "reservation_declined":
+  //       return <FaTimes className="text-red-500 mr-3 text-lg" />;
+  //     case "reservation_confirmed":
+  //       return <FaCheck className="text-green-500 mr-3 text-lg" />;
+  //     default:
+  //       return <FaBell className="text-yellow-500 mr-3 text-lg" />;
+  //   }
+  // };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -438,106 +398,6 @@ function AdminDashboard() {
           <div className="flex justify-between items-center mb-8">
             <div className={`text-2xl ${fontStyles.heading} text-gray-800`}>
               Dashboard Overview
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className={`p-3 rounded-full relative transition-all ${
-                  showNotifications ? "bg-indigo-100" : "hover:bg-gray-100"
-                }`}
-                aria-label="Notifications"
-              >
-                <FaBell
-                  size={20}
-                  className={`${loading ? "animate-spin" : ""} ${
-                    notifications.filter((n) => !n.is_read).length > 0
-                      ? "text-indigo-600"
-                      : "text-gray-500"
-                  }`}
-                />
-                {notifications.filter((n) => !n.is_read).length > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                    {notifications.filter((n) => !n.is_read).length}
-                  </span>
-                )}
-              </button>
-
-              {/* Notifications Dropdown */}
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50 border border-gray-200 transform origin-top-right transition-all">
-                  <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-lg">
-                    <h3
-                      className={`font-semibold ${fontStyles.heading} text-gray-800`}
-                    >
-                      Notifications
-                    </h3>
-                    <div className="flex space-x-3">
-                      {notifications.filter((n) => !n.is_read).length > 0 && (
-                        <button
-                          onClick={markAllNotificationsAsRead}
-                          className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
-                        >
-                          Mark all as read
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setShowNotifications(false)}
-                        className="text-xs text-gray-500 hover:text-gray-700"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {notifications.length > 0 ? (
-                      notifications.map((n) => (
-                        <div
-                          key={n.id}
-                          className={`p-4 border-b border-gray-100 hover:bg-indigo-50 cursor-pointer transition-colors ${
-                            !n.is_read ? "bg-blue-50" : ""
-                          }`}
-                          onClick={() => markNotificationAsRead(n.id)}
-                        >
-                          <div className="flex items-start">
-                            {getNotificationIcon(n.type)}
-                            <div className="flex-1">
-                              <p
-                                className={`text-sm font-medium ${fontStyles.heading} text-gray-800`}
-                              >
-                                {n.title}
-                              </p>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {n.message}
-                              </p>
-                              <p className="text-xs text-gray-400 mt-2">
-                                {new Date(n.created_at).toLocaleString()}
-                              </p>
-                              {n.type === "reservation_declined" && (
-                                <div className="mt-3">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      fetchPendingReservations(n.book_id);
-                                    }}
-                                    className="text-xs bg-indigo-100 text-indigo-600 px-3 py-1 rounded hover:bg-indigo-200 transition-colors"
-                                  >
-                                    Check pending reservations
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-6 text-center text-gray-500">
-                        <FaBell className="mx-auto text-gray-300 text-2xl mb-2" />
-                        <p>No new notifications</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 

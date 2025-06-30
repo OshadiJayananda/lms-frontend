@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import HeaderBanner from "../../Components/HeaderBanner";
 import ClientSidebar from "../../Components/ClientSidebar";
 import {
-  FaBell,
   FaBookOpen,
   FaClock,
-  FaExchangeAlt,
   FaCheckCircle,
-  FaCheck,
   FaArrowRight,
   FaSearch,
   FaBook,
@@ -17,7 +14,7 @@ import {
 } from "react-icons/fa";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   PieChart,
   Pie,
@@ -78,12 +75,7 @@ const QUOTES = [
 
 function Dashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState(null);
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
   const [stats, setStats] = useState({
     borrowed: 0,
     returned: 0,
@@ -103,22 +95,11 @@ function Dashboard() {
   const [quote, setQuote] = useState(QUOTES[0]);
   const [isNewUser, setIsNewUser] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const navigate = useNavigate();
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
   const COLORS = ["#4F46E5", "#10B981", "#F59E0B"];
   const FONT_FAMILY =
     "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const response = await api.get("/user/notifications");
-      setNotifications(response.data);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-      if (error.response?.status === 401) navigate("/login");
-    }
-  }, [navigate]);
 
   const fetchBorrowingPolicy = async () => {
     setLoading(true);
@@ -168,107 +149,12 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
-    fetchNotifications();
     fetchBorrowingPolicy();
     fetchStats();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, []);
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
-  };
-
-  const handleNotificationClick = (notification) => {
-    if (notification.type === "renewal_date_changed") {
-      setSelectedNotification(notification);
-      setShowConfirmationModal(true);
-    } else if (notification.type === "reservation_approved") {
-      setSelectedNotification(notification);
-      setShowConfirmationModal(true);
-    }
-    markNotificationAsRead(notification.id);
-  };
-
-  const handleRenewalResponse = async (confirm) => {
-    if (!selectedNotification?.id) {
-      toast.error("Notification information is missing");
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      const response = await api.post(
-        `/notifications/${selectedNotification.id}/renewal-response`,
-        { confirm }
-      );
-
-      toast.success(
-        response.data.message ||
-          (confirm
-            ? "Renewal request approved successfully"
-            : "Renewal request declined")
-      );
-
-      await fetchNotifications();
-      setShowConfirmationModal(false);
-    } catch (error) {
-      console.error("Renewal response error:", error);
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        "Failed to process your response. Please try again later.";
-      toast.error(errorMessage);
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const markNotificationAsRead = async (notificationId) => {
-    try {
-      await api.post(`/notifications/${notificationId}/read`);
-      fetchNotifications();
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    try {
-      await api.post("/notifications/read-all");
-      fetchNotifications();
-    } catch (error) {
-      console.error("Error marking all notifications as read:", error);
-    }
-  };
-
-  const handleReservationResponse = async (confirm) => {
-    if (!selectedNotification?.reservation_id) {
-      toast.error("Reservation information is missing");
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      const response = await api.post(
-        `/book-reservations/${selectedNotification.reservation_id}/response`,
-        { confirm }
-      );
-
-      toast.success(response.data.message);
-
-      await fetchNotifications();
-      setShowConfirmationModal(false);
-    } catch (error) {
-      console.error("Reservation response error:", error);
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        "Failed to process your response. Please try again later.";
-      toast.error(errorMessage);
-    } finally {
-      setProcessing(false);
-    }
   };
 
   const pieData = [
@@ -297,87 +183,6 @@ function Dashboard() {
         />
 
         <div className="p-6">
-          {/* Notification Bell */}
-          <div className="relative float-right mb-6">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="p-3 bg-white rounded-full shadow-sm hover:shadow-md transition-all relative"
-              aria-label="Notifications"
-            >
-              <FaBell size={20} className="text-indigo-600" />
-              {notifications.filter((n) => !n.is_read).length > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                  {notifications.filter((n) => !n.is_read).length}
-                </span>
-              )}
-            </button>
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-10 border border-gray-100">
-                <div className="p-3 border-b border-gray-100 flex justify-between items-center bg-indigo-50 rounded-t-lg">
-                  <h3 className="font-semibold text-indigo-700">
-                    Notifications
-                  </h3>
-                  {notifications.filter((n) => !n.is_read).length > 0 && (
-                    <button
-                      onClick={markAllAsRead}
-                      className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
-                    >
-                      Mark all as read
-                    </button>
-                  )}
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.length > 0 ? (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`p-3 border-b border-gray-100 hover:bg-indigo-50 cursor-pointer transition-colors ${
-                          !notification.is_read ? "bg-blue-50" : ""
-                        }`}
-                        onClick={() => handleNotificationClick(notification)}
-                      >
-                        <div className="flex items-start">
-                          <div
-                            className={`p-2 rounded-full mr-3 ${
-                              notification.type === "renewal_date_changed"
-                                ? "bg-purple-100 text-purple-600"
-                                : notification.type === "reservation_approved"
-                                ? "bg-green-100 text-green-600"
-                                : "bg-blue-100 text-blue-600"
-                            }`}
-                          >
-                            {notification.type === "reservation_approved" ? (
-                              <FaCheck size={14} />
-                            ) : (
-                              <FaExchangeAlt size={14} />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-800">
-                              {notification.title}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-2">
-                              {new Date(
-                                notification.created_at
-                              ).toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-4 text-center text-gray-500">
-                      No new notifications
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Welcome Section */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
@@ -896,78 +701,6 @@ function Dashboard() {
                     </Link>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Renewal Confirmation Modal */}
-        {showConfirmationModal && selectedNotification && (
-          <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-xl shadow-xl w-96 max-w-full mx-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  {selectedNotification.type === "reservation_approved"
-                    ? "Reservation Approved"
-                    : "Renewal Request"}
-                </h2>
-                <button
-                  onClick={() => setShowConfirmationModal(false)}
-                  className="text-gray-500 hover:text-gray-700 text-xl"
-                  aria-label="Close modal"
-                >
-                  &times;
-                </button>
-              </div>
-              <div className="mb-6">
-                <p className="text-gray-600 mb-4">
-                  {selectedNotification.message}
-                </p>
-                <p className="font-medium text-gray-800">
-                  {selectedNotification.type === "reservation_approved"
-                    ? "Do you still want to borrow this book?"
-                    : "Do you accept this new renewal date?"}
-                </p>
-              </div>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    if (selectedNotification.type === "reservation_approved") {
-                      handleReservationResponse(false);
-                    } else {
-                      handleRenewalResponse(false);
-                    }
-                  }}
-                  className={`px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors ${
-                    processing ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  disabled={processing}
-                >
-                  {processing
-                    ? "Processing..."
-                    : selectedNotification.type === "reservation_approved"
-                    ? "No, Cancel"
-                    : "Decline"}
-                </button>
-                <button
-                  onClick={() => {
-                    if (selectedNotification.type === "reservation_approved") {
-                      handleReservationResponse(true);
-                    } else {
-                      handleRenewalResponse(true);
-                    }
-                  }}
-                  className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors ${
-                    processing ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  disabled={processing}
-                >
-                  {processing
-                    ? "Processing..."
-                    : selectedNotification.type === "reservation_approved"
-                    ? "Yes, Confirm"
-                    : "Accept"}
-                </button>
               </div>
             </div>
           </div>
