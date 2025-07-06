@@ -101,12 +101,6 @@ function AdminDashboard() {
       if (reportDates.to)
         params.append("to_date", reportDates.to.toISOString().split("T")[0]);
 
-      // Special handling for overdue report
-      if (reportTypeToGenerate === "overdue") {
-        await generateOverdueReport();
-        return;
-      }
-
       // Default handling for other report types
       const response = await api.get(
         `/admin/reports/${reportTypeToGenerate}?${params}`,
@@ -188,60 +182,6 @@ function AdminDashboard() {
       toast.error("Failed to fetch dashboard stats", { position: "top-right" });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const generateOverdueReport = async () => {
-    try {
-      setReportLoading((prev) => ({ ...prev, overdue: true }));
-
-      const params = new URLSearchParams();
-      if (reportDates.from) {
-        params.append(
-          "from_date",
-          reportDates.from.toISOString().split("T")[0]
-        );
-      }
-      if (reportDates.to) {
-        params.append("to_date", reportDates.to.toISOString().split("T")[0]);
-      }
-
-      const response = await api.get(`/admin/reports/overdue?${params}`, {
-        responseType: "blob",
-        headers: {
-          Accept: "application/pdf",
-        },
-      });
-
-      // Create download link with proper filename
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `Overdue-Report-${new Date().toISOString().split("T")[0]}.pdf`
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      console.error("Report generation error:", error);
-
-      // Handle 500 errors specifically
-      if (error.response?.status === 500) {
-        try {
-          // Try to read error message from blob response
-          const errorText = await error.response.data.text();
-          const errorData = JSON.parse(errorText);
-          toast.error(errorData.message || "Server error generating report");
-        } catch (parseError) {
-          toast.error("Failed to generate overdue report");
-        }
-      } else {
-        toast.error("Failed to generate report. Please try again.");
-      }
-    } finally {
-      setReportLoading((prev) => ({ ...prev, overdue: false }));
     }
   };
 
