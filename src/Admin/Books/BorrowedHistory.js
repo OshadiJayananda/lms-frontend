@@ -45,18 +45,14 @@ function BorrowedHistory() {
   const fetchBorrowedBooks = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/admin/borrowed-books?q=${searchQuery}`);
-      // Mark overdue books and calculate fines
-      const booksWithOverdue = response.data.map((book) => {
-        const isOverdue = checkIfOverdue(book);
-        return {
-          ...book,
-          is_overdue: isOverdue,
-          fine: isOverdue ? calculateFine(book) : 0,
-        };
-      });
-      setBorrowedBooks(booksWithOverdue);
-      applyFilters(booksWithOverdue, searchQuery, statusFilter);
+      let url = "/admin/borrowed-books";
+      if (statusFilter === "Overdue") {
+        url = "/borrows/overdue"; // Use the standardized endpoint
+      }
+
+      const response = await api.get(url);
+      setBorrowedBooks(response.data);
+      applyFilters(response.data, searchQuery, statusFilter);
     } catch (error) {
       setError("Failed to fetch borrowed books. Please try again later.");
       toast.error("Failed to load borrowed books data");
@@ -64,7 +60,6 @@ function BorrowedHistory() {
       setLoading(false);
     }
   };
-
   const checkIfOverdue = (borrow) => {
     if (["Returned", "Confirmed", "Rejected"].includes(borrow.status)) {
       return false;
