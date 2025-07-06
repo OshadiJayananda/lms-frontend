@@ -12,6 +12,8 @@ import {
   FaCalendarAlt,
   FaClock,
   FaExchangeAlt,
+  FaFilter,
+  FaTrash,
 } from "react-icons/fa";
 
 function BorrowedHistory() {
@@ -20,9 +22,21 @@ function BorrowedHistory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [filteredBooks, setFilteredBooks] = useState([]);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+
+  const statusOptions = [
+    "All",
+    "Pending",
+    "Approved",
+    "Issued",
+    "Overdue",
+    "Returned",
+    "Confirmed",
+    "Rejected",
+  ];
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
@@ -32,8 +46,17 @@ function BorrowedHistory() {
     try {
       setLoading(true);
       const response = await api.get(`/admin/borrowed-books?q=${searchQuery}`);
-      setBorrowedBooks(response.data);
-      setFilteredBooks(response.data);
+      // Mark overdue books and calculate fines
+      const booksWithOverdue = response.data.map((book) => {
+        const isOverdue = checkIfOverdue(book);
+        return {
+          ...book,
+          is_overdue: isOverdue,
+          fine: isOverdue ? calculateFine(book) : 0,
+        };
+      });
+      setBorrowedBooks(booksWithOverdue);
+      applyFilters(booksWithOverdue, searchQuery, statusFilter);
     } catch (error) {
       setError("Failed to fetch borrowed books. Please try again later.");
       toast.error("Failed to load borrowed books data");
@@ -42,25 +65,103 @@ function BorrowedHistory() {
     }
   };
 
+  const checkIfOverdue = (borrow) => {
+    if (["Returned", "Confirmed", "Rejected"].includes(borrow.status)) {
+      return false;
+    }
+    if (!borrow.due_date) return false;
+
+    const dueDate = new Date(borrow.due_date);
+    const today = new Date();
+    return dueDate < today;
+  };
+
+  const calculateFine = (borrow) => {
+    if (!borrow.due_date) return 0;
+
+    const dueDate = new Date(borrow.due_date);
+    const today = new Date();
+    const diffTime = Math.max(0, today - dueDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Assuming a fixed fine rate of $0.50 per day for overdue books
+    const fineRate = 0.5;
+    return diffDays * fineRate;
+  };
+
+  const applyFilters = (books, query, status) => {
+    let filtered = [...books];
+
+    // Apply search filter
+    if (query) {
+      filtered = filtered.filter(
+        (borrow) =>
+          borrow.book.id.toString().includes(query) ||
+          borrow.user.id.toString().includes(query) ||
+          borrow.book.name.toLowerCase().includes(query.toLowerCase()) ||
+          borrow.book.isbn.toLowerCase().includes(query.toLowerCase()) ||
+          borrow.user.name.toLowerCase().includes(query.toLowerCase())
+      );
+    }
+
+    // Apply status filter
+    if (status !== "All") {
+      if (status === "Overdue") {
+        filtered = filtered.filter((borrow) => borrow.is_overdue);
+      } else {
+        filtered = filtered.filter((borrow) => borrow.status === status);
+      }
+    }
+
+    setFilteredBooks(filtered);
+  };
+
+  const deleteBorrowRecord = async (borrowId) => {
+    if (!window.confirm("Are you sure you want to delete this record?")) return;
+
+    try {
+      await api.delete(`/admin/borrowed-books/${borrowId}`);
+      toast.success("Borrow record deleted successfully");
+      fetchBorrowedBooks();
+    } catch (error) {
+      toast.error("Failed to delete borrow record");
+    }
+  };
+
   useEffect(() => {
     fetchBorrowedBooks();
   }, []);
 
-  const handleSearch = (event) => {
-    const query = event.target.value.toLowerCase();
-    setSearchQuery(query);
+  useEffect(() => {
+    applyFilters(borrowedBooks, searchQuery, statusFilter);
+  }, [searchQuery, statusFilter, borrowedBooks]);
 
-    if (query === "") {
-      setFilteredBooks(borrowedBooks);
-    } else {
-      const filtered = borrowedBooks.filter(
-        (borrow) =>
-          borrow.book.id.toString().includes(query) ||
-          borrow.user.id.toString().includes(query) ||
-          borrow.book.name.toLowerCase().includes(query) ||
-          borrow.book.isbn.toLowerCase().includes(query)
-      );
-      setFilteredBooks(filtered);
+  const handleSearch = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handleStatusFilterChange = (event) => {
+    setStatusFilter(event.target.value);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Returned":
+        return "bg-green-100 text-green-800";
+      case "Overdue":
+        return "bg-red-100 text-red-800";
+      case "Issued":
+        return "bg-blue-100 text-blue-800";
+      case "Confirmed":
+        return "bg-purple-100 text-purple-800";
+      case "Pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "Approved":
+        return "bg-teal-100 text-teal-800";
+      case "Rejected":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -84,30 +185,51 @@ function BorrowedHistory() {
             <div className="flex-1 w-full md:w-auto">
               <Header />
             </div>
-
-            <div className="relative w-full md:w-96">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaSearch className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search by Book/User ID, Name or ISBN..."
-                value={searchQuery}
-                onChange={handleSearch}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
           </div>
           <div className="p-6">
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 flex items-center">
-                <FaHistory className="text-blue-600 mr-2" />
-                <h2 className="text-2xl font-bold text-gray-800 font-serif">
-                  Borrowed Book History
-                </h2>
-                <span className="ml-auto bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                  {filteredBooks.length} records
-                </span>
+              <div className="px-6 py-4 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center">
+                  <FaHistory className="text-blue-600 mr-2" />
+                  <h2 className="text-2xl font-bold text-gray-800 font-serif">
+                    Borrowed Book History
+                  </h2>
+                  <span className="ml-4 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    {filteredBooks.length} records
+                  </span>
+                </div>
+
+                <div className="w-full md:w-auto flex flex-col md:flex-row gap-3">
+                  <div className="relative w-full md:w-64">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FaSearch className="text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search by Book/User ID, Name or ISBN..."
+                      value={searchQuery}
+                      onChange={handleSearch}
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="relative w-full md:w-48">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FaFilter className="text-gray-400" />
+                    </div>
+                    <select
+                      value={statusFilter}
+                      onChange={handleStatusFilterChange}
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                    >
+                      {statusOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
 
               {loading ? (
@@ -130,13 +252,18 @@ function BorrowedHistory() {
               ) : filteredBooks.length === 0 ? (
                 <div className="p-8 text-center">
                   <FaBook className="mx-auto text-gray-400 text-4xl mb-3" />
-                  <p className="text-gray-500">No borrowed books found</p>
-                  {searchQuery && (
+                  <p className="text-gray-500">
+                    No borrowed books found matching your criteria
+                  </p>
+                  {(searchQuery || statusFilter !== "All") && (
                     <button
-                      onClick={() => setSearchQuery("")}
+                      onClick={() => {
+                        setSearchQuery("");
+                        setStatusFilter("All");
+                      }}
                       className="mt-4 text-blue-600 hover:text-blue-800 text-sm"
                     >
-                      Clear search
+                      Clear filters
                     </button>
                   )}
                 </div>
@@ -152,7 +279,7 @@ function BorrowedHistory() {
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           <div className="flex items-center">
-                            <FaUser className="mr-1" /> User ID
+                            <FaUser className="mr-1" /> User
                           </div>
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -169,6 +296,9 @@ function BorrowedHistory() {
                           <div className="flex items-center">
                             <FaExchangeAlt className="mr-1" /> Status
                           </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
                         </th>
                       </tr>
                     </thead>
@@ -195,8 +325,11 @@ function BorrowedHistory() {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">
-                              {borrow.user.id}
+                            <div className="text-sm font-medium text-gray-900">
+                              {borrow.user.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ID: {borrow.user.id}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -205,7 +338,7 @@ function BorrowedHistory() {
                                 ? new Date(
                                     borrow.issued_date
                                   ).toLocaleDateString()
-                                : "Not Issued Yet"}
+                                : "Not Issued"}
                             </div>
                             <div className="text-xs text-gray-500">
                               {borrow.issued_date
@@ -215,13 +348,14 @@ function BorrowedHistory() {
                                 : ""}
                             </div>
                           </td>
-
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div
                               className={`text-sm ${
                                 borrow.due_date &&
                                 new Date(borrow.due_date) < new Date() &&
-                                borrow.status !== "Returned"
+                                !["Returned", "Confirmed"].includes(
+                                  borrow.status
+                                )
                                   ? "text-red-600 font-medium"
                                   : "text-gray-900"
                               }`}
@@ -236,21 +370,33 @@ function BorrowedHistory() {
                                 : ""}
                             </div>
                           </td>
-
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
-                              className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                borrow.status === "Returned"
-                                  ? "bg-green-100 text-green-800"
-                                  : borrow.status === "Expired"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                              }`}
+                              className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                                borrow.is_overdue ? "Overdue" : borrow.status
+                              )}`}
                             >
                               {borrow.status === "Confirmed"
                                 ? "Return Confirmed"
+                                : borrow.is_overdue
+                                ? "Overdue"
                                 : borrow.status}
                             </span>
+                            {(borrow.is_overdue ||
+                              statusFilter === "Overdue") && (
+                              <div className="mt-1 text-xs text-red-600">
+                                Fine: ${borrow.fine?.toFixed(2) || "0.00"}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                              onClick={() => deleteBorrowRecord(borrow.id)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Delete record"
+                            >
+                              <FaTrash />
+                            </button>
                           </td>
                         </tr>
                       ))}
