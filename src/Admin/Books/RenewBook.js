@@ -330,10 +330,18 @@ function RenewBook() {
                                 ? "bg-blue-100 text-blue-800"
                                 : request.status === "approved"
                                 ? "bg-green-100 text-green-800"
+                                : request.status === "rejected" &&
+                                  request.admin_notes?.includes(
+                                    "Automatically canceled"
+                                  )
+                                ? "bg-purple-100 text-purple-800"
                                 : "bg-red-100 text-red-800"
                             }`}
                           >
                             {request.status.replace(/_/g, " ")}
+                            {request.admin_notes?.includes(
+                              "Automatically canceled"
+                            ) && " (Expired)"}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
