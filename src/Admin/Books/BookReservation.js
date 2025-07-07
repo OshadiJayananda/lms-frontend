@@ -9,6 +9,7 @@ import {
   FaUser,
   FaSearch,
   FaInfoCircle,
+  FaTrash,
 } from "react-icons/fa";
 import api from "../../Components/Api";
 import { toast } from "react-toastify";
@@ -110,6 +111,20 @@ function BookReservation() {
 
     return matchesSearch && matchesStatus;
   });
+
+  const handleDelete = async (reservationId) => {
+    if (window.confirm("Are you sure you want to delete this reservation?")) {
+      try {
+        await api.delete(`/admin/book-reservations/${reservationId}`);
+        toast.success("Reservation deleted successfully");
+        fetchReservations(currentPage);
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message || "Failed to delete reservation"
+        );
+      }
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -361,6 +376,15 @@ function BookReservation() {
                                 ) : (
                                   "Confirm Issued"
                                 )}
+                              </button>
+                            )}
+                            {reservation.status === "rejected" && (
+                              <button
+                                onClick={() => handleDelete(reservation.id)}
+                                className="flex items-center text-red-600 hover:text-red-900 px-3 py-1 rounded-md hover:bg-red-100 transition text-sm"
+                                title="Delete"
+                              >
+                                <FaTrash className="mr-1" /> Delete
                               </button>
                             )}
                           </div>
