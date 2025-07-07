@@ -9,6 +9,7 @@ import {
   FaInfoCircle,
   FaUser,
   FaSearch,
+  FaTrash,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import api from "../../Components/Api";
@@ -25,7 +26,7 @@ function RenewBook() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
-  const [statusFilter, setStatusFilter] = useState("all"); // 'all' will show all statuses
+  const [statusFilter, setStatusFilter] = useState("all");
   const STATUS_PENDING = "pending";
   const STATUS_PENDING_USER_CONFIRMATION = "pending_user_confirmation";
   const STATUS_APPROVED = "approved";
@@ -141,6 +142,22 @@ function RenewBook() {
     setIsDateModalOpen(true);
   };
 
+  const handleDelete = async (requestId) => {
+    if (
+      window.confirm("Are you sure you want to delete this renewal request?")
+    ) {
+      try {
+        await api.delete(`/admin/renew-requests/${requestId}`);
+        toast.success("Renewal request deleted successfully");
+        fetchRenewRequests(currentPage);
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message || "Failed to delete renewal request"
+        );
+      }
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
       <SideBar isCollapsed={isSidebarCollapsed} onToggle={handleToggle} />
@@ -228,35 +245,32 @@ function RenewBook() {
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
-                  {/* Table headers remain the same */}
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Book Details
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Patron
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Current Due Date
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Requested Date
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
 
-                  {/* Table body with filteredRequests */}
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredRequests.map((request) => (
-                      <tr key={request.id}>
-                        {/* Table row content remains the same */}
+                      <tr key={request.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-16 w-12">
@@ -297,17 +311,17 @@ function RenewBook() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(
                             request.current_due_date
                           ).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(
                             request.requested_date
                           ).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`px-2 py-1 text-xs font-medium rounded-full ${
                               request.status === "pending"
@@ -322,47 +336,44 @@ function RenewBook() {
                             {request.status.replace(/_/g, " ")}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          {request.status === "pending" && (
-                            <>
-                              <button
-                                onClick={() => openDateModal(request)}
-                                className="p-2 text-blue-600 hover:text-blue-800"
-                                title="Propose New Date"
-                              >
-                                <FaCalendarAlt />
-                              </button>
-                              <button
-                                onClick={() => handleApprove(request.id, true)}
-                                className="p-2 text-green-600 hover:text-green-800"
-                                title="Approve As Requested"
-                              >
-                                <FaCheck />
-                              </button>
-                              <button
-                                onClick={() => handleReject(request.id)}
-                                className="p-2 text-red-600 hover:text-red-800"
-                                title="Reject"
-                              >
-                                <FaTimes />
-                              </button>
-                            </>
-                          )}
-                          {request.status === "pending_user_confirmation" && (
-                            <span className="text-sm text-gray-500">
-                              Waiting for user to confirm the new date
-                            </span>
-                          )}
-                          {request.status === "approved" && (
-                            <span className="text-sm text-green-600">
-                              Renewal confirmed
-                            </span>
-                          )}
-                          {request.status === "rejected" && (
-                            <span className="text-sm text-red-600">
-                              Renewal rejected
-                            </span>
-                          )}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            {request.status === "pending" && (
+                              <>
+                                <button
+                                  onClick={() => openDateModal(request)}
+                                  className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+                                  title="Propose New Date"
+                                >
+                                  <FaCalendarAlt />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleApprove(request.id, true)
+                                  }
+                                  className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded"
+                                  title="Approve As Requested"
+                                >
+                                  <FaCheck />
+                                </button>
+                                <button
+                                  onClick={() => handleReject(request.id)}
+                                  className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                                  title="Reject"
+                                >
+                                  <FaTimes />
+                                </button>
+                              </>
+                            )}
+
+                            <button
+                              onClick={() => handleDelete(request.id)}
+                              className="text-red-600 hover:text-red-900 rounded transition-colors duration-200"
+                              title="Delete Request"
+                            >
+                              <FaTrash className="text-sm" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -373,7 +384,7 @@ function RenewBook() {
           )}
 
           {filteredRequests.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-white rounded-b-xl shadow-sm">
               <div className="text-sm text-gray-500">
                 Showing page {currentPage} of {totalPages}
               </div>
@@ -384,9 +395,9 @@ function RenewBook() {
                     setCurrentPage(prevPage);
                   }}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-md ${
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
                     currentPage === 1
-                      ? "bg-gray-100 text-gray-400"
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   }`}
                 >
@@ -398,9 +409,9 @@ function RenewBook() {
                     setCurrentPage(nextPage);
                   }}
                   disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded-md ${
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
                     currentPage === totalPages
-                      ? "bg-gray-100 text-gray-400"
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   }`}
                 >
@@ -411,7 +422,7 @@ function RenewBook() {
           )}
         </div>
 
-        {/* Date Adjustment Modal (remains the same) */}
+        {/* Date Adjustment Modal */}
         {isDateModalOpen && selectedRequest && (
           <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
@@ -435,7 +446,7 @@ function RenewBook() {
                   onChange={(date) => setNewDueDate(date)}
                   minDate={new Date(selectedRequest.current_due_date)}
                   maxDate={new Date(selectedRequest.requested_date)}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
                   dateFormat="yyyy-MM-dd"
                   showMonthDropdown
                   showYearDropdown
@@ -473,7 +484,7 @@ function RenewBook() {
                 </button>
                 <button
                   onClick={() => handleApprove(selectedRequest.id)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
                   disabled={!newDueDate}
                 >
                   Submit New Date
