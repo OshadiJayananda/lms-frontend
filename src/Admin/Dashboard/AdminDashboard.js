@@ -101,7 +101,6 @@ function AdminDashboard() {
       if (reportDates.to)
         params.append("to_date", reportDates.to.toISOString().split("T")[0]);
 
-      // Default handling for other report types
       const response = await api.get(
         `/admin/reports/${reportTypeToGenerate}?${params}`,
         {
@@ -109,17 +108,28 @@ function AdminDashboard() {
         }
       );
 
-      // Create a blob from the PDF data
+      // Check if response is a PDF
+      if (response.headers["content-type"] !== "application/pdf") {
+        // Try to parse as JSON error response
+        const text = await response.data.text();
+        try {
+          const errorData = JSON.parse(text);
+          throw new Error(
+            errorData.error || errorData.message || "Unknown error"
+          );
+        } catch (e) {
+          throw new Error("Server returned non-PDF response");
+        }
+      }
+
       const blob = new Blob([response.data], {
         type: "application/pdf",
       });
 
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
 
-      // Set the filename from response headers or create a default one
       const contentDisposition = response.headers["content-disposition"];
       let fileName = `${reportTypeToGenerate}-report-${new Date()
         .toISOString()
@@ -135,12 +145,18 @@ function AdminDashboard() {
       link.setAttribute("download", fileName);
       document.body.appendChild(link);
       link.click();
-
-      // Clean up
       link.remove();
       window.URL.revokeObjectURL(url);
+
+      toast.success(`Report generated successfully!`, {
+        position: "top-right",
+      });
     } catch (error) {
-      toast.error(`Failed to generate ${reportTypeToGenerate} report`);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        `Failed to generate ${reportTypeToGenerate} report`;
+      toast.error(errorMessage, { position: "top-right" });
       console.error("Report generation error:", error);
     } finally {
       setReportLoading((prev) => ({ ...prev, [reportTypeToGenerate]: false }));
@@ -149,7 +165,6 @@ function AdminDashboard() {
       setReportDates({ from: null, to: null });
     }
   };
-
   const fetchNotifications = async () => {
     try {
       const response = await api.get("/admin/notifications");
