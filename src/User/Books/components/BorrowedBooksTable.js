@@ -4,6 +4,8 @@ import {
   FaCalendarAlt,
   FaChevronLeft,
   FaChevronRight,
+  FaMoneyBillWave,
+  FaInfoCircle,
 } from "react-icons/fa";
 
 const BorrowedBooksTable = ({
@@ -20,8 +22,8 @@ const BorrowedBooksTable = ({
 }) => {
   const filteredBooks = borrowedBooks.filter(
     (borrow) =>
-      (borrow.book.name.toLowerCase().includes(searchQuery) ||
-        borrow.book.isbn.toLowerCase().includes(searchQuery) ||
+      (borrow.book.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        borrow.book.isbn.toLowerCase().includes(searchQuery.toLowerCase()) ||
         borrow.book.id.toString().includes(searchQuery)) &&
       (selectedStatus === "" ||
         (selectedStatus === "overdue"
@@ -40,7 +42,10 @@ const BorrowedBooksTable = ({
   if (error) {
     return (
       <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-        <p className="text-sm text-red-700">{error}</p>
+        <div className="flex items-center">
+          <FaInfoCircle className="text-red-500 mr-2" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
       </div>
     );
   }
@@ -64,11 +69,21 @@ const BorrowedBooksTable = ({
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden">
       <div className="p-6 border-b border-gray-200">
-        <h2 className="text-xl font-bold text-gray-800">Your Borrow History</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Showing {totalCount} book
-          {totalCount !== 1 ? "s" : ""}
-        </p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">
+              Your Borrow History
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Showing {filteredBooks.length} of {totalCount} book
+              {totalCount !== 1 ? "s" : ""}
+            </p>
+          </div>
+          {/* <div className="text-sm bg-blue-50 text-blue-800 px-4 py-2 rounded-lg">
+            <span className="font-medium">Tip:</span> Click on the book cover
+            for more details
+          </div> */}
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -76,13 +91,10 @@ const BorrowedBooksTable = ({
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Book
+                Book Details
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Details
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Dates
+                Borrow Information
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
@@ -92,78 +104,110 @@ const BorrowedBooksTable = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredBooks.map((borrow) => {
               let statusClass = "bg-yellow-100 text-yellow-800";
+              let statusText = borrow.status;
+
               if (
                 borrow.status === "Expired" ||
                 borrow.status === "Overdue" ||
                 borrow.is_overdue
               ) {
                 statusClass = "bg-red-100 text-red-800";
+                statusText = "Overdue";
               } else if (
                 borrow.status === "Returned" ||
                 borrow.status === "Confirmed"
               ) {
                 statusClass = "bg-green-100 text-green-800";
+                statusText =
+                  borrow.status === "Confirmed"
+                    ? "Return Confirmed"
+                    : "Returned";
               } else if (borrow.status === "Renewed") {
                 statusClass = "bg-blue-100 text-blue-800";
               }
 
+              const daysOverdue = borrow.is_overdue
+                ? Math.ceil(
+                    (new Date() - new Date(borrow.due_date)) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                : 0;
+
               return (
                 <tr key={borrow.id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-16 w-12">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 h-24 w-16 cursor-pointer hover:shadow-md transition-shadow">
                         <img
-                          className="h-full w-full object-cover rounded"
+                          className="h-full w-full object-cover rounded-lg"
                           src={borrow.book.image || "/default-book-cover.png"}
                           alt={borrow.book.name}
                         />
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-semibold text-gray-900">
                           {borrow.book.name}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          <div>ID: {borrow.book.id}</div>
+                          <div>ISBN: {borrow.book.isbn}</div>
+                          <div>
+                            Author: {borrow.book.author?.name || "Unknown"}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    <div>ID: {borrow.book.id}</div>
-                    <div>ISBN: {borrow.book.isbn}</div>
-                    <div>
-                      Author: {borrow.book.author?.name || "Unknown Author"}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    <div className="flex items-center mb-1">
-                      <FaCalendarAlt className="mr-2 text-gray-400" />
-                      <span className="font-medium">Issued:</span>{" "}
-                      {borrow.issued_date
-                        ? new Date(borrow.issued_date).toLocaleDateString()
-                        : "Not Issued Yet"}
-                    </div>
-                    <div className="flex items-center">
-                      <FaCalendarAlt className="mr-2 text-gray-400" />
-                      <span className="font-medium">Due:</span>{" "}
-                      {borrow.due_date
-                        ? new Date(borrow.due_date).toLocaleDateString()
-                        : "Not Issued Yet"}
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-900 space-y-2">
+                      <div className="flex items-center">
+                        <FaCalendarAlt className="mr-2 text-gray-400 flex-shrink-0" />
+                        <div>
+                          <span className="font-medium">Issued:</span>{" "}
+                          {borrow.issued_date
+                            ? new Date(borrow.issued_date).toLocaleDateString()
+                            : "Not Issued Yet"}
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <FaCalendarAlt className="mr-2 text-gray-400 flex-shrink-0" />
+                        <div>
+                          <span className="font-medium">Due:</span>{" "}
+                          {borrow.due_date
+                            ? new Date(borrow.due_date).toLocaleDateString()
+                            : "Not Issued Yet"}
+                          {borrow.is_overdue && (
+                            <span className="ml-2 text-xs text-red-600">
+                              ({daysOverdue} day{daysOverdue !== 1 ? "s" : ""}{" "}
+                              overdue)
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span
-                      className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}`}
-                    >
-                      {borrow.status === "Confirmed"
-                        ? "Return Confirmed"
-                        : borrow.status}
-                    </span>
-                    {borrow.is_overdue && !borrow.fine_paid && (
-                      <button
-                        onClick={() => handlePayFine(borrow.id)}
-                        className="ml-2 mt-2 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                    <div className="flex flex-col items-start space-y-2">
+                      <span
+                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}`}
                       >
-                        Pay Fine
-                      </button>
-                    )}
+                        {statusText}
+                      </span>
+                      {borrow.is_overdue && !borrow.fine_paid && (
+                        <button
+                          onClick={() => handlePayFine(borrow.id)}
+                          className="flex items-center px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs transition-colors"
+                        >
+                          <FaMoneyBillWave className="mr-1" />
+                          Pay Fine
+                        </button>
+                      )}
+                      {/* {borrow.fine_paid && (
+                        <span className="text-xs text-green-600">
+                          Fine paid
+                        </span>
+                      )} */}
+                    </div>
                   </td>
                 </tr>
               );
@@ -172,71 +216,48 @@ const BorrowedBooksTable = ({
         </table>
       </div>
 
-      {/* Pagination Controls */}
-      <div className="px-6 py-4 border-t border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 flex justify-between sm:hidden">
+      {/* Enhanced Pagination Controls */}
+      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-sm text-gray-700">
+            Showing{" "}
+            <span className="font-medium">{(currentPage - 1) * 10 + 1}</span> to{" "}
+            <span className="font-medium">
+              {Math.min(currentPage * 10, totalCount)}
+            </span>{" "}
+            of <span className="font-medium">{totalCount}</span> results
+          </div>
+
+          <div className="flex items-center space-x-2">
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+              className={`flex items-center px-3 py-1 rounded-md border ${
                 currentPage === 1
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
+                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
             >
+              <FaChevronLeft className="h-3 w-3 mr-1" />
               Previous
             </button>
+
+            <div className="px-3 py-1 text-sm text-gray-700">
+              Page {currentPage} of {totalPages}
+            </div>
+
             <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+              className={`flex items-center px-3 py-1 rounded-md border ${
                 currentPage === totalPages
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
+                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
             >
               Next
+              <FaChevronRight className="h-3 w-3 ml-1" />
             </button>
-          </div>
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Showing page <span className="font-medium">{currentPage}</span>{" "}
-                of <span className="font-medium">{totalPages}</span>
-              </p>
-            </div>
-            <div>
-              <nav
-                className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-                aria-label="Pagination"
-              >
-                <button
-                  onClick={() => onPageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                    currentPage === 1
-                      ? "text-gray-300 cursor-not-allowed"
-                      : "text-gray-500 hover:bg-gray-50"
-                  }`}
-                >
-                  <span className="sr-only">Previous</span>
-                  <FaChevronLeft className="h-5 w-5" aria-hidden="true" />
-                </button>
-                <button
-                  onClick={() => onPageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                    currentPage === totalPages
-                      ? "text-gray-300 cursor-not-allowed"
-                      : "text-gray-500 hover:bg-gray-50"
-                  }`}
-                >
-                  <span className="sr-only">Next</span>
-                  <FaChevronRight className="h-5 w-5" aria-hidden="true" />
-                </button>
-              </nav>
-            </div>
           </div>
         </div>
       </div>
