@@ -128,7 +128,8 @@ const BorrowedBooksTable = ({
 
               const daysOverdue = borrow.is_overdue
                 ? Math.ceil(
-                    (new Date() - new Date(borrow.due_date)) /
+                    (new Date(borrow.returned_date) -
+                      new Date(borrow.due_date)) /
                       (1000 * 60 * 60 * 24)
                   )
                 : 0;
