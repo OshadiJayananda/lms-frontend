@@ -134,22 +134,6 @@ function Profile() {
       .required("Confirm password is required"),
   });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-red-600 text-lg">Failed to load user data.</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <ClientSidebar
@@ -170,91 +154,101 @@ function Profile() {
 
         <div className="p-6">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              {/* Profile Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-8 text-white">
-                <div className="flex flex-col md:flex-row items-center gap-6">
-                  <div className="relative group">
-                    <div className="w-32 h-32 rounded-full border-4 border-white overflow-hidden bg-gray-200">
-                      {user.profile_picture ? (
-                        <img
-                          src={user.profile_picture}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <FaUserCircle className="w-full h-full text-gray-400" />
-                      )}
-                    </div>
-                    <label
-                      htmlFor="profile-picture-upload"
-                      className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
-                    >
-                      <FaCamera className="text-white text-2xl" />
-                    </label>
-                    <input
-                      type="file"
-                      id="profile-picture-upload"
-                      accept="image/*"
-                      onChange={handleProfilePictureChange}
-                      className="hidden"
-                    />
-                  </div>
-                  <div className="text-center md:text-left">
-                    <h1 className="text-2xl font-bold">{user.name}</h1>
-                    <p className="text-blue-100 mt-1">{user.email}</p>
-                    <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
-                      <button
-                        onClick={() => setPasswordModalOpen(true)}
-                        className="flex items-center gap-2 bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+              </div>
+            ) : !user ? (
+              <div className="text-center py-10 text-red-600 text-lg">
+                Failed to load user data.
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                {/* Profile Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-8 text-white">
+                  <div className="flex flex-col md:flex-row items-center gap-6">
+                    <div className="relative group">
+                      <div className="w-32 h-32 rounded-full border-4 border-white overflow-hidden bg-gray-200">
+                        {user.profile_picture ? (
+                          <img
+                            src={user.profile_picture}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <FaUserCircle className="w-full h-full text-gray-400" />
+                        )}
+                      </div>
+                      <label
+                        htmlFor="profile-picture-upload"
+                        className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
                       >
-                        <FaLock /> Change Password
-                      </button>
-                      {user.profile_picture && (
+                        <FaCamera className="text-white text-2xl" />
+                      </label>
+                      <input
+                        type="file"
+                        id="profile-picture-upload"
+                        accept="image/*"
+                        onChange={handleProfilePictureChange}
+                        className="hidden"
+                      />
+                    </div>
+                    <div className="text-center md:text-left">
+                      <h1 className="text-2xl font-bold">{user.name}</h1>
+                      <p className="text-blue-100 mt-1">{user.email}</p>
+                      <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
                         <button
-                          onClick={() => setIsModalOpen(true)}
-                          className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                          onClick={() => setPasswordModalOpen(true)}
+                          className="flex items-center gap-2 bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
                         >
-                          <FaTrash /> Remove Picture
+                          <FaLock /> Change Password
                         </button>
-                      )}
+                        {user.profile_picture && (
+                          <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                          >
+                            <FaTrash /> Remove Picture
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Profile Details */}
-              <div className="p-8">
-                <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                  Profile Information
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 text-gray-600">
-                      <FaUser className="text-blue-600" />
-                      <span>Name:</span>
-                      <span className="font-medium text-gray-800">
-                        {user.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-gray-600">
-                      <FaEnvelope className="text-blue-600" />
-                      <span>Email:</span>
-                      <span className="font-medium text-gray-800">
-                        {user.email}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-gray-600">
-                      <FaPhone className="text-blue-600" />
-                      <span>Phone:</span>
-                      <span className="font-medium text-gray-800">
-                        {user.contact || "Not provided"}
-                      </span>
+                {/* Profile Details */}
+                <div className="p-8">
+                  <h2 className="text-xl font-semibold text-gray-800 mb-6">
+                    Profile Information
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 text-gray-600">
+                        <FaUser className="text-blue-600" />
+                        <span>Name:</span>
+                        <span className="font-medium text-gray-800">
+                          {user.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-gray-600">
+                        <FaEnvelope className="text-blue-600" />
+                        <span>Email:</span>
+                        <span className="font-medium text-gray-800">
+                          {user.email}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-gray-600">
+                        <FaPhone className="text-blue-600" />
+                        <span>Phone:</span>
+                        <span className="font-medium text-gray-800">
+                          {user.contact || "Not provided"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

@@ -20,23 +20,25 @@ const BorrowedBooksTable = ({
   onPageChange,
   totalCount,
 }) => {
-  const filteredBooks = borrowedBooks.filter(
-    (borrow) =>
-      (borrow.book.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        borrow.book.isbn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        borrow.book.id.toString().includes(searchQuery)) &&
-      (selectedStatus === "" ||
-        (selectedStatus === "overdue"
-          ? borrow.is_overdue || borrow.status.toLowerCase() === "overdue"
-          : borrow.status.toLowerCase() === selectedStatus))
-  );
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+
+  function toDateOnly(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function calculateDaysOverdue(dueDate, returnedDate) {
+    const end = toDateOnly(returnedDate ? returnedDate : Date.now());
+    const start = toDateOnly(dueDate);
+    const msInDay = 1000 * 60 * 60 * 24;
+    return Math.ceil((end - start) / msInDay);
   }
 
   if (error) {
@@ -50,7 +52,7 @@ const BorrowedBooksTable = ({
     );
   }
 
-  if (filteredBooks.length === 0) {
+  if (borrowedBooks.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-xl shadow-md">
         <FaBook className="mx-auto text-gray-400 text-4xl mb-3" />
@@ -75,7 +77,7 @@ const BorrowedBooksTable = ({
               Your Borrow History
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              Showing {filteredBooks.length} of {totalCount} book
+              Showing {borrowedBooks.length} of {totalCount} book
               {totalCount !== 1 ? "s" : ""}
             </p>
           </div>
@@ -102,7 +104,7 @@ const BorrowedBooksTable = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredBooks.map((borrow) => {
+            {borrowedBooks.map((borrow) => {
               let statusClass = "bg-yellow-100 text-yellow-800";
               let statusText = borrow.status;
 
@@ -112,7 +114,9 @@ const BorrowedBooksTable = ({
                 borrow.is_overdue
               ) {
                 statusClass = "bg-red-100 text-red-800";
-                statusText = "Overdue";
+                if (borrow.status === "Confirmed") {
+                  statusText = "Return Confirmed";
+                }
               } else if (
                 borrow.status === "Returned" ||
                 borrow.status === "Confirmed"
@@ -125,13 +129,8 @@ const BorrowedBooksTable = ({
               } else if (borrow.status === "Renewed") {
                 statusClass = "bg-blue-100 text-blue-800";
               }
-
               const daysOverdue = borrow.is_overdue
-                ? Math.ceil(
-                    (new Date(borrow.returned_date) -
-                      new Date(borrow.due_date)) /
-                      (1000 * 60 * 60 * 24)
-                  )
+                ? calculateDaysOverdue(borrow.due_date, borrow.returned_date)
                 : 0;
 
               return (

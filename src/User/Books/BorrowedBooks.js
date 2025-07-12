@@ -36,6 +36,7 @@ function BorrowedBooks() {
 
   const fetchBorrowedBooks = async () => {
     try {
+      setLoading(true);
       const params = new URLSearchParams({
         page: currentPage,
         per_page: perPage,
