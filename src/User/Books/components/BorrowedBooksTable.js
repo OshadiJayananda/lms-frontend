@@ -54,7 +54,7 @@ const BorrowedBooksTable = ({
 
   if (borrowedBooks.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-xl shadow-md">
+      <div className="text-center py-12 bg-white rounded-lg shadow-sm">
         <FaBook className="mx-auto text-gray-400 text-4xl mb-3" />
         <h3 className="text-lg font-medium text-gray-900">
           No borrowed books found
@@ -69,22 +69,18 @@ const BorrowedBooksTable = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="p-4 sm:p-6 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-800">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
               Your Borrow History
             </h2>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
               Showing {borrowedBooks.length} of {totalCount} book
               {totalCount !== 1 ? "s" : ""}
             </p>
           </div>
-          {/* <div className="text-sm bg-blue-50 text-blue-800 px-4 py-2 rounded-lg">
-            <span className="font-medium">Tip:</span> Click on the book cover
-            for more details
-          </div> */}
         </div>
       </div>
 
@@ -92,13 +88,13 @@ const BorrowedBooksTable = ({
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Book Details
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Borrow Information
+              <th className="px-4 py-3 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Borrow Info
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
             </tr>
@@ -135,49 +131,53 @@ const BorrowedBooksTable = ({
 
               return (
                 <tr key={borrow.id} className="hover:bg-gray-50 transition">
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 sm:px-6">
                     <div className="flex items-start">
-                      <div className="flex-shrink-0 h-24 w-16 cursor-pointer hover:shadow-md transition-shadow">
+                      <div className="flex-shrink-0 h-16 w-12 sm:h-24 sm:w-16 cursor-pointer hover:shadow-md transition-shadow">
                         <img
-                          className="h-full w-full object-cover rounded-lg"
+                          className="h-full w-full object-cover rounded"
                           src={borrow.book.image || "/default-book-cover.png"}
                           alt={borrow.book.name}
                         />
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-semibold text-gray-900">
+                      <div className="ml-3 sm:ml-4">
+                        <div className="text-sm font-medium text-gray-900 line-clamp-2">
                           {borrow.book.name}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          <div>ID: {borrow.book.id}</div>
-                          <div>ISBN: {borrow.book.isbn}</div>
-                          <div>
+                        <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+                          <div className="line-clamp-1">
+                            ID: {borrow.book.id}
+                          </div>
+                          <div className="line-clamp-1">
+                            ISBN: {borrow.book.isbn}
+                          </div>
+                          <div className="line-clamp-1">
                             Author: {borrow.book.author?.name || "Unknown"}
                           </div>
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 space-y-2">
-                      <div className="flex items-center">
-                        <FaCalendarAlt className="mr-2 text-gray-400 flex-shrink-0" />
+                  <td className="px-4 py-4 sm:px-6">
+                    <div className="text-xs sm:text-sm text-gray-900 space-y-1.5">
+                      <div className="flex items-start">
+                        <FaCalendarAlt className="mr-1.5 mt-0.5 text-gray-400 flex-shrink-0 text-xs" />
                         <div>
                           <span className="font-medium">Issued:</span>{" "}
                           {borrow.issued_date
                             ? new Date(borrow.issued_date).toLocaleDateString()
-                            : "Not Issued Yet"}
+                            : "Not Issued"}
                         </div>
                       </div>
-                      <div className="flex items-center">
-                        <FaCalendarAlt className="mr-2 text-gray-400 flex-shrink-0" />
+                      <div className="flex items-start">
+                        <FaCalendarAlt className="mr-1.5 mt-0.5 text-gray-400 flex-shrink-0 text-xs" />
                         <div>
                           <span className="font-medium">Due:</span>{" "}
                           {borrow.due_date
                             ? new Date(borrow.due_date).toLocaleDateString()
-                            : "Not Issued Yet"}
+                            : "Not Issued"}
                           {borrow.is_overdue && (
-                            <span className="ml-2 text-xs text-red-600">
+                            <span className="ml-1 text-xs text-red-600">
                               ({daysOverdue} day{daysOverdue !== 1 ? "s" : ""}{" "}
                               overdue)
                             </span>
@@ -186,27 +186,22 @@ const BorrowedBooksTable = ({
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col items-start space-y-2">
+                  <td className="px-4 py-4 sm:px-6">
+                    <div className="flex flex-col items-start space-y-1.5">
                       <span
-                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}`}
+                        className={`px-2 py-0.5 sm:px-3 sm:py-1 inline-flex text-xs leading-4 sm:leading-5 font-semibold rounded-full ${statusClass}`}
                       >
                         {statusText}
                       </span>
                       {borrow.is_overdue && !borrow.fine_paid && (
                         <button
                           onClick={() => handlePayFine(borrow.id)}
-                          className="flex items-center px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs transition-colors"
+                          className="flex items-center px-2 py-0.5 sm:px-3 sm:py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs transition-colors"
                         >
-                          <FaMoneyBillWave className="mr-1" />
+                          <FaMoneyBillWave className="mr-1 text-xs" />
                           Pay Fine
                         </button>
                       )}
-                      {/* {borrow.fine_paid && (
-                        <span className="text-xs text-green-600">
-                          Fine paid
-                        </span>
-                      )} */}
                     </div>
                   </td>
                 </tr>
@@ -216,10 +211,10 @@ const BorrowedBooksTable = ({
         </table>
       </div>
 
-      {/* Enhanced Pagination Controls */}
-      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-sm text-gray-700">
+      {/* Responsive Pagination */}
+      <div className="px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50">
+        <div className="flex flex-col xs:flex-row items-center justify-between gap-3">
+          <div className="text-xs sm:text-sm text-gray-600">
             Showing{" "}
             <span className="font-medium">{(currentPage - 1) * 10 + 1}</span> to{" "}
             <span className="font-medium">
@@ -228,35 +223,37 @@ const BorrowedBooksTable = ({
             of <span className="font-medium">{totalCount}</span> results
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`flex items-center px-3 py-1 rounded-md border ${
+              className={`flex items-center px-2 py-1 sm:px-3 sm:py-1 rounded border text-xs ${
                 currentPage === 1
                   ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                   : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
             >
-              <FaChevronLeft className="h-3 w-3 mr-1" />
-              Previous
+              <FaChevronLeft className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
+              <span className="hidden sm:inline">Previous</span>
+              <span className="sm:hidden">Prev</span>
             </button>
 
-            <div className="px-3 py-1 text-sm text-gray-700">
-              Page {currentPage} of {totalPages}
+            <div className="px-2 py-1 text-xs sm:text-sm text-gray-700">
+              {currentPage}/{totalPages}
             </div>
 
             <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className={`flex items-center px-3 py-1 rounded-md border ${
+              className={`flex items-center px-2 py-1 sm:px-3 sm:py-1 rounded border text-xs ${
                 currentPage === totalPages
                   ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                   : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
             >
-              Next
-              <FaChevronRight className="h-3 w-3 ml-1" />
+              <span className="hidden sm:inline">Next</span>
+              <span className="sm:hidden">Next</span>
+              <FaChevronRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 ml-1" />
             </button>
           </div>
         </div>
