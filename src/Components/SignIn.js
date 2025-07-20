@@ -86,12 +86,7 @@ export default function SignIn() {
           );
         }
       } catch (error) {
-        const errorMessage =
-          error.response?.data?.error ||
-          error.response?.data?.message ||
-          error.message ||
-          "Registration failed. Please try again.";
-        toast.error(errorMessage);
+        toast.error("Registration failed. Please try again.");
       }
     },
   });

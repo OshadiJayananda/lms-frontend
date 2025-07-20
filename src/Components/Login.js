@@ -27,7 +27,7 @@ function Login() {
       localStorage.setItem("token", response.data.access_token);
       localStorage.setItem("role", response.data.role);
 
-      toast.success("Login Successful!");
+      // toast.success("Login Successful!");
 
       const userRole = response.data.role;
       if (userRole === "admin") {
@@ -40,12 +40,12 @@ function Login() {
         );
       }
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
-        "Something went wrong";
-      toast.error("Login failed: " + errorMessage);
+      // const errorMessage =
+      //   error.response?.data?.error ||
+      //   error.response?.data?.message ||
+      //   error.message ||
+      //   "Something went wrong";
+      toast.error("Login failed: ");
     } finally {
       setIsLoading(false);
     }
