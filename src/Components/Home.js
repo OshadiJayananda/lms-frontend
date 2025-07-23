@@ -3,6 +3,37 @@ import React from "react";
 export default function Home() {
   const home_pic = process.env.PUBLIC_URL + "/images/home_pic.jpg";
 
+  // Typography configuration - easily change colors and styles here
+  const typography = {
+    heading: {
+      primary: "text-blue-800", // Change main heading color
+      secondary: "text-amber-600", // Change accent color in heading
+      size: "text-4xl md:text-5xl", // Adjust heading sizes
+      weight: "font-bold", // Change font weight
+    },
+    subheading: {
+      color: "text-gray-600", // Change subheading color
+      size: "text-lg", // Adjust subheading size
+    },
+    mobileHeading: {
+      primary: "text-blue-200", // Mobile heading primary color
+      secondary: "text-amber-200", // Mobile heading secondary color
+      size: "text-3xl", // Mobile heading size
+    },
+    mobileSubheading: {
+      color: "text-blue-50", // Mobile subheading color
+    },
+    featureText: {
+      color: "text-gray-800", // Feature card text color
+      size: "text-sm sm:text-base", // Feature text size
+    },
+    openingHours: {
+      title: "text-gray-800", // Opening hours title color
+      text: "text-gray-600", // Opening hours text color
+      accent: "text-gray-700", // Opening hours accent color
+    },
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
       {/* Mobile-first layout with improved stacking */}
@@ -20,11 +51,13 @@ export default function Home() {
 
           {/* Mobile header that disappears on desktop */}
           <div className="md:hidden absolute bottom-6 left-0 right-0 px-6 text-center">
-            <h1 className="text-3xl font-bold text-white mb-1">
-              <span className="text-blue-200">Liber</span>
-              <span className="text-amber-200">Verse</span>
+            <h1 className={`${typography.mobileHeading.size} font-bold mb-1`}>
+              <span className={typography.mobileHeading.primary}>Liber</span>
+              <span className={typography.mobileHeading.secondary}>Verse</span>
             </h1>
-            <p className="text-blue-50">Your gateway to knowledge</p>
+            <p className={typography.mobileSubheading.color}>
+              Your gateway to knowledge
+            </p>
           </div>
         </div>
 
@@ -33,11 +66,16 @@ export default function Home() {
           <div className="max-w-md w-full mx-auto space-y-6">
             {/* Desktop header hidden on mobile */}
             <div className="hidden md:block text-center md:text-left">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-                Welcome to <span className="text-blue-800">Liber</span>
-                <span className="text-amber-600">Verse</span>
+              <h1
+                className={`${typography.heading.size} ${typography.heading.weight} text-gray-900 mb-3`}
+              >
+                Welcome to{" "}
+                <span className={typography.heading.primary}>Liber</span>
+                <span className={typography.heading.secondary}>Verse</span>
               </h1>
-              <p className="text-lg text-gray-600">
+              <p
+                className={`${typography.subheading.size} ${typography.subheading.color}`}
+              >
                 Your gateway to knowledge and discovery
               </p>
             </div>
@@ -61,7 +99,9 @@ export default function Home() {
                   <span className={`text-3xl mb-2 ${feature.color}`}>
                     {feature.icon}
                   </span>
-                  <h3 className="font-medium text-gray-800 text-sm sm:text-base text-center">
+                  <h3
+                    className={`font-medium ${typography.featureText.color} ${typography.featureText.size} text-center`}
+                  >
                     {feature.text}
                   </h3>
                 </div>
@@ -87,11 +127,15 @@ export default function Home() {
                     />
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-gray-800">
+                <h2
+                  className={`text-lg font-semibold ${typography.openingHours.title}`}
+                >
                   Opening Hours
                 </h2>
               </div>
-              <div className="space-y-2 text-gray-600 text-sm">
+              <div
+                className={`space-y-2 ${typography.openingHours.text} text-sm`}
+              >
                 {[
                   { day: "Monday - Friday", time: "8:00 AM - 8:00 PM" },
                   { day: "Saturday", time: "9:00 AM - 6:00 PM" },
@@ -99,7 +143,9 @@ export default function Home() {
                 ].map((schedule, index) => (
                   <div key={index} className="flex justify-between">
                     <span>{schedule.day}</span>
-                    <span className="font-medium text-gray-700">
+                    <span
+                      className={`font-medium ${typography.openingHours.accent}`}
+                    >
                       {schedule.time}
                     </span>
                   </div>
