@@ -6,10 +6,45 @@ import { toast } from "react-toastify";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { FaEye, FaEyeSlash, FaBookOpen, FaUniversity } from "react-icons/fa";
+import Modal from "react-modal";
+
+// Make sure to bind modal to your appElement (http://reactcommunity.org/react-modal/accessibility/)
+Modal.setAppElement("#root");
+
+// CSS styles for the modal (add this right after imports)
+const modalStyles = {
+  overlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    zIndex: 1000,
+  },
+  content: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+    background: "white",
+    padding: "2rem",
+    borderRadius: "8px",
+    maxWidth: "400px",
+    width: "90%",
+    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+    outline: "none",
+  },
+};
 
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showInvalidCredsModal, setShowInvalidCredsModal] = useState(false);
+  const [remainingAttempts, setRemainingAttempts] = useState(null);
   const navigate = useNavigate();
 
   const login_pg = process.env.PUBLIC_URL + "/images/login_pg.jpg";
@@ -27,8 +62,6 @@ function Login() {
       localStorage.setItem("token", response.data.access_token);
       localStorage.setItem("role", response.data.role);
 
-      // toast.success("Login Successful!");
-
       const userRole = response.data.role;
       if (userRole === "admin") {
         navigate("/admin/dashboard");
@@ -40,12 +73,35 @@ function Login() {
         );
       }
     } catch (error) {
-      // const errorMessage =
-      //   error.response?.data?.error ||
-      //   error.response?.data?.message ||
-      //   error.message ||
-      //   "Something went wrong";
-      toast.error("Login failed: ");
+      if (error.response?.status === 401) {
+        // Invalid credentials case
+        if (error.response.data?.remaining_attempts !== undefined) {
+          setRemainingAttempts(error.response.data.remaining_attempts);
+        }
+        setShowInvalidCredsModal(true);
+      } else if (error.response?.status === 429) {
+        // Too many attempts case
+        const seconds = error.response.data?.retry_after || 60;
+        const minutes = Math.ceil(seconds / 60);
+        toast.error(
+          `Too many login attempts. Please try again in ${minutes} minute${
+            minutes !== 1 ? "s" : ""
+          }.`,
+          {
+            autoClose: 10000, // Show for 10 seconds
+            closeButton: true,
+          }
+        );
+      } else {
+        // Other error cases
+        toast.error(
+          "Login failed: " + (error.response?.data?.message || error.message),
+          {
+            autoClose: 5000,
+            closeButton: true,
+          }
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -243,6 +299,36 @@ function Login() {
           </div>
         </div>
       </div>
+
+      {/* Invalid Credentials Modal */}
+      <Modal
+        isOpen={showInvalidCredsModal}
+        onRequestClose={() => setShowInvalidCredsModal(false)}
+        style={modalStyles}
+        contentLabel="Invalid Credentials"
+        shouldCloseOnOverlayClick={false}
+        shouldCloseOnEsc={false}
+      >
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Login Failed</h2>
+          <p className="text-gray-700 mb-4">
+            The email or password you entered is incorrect.
+          </p>
+          {remainingAttempts !== null && (
+            <p className="text-orange-600 font-medium mb-4">
+              Remaining attempts: {remainingAttempts}
+            </p>
+          )}
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowInvalidCredsModal(false)}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
