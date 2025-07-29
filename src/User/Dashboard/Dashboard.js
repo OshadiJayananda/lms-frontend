@@ -574,7 +574,7 @@ function Dashboard() {
                     >
                       <FaMoneyBillWave className="mr-2" />
                       <span className="text-sm font-medium">
-                        Pay Total Fine:{" "}
+                        Pay Fine:{" "}
                         <span className="font-bold">Rs.{totalFine}</span>
                       </span>
                       <FaArrowRight className="ml-2 text-xs" />
@@ -897,7 +897,7 @@ const BookCard = ({ image, title, dueDate, status, daysRemaining, fine }) => {
               }`}
               whileHover={{ scale: 1.1 }}
             >
-              {daysRemaining > 0 ? `${daysRemaining} days left` : "Due today"}
+              {daysRemaining > 0 ? `${daysRemaining} days left` : "Overdue"}
             </motion.span>
           )}
           {status === "overdue" && (
