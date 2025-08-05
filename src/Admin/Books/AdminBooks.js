@@ -55,6 +55,16 @@ function AdminBooks() {
     author_id: Yup.string().required("Author is required"),
     isbn: Yup.string()
       .required("ISBN is required")
+      .matches(
+        /^(?=(?:\D*\d){10}(?:(?:\D*\d){3})?$)[\d-]+$/,
+        "Invalid ISBN format. Must be 10 or 13 digits (hyphens allowed)"
+      )
+      .test("isbn-format", "Invalid ISBN format", (value) => {
+        // Remove all hyphens and spaces
+        const cleanedValue = value.replace(/[-\s]/g, "");
+        // Check for ISBN-10 (10 digits) or ISBN-13 (13 digits)
+        return cleanedValue.length === 10 || cleanedValue.length === 13;
+      })
       .test("isbn-unique", "ISBN must be unique", async (value) => {
         if (!value) return true;
         if (selectedBook && selectedBook.isbn === value) return true;
@@ -744,11 +754,26 @@ function AdminBooks() {
                         ? "border-red-500"
                         : "border-gray-300"
                     }`}
+                    placeholder="e.g. 978-3-16-148410-0"
                   />
                   {formik.touched.isbn && formik.errors.isbn && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {formik.errors.isbn}
-                    </p>
+                    <div className="mt-1 flex items-center text-sm text-red-600">
+                      <svg
+                        className="w-4 h-4 mr-1 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span>{formik.errors.isbn}</span>
+                    </div>
                   )}
                 </div>
               </div>
