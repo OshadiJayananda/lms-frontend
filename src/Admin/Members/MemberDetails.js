@@ -51,11 +51,21 @@ function MemberDetails() {
       if (activeTab === "inactive") return member.status !== "Active";
       return true;
     })
-    .filter((member) =>
-      `${member.name} ${member.email} ${member.mid} ${member.contact}`
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase())
-    );
+    .filter((member) => {
+      if (!searchQuery) return true;
+
+      const query = searchQuery.toLowerCase();
+
+      // Check exact ID match first
+      if (member.id.toString() === query) return true;
+
+      // Then check other fields for partial matches
+      return (
+        member.name.toLowerCase().includes(query) ||
+        member.email.toLowerCase().includes(query) ||
+        member.contact?.toLowerCase().includes(query)
+      );
+    });
 
   const statusCounts = members.reduce(
     (acc, member) => ({
@@ -92,7 +102,7 @@ function MemberDetails() {
                 <h1 className="text-3xl font-bold text-gray-800 font-serif">
                   Member Directory
                 </h1>
-                <p className="text-gray-600 mt-2">
+                <p className="text-gray-700 mt-2 italic">
                   Manage all registered library members and their activities
                 </p>
               </div>
