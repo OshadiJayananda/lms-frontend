@@ -54,7 +54,11 @@ function Authors() {
     validationSchema: Yup.object({
       name: Yup.string()
         .required("Author name is required")
-        .min(2, "Must be at least 2 characters"),
+        .min(2, "Must be at least 2 characters")
+        .matches(
+          /^[a-zA-Z\s.'-]+$/,
+          "Name can only contain letters, spaces, and basic punctuation"
+        ),
       birth_date: Yup.date()
         .max(new Date(), "Birth date cannot be in the future")
         .nullable(),
@@ -152,11 +156,27 @@ function Authors() {
                     onChange={formik.handleChange}
                     placeholder="e.g. J.K. Rowling"
                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      formik.errors.name ? "border-red-500" : "border-gray-300"
+                      formik.touched.name && formik.errors.name
+                        ? "border-red-500"
+                        : "border-gray-300"
                     }`}
                   />
-                  {formik.errors.name && (
-                    <p className="mt-1 text-sm text-red-600">
+                  {formik.touched.name && formik.errors.name && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
                       {formik.errors.name}
                     </p>
                   )}
