@@ -50,8 +50,17 @@ function AdminBooks() {
   // Formik validation schema
   const validationSchema = Yup.object({
     name: Yup.string()
+      .required("Title is required")
       .min(2, "Title must be at least 2 characters")
-      .required("Title is required"),
+      .test(
+        "has-letters",
+        "Title must contain at least 2 letters (numbers and spaces allowed)",
+        (value) => {
+          // Count the number of letters (a-z, A-Z) in the string
+          const letterCount = (value.match(/[a-zA-Z]/g) || []).length;
+          return letterCount >= 2;
+        }
+      ),
     author_id: Yup.string().required("Author is required"),
     isbn: Yup.string()
       .required("ISBN is required")
@@ -60,22 +69,16 @@ function AdminBooks() {
         "Invalid ISBN format. Must be 10 or 13 digits (hyphens allowed)"
       )
       .test("isbn-format", "Invalid ISBN format", (value) => {
-        // Remove all hyphens and spaces
         const cleanedValue = value.replace(/[-\s]/g, "");
-        // Check for ISBN-10 (10 digits) or ISBN-13 (13 digits)
         return cleanedValue.length === 10 || cleanedValue.length === 13;
-      })
-      .test("isbn-unique", "ISBN must be unique", async (value) => {
-        if (!value) return true;
-        if (selectedBook && selectedBook.isbn === value) return true;
-        try {
-          const response = await api.get(`/books/check-isbn?isbn=${value}`);
-          return !response.data.exists;
-        } catch (error) {
-          return true; // Assume valid if check fails
-        }
       }),
-    description: Yup.string().required("Description is required"),
+    description: Yup.string()
+      .required("Description is required")
+      .min(20, "Description must be at least 20 characters")
+      .matches(
+        /^[a-zA-Z0-9\s\-',.!?]+$/,
+        "Description can only contain letters, numbers, spaces, and basic punctuation"
+      ),
     no_of_copies: Yup.number()
       .min(1, "Number of copies must be at least 1")
       .required("Number of copies is required"),
@@ -701,9 +704,23 @@ function AdminBooks() {
                     }`}
                   />
                   {formik.touched.name && formik.errors.name && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {formik.errors.name}
-                    </p>
+                    <div className="mt-1 flex items-center text-sm text-red-600">
+                      <svg
+                        className="w-4 h-4 mr-1 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span>{formik.errors.name}</span>
+                    </div>
                   )}
                 </div>
 
