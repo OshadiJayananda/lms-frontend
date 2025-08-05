@@ -430,6 +430,10 @@ function Books() {
                           <FaUserAlt className="mr-1 text-gray-400" />
                           <span className="truncate">{book.author?.name}</span>
                         </div>
+                        <div className="mt-1 text-xs text-gray-500 truncate">
+                          <span className="font-medium">ISBN:</span>{" "}
+                          {book.isbn || "N/A"}
+                        </div>
                         <div className="mt-2 flex justify-between items-center">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                             <FaBook className="mr-1" />
