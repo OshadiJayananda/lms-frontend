@@ -60,8 +60,8 @@ const QUOTES = [
     author: "J.K. Rowling",
   },
   {
-    text: "That's the thing about books. They let you travel without moving your feet.",
-    author: "Jhumpa Lahiri",
+    text: "A room without books is like a body without a soul",
+    author: "Marcus Tullius Cicero",
   },
 ];
 
