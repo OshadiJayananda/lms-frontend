@@ -122,11 +122,7 @@ function SideBar({ isCollapsed, onToggle }) {
             <FaBars />
           </button>
           {!isCollapsed && (
-            <h1
-              style={{ fontSize: "20px", fontWeight: "600", color: "#63b3ed" }}
-            >
-              Admin Portal
-            </h1>
+            <h1 className="text-lg font-medium text-blue-300">Admin Portal</h1>
           )}
         </div>
 
