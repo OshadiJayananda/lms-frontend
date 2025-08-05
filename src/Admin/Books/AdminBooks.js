@@ -46,7 +46,85 @@ function AdminBooks() {
   const [totalBooks, setTotalBooks] = useState(0);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
-
+  const commonWords = [
+    "the",
+    "and",
+    "that",
+    "have",
+    "for",
+    "not",
+    "with",
+    "you",
+    "this",
+    "but",
+    "his",
+    "from",
+    "they",
+    "will",
+    "would",
+    "there",
+    "their",
+    "what",
+    "about",
+    "which",
+    "when",
+    "your",
+    "said",
+    "could",
+    "been",
+    "were",
+    "them",
+    "then",
+    "some",
+    "into",
+    "other",
+    "than",
+    "then",
+    "look",
+    "only",
+    "come",
+    "over",
+    "think",
+    "also",
+    "back",
+    "after",
+    "used",
+    "two",
+    "how",
+    "our",
+    "work",
+    "first",
+    "well",
+    "way",
+    "even",
+    "new",
+    "want",
+    "because",
+    "any",
+    "these",
+    "give",
+    "most",
+    "book",
+    "read",
+    "story",
+    "author",
+    "character",
+    "plot",
+    "setting",
+    "theme",
+    "chapter",
+    "novel",
+    "fiction",
+    "nonfiction",
+    "literature",
+    "science",
+    "history",
+    "learn",
+    "knowledge",
+    "information",
+    "education",
+    // Add more common words as needed
+  ];
   // Formik validation schema
   const validationSchema = Yup.object({
     name: Yup.string()
@@ -75,9 +153,28 @@ function AdminBooks() {
     description: Yup.string()
       .required("Description is required")
       .min(20, "Description must be at least 20 characters")
-      .matches(
-        /^[a-zA-Z0-9\s\-',.!?]+$/,
-        "Description can only contain letters, numbers, spaces, and basic punctuation"
+      .test(
+        "meaningful-description",
+        "Description must contain meaningful text (not random characters)",
+        (value) => {
+          if (!value) return false;
+
+          // Normalize the text (remove punctuation, lowercase)
+          const normalized = value.toLowerCase().replace(/[^a-z\s]/g, "");
+          const words = normalized
+            .split(/\s+/)
+            .filter((word) => word.length >= 3);
+
+          // Check if at least 50% of words are meaningful
+          const meaningfulCount = words.filter(
+            (word) =>
+              commonWords.includes(word) ||
+              (word.length >= 5 &&
+                /([aeiouy]{2,}|[a-z]{2,}[aeiouy][a-z]*)/i.test(word))
+          ).length;
+
+          return meaningfulCount >= Math.max(2, words.length * 0.5);
+        }
       ),
     no_of_copies: Yup.number()
       .min(1, "Number of copies must be at least 1")
@@ -815,9 +912,23 @@ function AdminBooks() {
                     }`}
                   ></textarea>
                   {formik.touched.description && formik.errors.description && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {formik.errors.description}
-                    </p>
+                    <div className="mt-1 flex items-center text-sm text-red-600">
+                      <svg
+                        className="w-4 h-4 mr-1 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span>{formik.errors.description}</span>
+                    </div>
                   )}
                 </div>
 
