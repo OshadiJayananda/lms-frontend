@@ -24,10 +24,12 @@ Modal.setAppElement("#root");
 
 const Profile = () => {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({});
   const [loading, setLoading] = useState(true);
   const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingField, setEditingField] = useState(null);
   const [activeTab, setActiveTab] = useState("personal");
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
@@ -150,20 +152,56 @@ const Profile = () => {
       .required("Confirm password is required"),
   });
 
-  const ProfileInfoCard = ({ icon, title, value, editable = false }) => (
+  const ProfileInfoCard = ({
+    icon,
+    title,
+    value,
+    fieldName,
+    editable = false,
+  }) => (
     <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
       <div className="p-3 bg-blue-100 rounded-full text-blue-600">{icon}</div>
       <div className="flex-1">
         <h3 className="text-sm font-medium text-gray-500">{title}</h3>
         <p className="mt-1 text-gray-900">{value || "Not provided"}</p>
       </div>
-      {/* {editable && (
-        <button className="text-blue-600 hover:text-blue-800">
+      {editable && (
+        <button
+          className="text-blue-600 hover:text-blue-800"
+          onClick={() => {
+            setEditingField(fieldName);
+            setIsEditModalOpen(true);
+          }}
+        >
           <FaEdit />
         </button>
-      )} */}
+      )}
     </div>
   );
+
+  const handleUpdateUserDetails = async (values, { setSubmitting }) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentication error. Please log in again.");
+        return;
+      }
+
+      const response = await api.put("/user/update-details", values, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      toast.success("User details updated successfully!");
+      setUser((prev) => ({ ...prev, ...values }));
+      setIsEditModalOpen(false);
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Error updating user details"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -228,22 +266,7 @@ const Profile = () => {
                     <div className="text-center md:text-left">
                       <h1 className="text-2xl font-bold">{user.name}</h1>
                       <p className="text-blue-100 mt-1">{user.email}</p>
-                      <div className="mt-4 flex flex-wrap gap-3 justify-center md:justify-start">
-                        {/* <button
-                          onClick={() => setPasswordModalOpen(true)}
-                          className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors"
-                        >
-                          <FaLock size={14} /> Change Password
-                        </button>
-                        {user.profile_picture && (
-                          <button
-                            onClick={() => setIsDeleteModalOpen(true)}
-                            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors"
-                          >
-                            <FaTrash size={14} /> Remove Picture
-                          </button>
-                        )} */}
-                      </div>
+                      <div className="mt-4 flex flex-wrap gap-3 justify-center md:justify-start"></div>
                     </div>
                   </div>
                 </div>
@@ -363,6 +386,7 @@ const Profile = () => {
                               icon={<FaUser />}
                               title="Full Name"
                               value={user.name}
+                              fieldName="name"
                               editable
                             />
                             <ProfileInfoCard
@@ -373,7 +397,8 @@ const Profile = () => {
                             <ProfileInfoCard
                               icon={<FaPhone />}
                               title="Phone Number"
-                              value={user.contact || "Not provided"}
+                              value={user.contact}
+                              fieldName="contact"
                               editable
                             />
                             <ProfileInfoCard
@@ -647,6 +672,88 @@ const Profile = () => {
               Remove Picture
             </button>
           </div>
+        </motion.div>
+      </Modal>
+
+      {/* Edit User Details Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onRequestClose={() => setIsEditModalOpen(false)}
+        className="modal"
+        overlayClassName="modal-overlay"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 mx-4"
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">
+              Update{" "}
+              {editingField === "name"
+                ? "Full Name"
+                : editingField === "contact"
+                ? "Phone Number"
+                : "Details"}
+            </h2>
+            <button
+              onClick={() => setIsEditModalOpen(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <FaTimes />
+            </button>
+          </div>
+
+          {editingField && (
+            <Formik
+              initialValues={{
+                [editingField]: user[editingField] || "",
+              }}
+              onSubmit={handleUpdateUserDetails}
+            >
+              {({ isSubmitting }) => (
+                <Form className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {editingField === "name"
+                        ? "Full Name"
+                        : editingField === "contact"
+                        ? "Phone Number"
+                        : "Details"}
+                    </label>
+                    <Field
+                      type={
+                        editingField === "name"
+                          ? "text"
+                          : editingField === "contact"
+                          ? "tel"
+                          : "text"
+                      }
+                      name={editingField}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditModalOpen(false)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    >
+                      {isSubmitting ? "Updating..." : "Update"}
+                    </button>
+                  </div>
+                </Form>
+              )}
+            </Formik>
+          )}
         </motion.div>
       </Modal>
     </div>
