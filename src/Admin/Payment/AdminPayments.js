@@ -13,6 +13,8 @@ import {
   FaCalendarAlt,
   FaInfoCircle,
   FaUser,
+  FaAngleDoubleLeft,
+  FaAngleDoubleRight,
 } from "react-icons/fa";
 import { FiCreditCard } from "react-icons/fi";
 
@@ -24,15 +26,24 @@ function AdminPayments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [perPage, setPerPage] = useState(10);
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
   useEffect(() => {
     const fetchPayments = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/admin/payments?page=${currentPage}`);
+        const response = await api.get(`/admin/payments`, {
+          params: {
+            page: currentPage,
+            per_page: perPage,
+            q: searchQuery,
+          },
+        });
         setPayments(response.data.data);
         setTotalPages(response.data.last_page);
+        setTotalItems(response.data.total);
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load payments");
         toast.error("Failed to load payment information");
@@ -42,7 +53,7 @@ function AdminPayments() {
     };
 
     fetchPayments();
-  }, [currentPage]);
+  }, [currentPage, perPage, searchQuery]);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -50,23 +61,29 @@ function AdminPayments() {
     }
   };
 
-  const filteredPayments = payments.filter(
-    (payment) =>
-      payment.borrow?.book?.name
-        ?.toLowerCase()
-        ?.includes(searchQuery.toLowerCase()) ||
-      payment.stripe_payment_id
-        ?.toLowerCase()
-        ?.includes(searchQuery.toLowerCase()) ||
-      payment.description?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
-      payment.amount?.toString()?.includes(searchQuery) ||
-      payment.borrow?.user?.name
-        ?.toLowerCase()
-        ?.includes(searchQuery.toLowerCase()) ||
-      payment.borrow?.user?.email
-        ?.toLowerCase()
-        ?.includes(searchQuery.toLowerCase())
-  );
+  const handlePerPageChange = (e) => {
+    setPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
+  const getStatusBadge = (status) => {
+    const statusClasses = {
+      completed: "bg-green-100 text-green-800",
+      pending: "bg-yellow-100 text-yellow-800",
+      failed: "bg-red-100 text-red-800",
+      refunded: "bg-purple-100 text-purple-800",
+    };
+
+    return (
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
+          statusClasses[status] || "bg-gray-100 text-gray-800"
+        }`}
+      >
+        {status}
+      </span>
+    );
+  };
 
   const renderPagination = () => {
     const pageNumbers = [];
@@ -84,26 +101,57 @@ function AdminPayments() {
     }
 
     return (
-      <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-        <div className="text-sm text-gray-600">
-          Showing {payments.length} of {totalPages * 10} payments
+      <div className="flex flex-col md:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">
+            Showing{" "}
+            <span className="font-medium">
+              {(currentPage - 1) * perPage + 1}
+            </span>{" "}
+            to{" "}
+            <span className="font-medium">
+              {Math.min(currentPage * perPage, totalItems)}
+            </span>{" "}
+            of <span className="font-medium">{totalItems}</span> payments
+          </span>
+
+          <select
+            value={perPage}
+            onChange={handlePerPageChange}
+            className="block w-20 pl-3 pr-8 py-1 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            {[5, 10, 20, 50, 100].map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="flex items-center space-x-2">
+
+        <div className="flex items-center space-x-1">
           <button
             onClick={() => handlePageChange(1)}
             disabled={currentPage === 1}
-            className="p-2 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+            className={`p-2 rounded-md ${
+              currentPage === 1
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
             aria-label="First page"
           >
-            «
+            <FaAngleDoubleLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="p-2 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+            className={`p-2 rounded-md ${
+              currentPage === 1
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
             aria-label="Previous page"
           >
-            <FaChevronLeft />
+            <FaChevronLeft className="w-4 h-4" />
           </button>
 
           {startPage > 1 && (
@@ -131,40 +179,29 @@ function AdminPayments() {
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="p-2 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+            className={`p-2 rounded-md ${
+              currentPage === totalPages
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
             aria-label="Next page"
           >
-            <FaChevronRight />
+            <FaChevronRight className="w-4 h-4" />
           </button>
           <button
             onClick={() => handlePageChange(totalPages)}
             disabled={currentPage === totalPages}
-            className="p-2 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+            className={`p-2 rounded-md ${
+              currentPage === totalPages
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
             aria-label="Last page"
           >
-            »
+            <FaAngleDoubleRight className="w-4 h-4" />
           </button>
         </div>
       </div>
-    );
-  };
-
-  const getStatusBadge = (status) => {
-    const statusClasses = {
-      completed: "bg-green-100 text-green-800",
-      pending: "bg-yellow-100 text-yellow-800",
-      failed: "bg-red-100 text-red-800",
-      refunded: "bg-purple-100 text-purple-800",
-    };
-
-    return (
-      <span
-        className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
-          statusClasses[status] || "bg-gray-100 text-gray-800"
-        }`}
-      >
-        {status}
-      </span>
     );
   };
 
@@ -225,7 +262,7 @@ function AdminPayments() {
                   Try again
                 </button>
               </div>
-            ) : filteredPayments.length === 0 ? (
+            ) : payments.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <FiCreditCard className="mx-auto text-gray-400 text-4xl mb-3" />
                 <h3 className="text-lg font-medium text-gray-900">
@@ -263,7 +300,7 @@ function AdminPayments() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredPayments.map((payment) => (
+                      {payments.map((payment) => (
                         <tr
                           key={payment.id}
                           className="hover:bg-gray-50 transition-colors"
