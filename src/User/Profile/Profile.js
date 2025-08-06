@@ -40,16 +40,9 @@ const Profile = () => {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token found");
 
-        const userRes = await api.get("/user", {
-          headers: { Authorization: `Bearer ${token}` },
-          params: {
-            include: "created_at,updated_at", // Request these fields
-          },
-        });
+        const userRes = await api.get("/user");
 
-        const profileRes = await api.get("/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const profileRes = await api.get("/profile");
 
         setUser({
           ...userRes.data,
@@ -57,7 +50,6 @@ const Profile = () => {
           // Ensure we have fallback values
           created_at: userRes.data.created_at || new Date().toISOString(),
           updated_at: userRes.data.updated_at || new Date().toISOString(),
-          // email_verified_at: userRes.data.email_verified_at || null,
         });
       } catch (error) {
         toast.error("Error fetching user data");

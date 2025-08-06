@@ -1,8 +1,10 @@
 import axios from "axios";
 import { toast } from "react-toastify";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
 const api = axios.create({
-  baseURL: "http://localhost:8000/api", // Replace with your API's base URL
+  baseURL: BACKEND_URL + "/api",
 });
 
 api.interceptors.request.use((config) => {
