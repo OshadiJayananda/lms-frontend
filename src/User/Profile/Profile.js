@@ -43,7 +43,7 @@ const Profile = () => {
         const userRes = await api.get("/user", {
           headers: { Authorization: `Bearer ${token}` },
           params: {
-            include: "created_at,updated_at,email_verified_at", // Request these fields
+            include: "created_at,updated_at", // Request these fields
           },
         });
 
@@ -57,7 +57,7 @@ const Profile = () => {
           // Ensure we have fallback values
           created_at: userRes.data.created_at || new Date().toISOString(),
           updated_at: userRes.data.updated_at || new Date().toISOString(),
-          email_verified_at: userRes.data.email_verified_at || null,
+          // email_verified_at: userRes.data.email_verified_at || null,
         });
       } catch (error) {
         toast.error("Error fetching user data");
@@ -179,7 +179,10 @@ const Profile = () => {
     </div>
   );
 
-  const handleUpdateUserDetails = async (values, { setSubmitting }) => {
+  const handleUpdateUserDetails = async (
+    values,
+    { setSubmitting, setErrors }
+  ) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -191,17 +194,38 @@ const Profile = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      toast.success("User details updated successfully!");
-      setUser((prev) => ({ ...prev, ...values }));
-      setIsEditModalOpen(false);
+      if (response.data && response.data.user) {
+        toast.success("User details updated successfully!");
+        setUser((prev) => ({
+          ...prev,
+          ...values,
+          updated_at: response.data.user.updated_at,
+        }));
+        setIsEditModalOpen(false);
+      }
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Error updating user details"
-      );
+      if (error.response?.status === 422) {
+        // Handle validation errors from server
+        setErrors(error.response.data.errors);
+        toast.error("Please correct the validation errors");
+      } else {
+        toast.error(
+          error.response?.data?.message || "Error updating user details"
+        );
+      }
     } finally {
       setSubmitting(false);
     }
   };
+  // Add this validation schema near your other schemas
+  const editValidationSchema = Yup.object().shape({
+    name: Yup.string()
+      .max(255, "Name must be less than 255 characters")
+      .required("Name is required"),
+    contact: Yup.string()
+      .matches(/^[0-9]{10}$/, "Contact must be exactly 10 digits")
+      .required("Contact is required"),
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -404,9 +428,17 @@ const Profile = () => {
                             <ProfileInfoCard
                               icon={<FaCalendarAlt />}
                               title="Member Since"
-                              value={new Date(
+                              value={
                                 user.created_at
-                              ).toLocaleDateString()}
+                                  ? new Date(
+                                      user.created_at
+                                    ).toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
+                                  : "Unknown"
+                              }
                             />
                           </div>
                         </div>
@@ -689,12 +721,7 @@ const Profile = () => {
         >
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-800">
-              Update{" "}
-              {editingField === "name"
-                ? "Full Name"
-                : editingField === "contact"
-                ? "Phone Number"
-                : "Details"}
+              Update {editingField === "name" ? "Full Name" : "Phone Number"}
             </h2>
             <button
               onClick={() => setIsEditModalOpen(false)}
@@ -704,56 +731,71 @@ const Profile = () => {
             </button>
           </div>
 
-          {editingField && (
-            <Formik
-              initialValues={{
-                [editingField]: user[editingField] || "",
-              }}
-              onSubmit={handleUpdateUserDetails}
-            >
-              {({ isSubmitting }) => (
-                <Form className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {editingField === "name"
-                        ? "Full Name"
-                        : editingField === "contact"
-                        ? "Phone Number"
-                        : "Details"}
-                    </label>
-                    <Field
-                      type={
-                        editingField === "name"
-                          ? "text"
-                          : editingField === "contact"
-                          ? "tel"
-                          : "text"
-                      }
-                      name={editingField}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none"
-                    />
-                  </div>
+          <Formik
+            initialValues={{
+              [editingField]: user[editingField] || "",
+            }}
+            validationSchema={
+              editingField === "contact"
+                ? Yup.object().shape({
+                    contact: Yup.string()
+                      .matches(/^[0-9]{10}$/, "Must be exactly 10 digits")
+                      .required("Phone number is required"),
+                  })
+                : Yup.object().shape({
+                    name: Yup.string().required("Name is required"),
+                  })
+            }
+            onSubmit={handleUpdateUserDetails}
+          >
+            {({ isSubmitting, errors, touched }) => (
+              <Form className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {editingField === "name" ? "Full Name" : "Phone Number"}
+                  </label>
+                  <Field
+                    type={editingField === "name" ? "text" : "tel"}
+                    name={editingField}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
+                      errors[editingField] && touched[editingField]
+                        ? "border-red-500 focus:ring-red-200"
+                        : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
+                    }`}
+                  />
+                  <ErrorMessage
+                    name={editingField}
+                    component="div"
+                    className="mt-1 text-sm text-red-600"
+                  />
+                  {editingField === "contact" && (
+                    <div className="mt-1 text-xs text-gray-500">
+                      Must be exactly 10 digits (e.g., 0712345678)
+                    </div>
+                  )}
+                </div>
 
-                  <div className="flex justify-end gap-3 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditModalOpen(false)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                    >
-                      {isSubmitting ? "Updating..." : "Update"}
-                    </button>
-                  </div>
-                </Form>
-              )}
-            </Formik>
-          )}
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ${
+                      isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    {isSubmitting ? "Updating..." : "Update"}
+                  </button>
+                </div>
+              </Form>
+            )}
+          </Formik>
         </motion.div>
       </Modal>
     </div>
