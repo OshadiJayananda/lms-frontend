@@ -14,6 +14,10 @@ import {
   FaExchangeAlt,
   FaFilter,
   FaTrash,
+  FaAngleLeft,
+  FaAngleRight,
+  FaAngleDoubleLeft,
+  FaAngleDoubleRight,
 } from "react-icons/fa";
 
 function BorrowedHistory() {
@@ -24,6 +28,12 @@ function BorrowedHistory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [filteredBooks, setFilteredBooks] = useState([]);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [lastPage, setLastPage] = useState(1);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
@@ -47,12 +57,21 @@ function BorrowedHistory() {
       setLoading(true);
       let url = "/admin/borrowed-books";
       if (statusFilter === "Overdue") {
-        url = "/borrows/overdue"; // Use the standardized endpoint
+        url = "/borrows/overdue";
       }
 
-      const response = await api.get(url);
-      setBorrowedBooks(response.data);
-      applyFilters(response.data, searchQuery, statusFilter);
+      const response = await api.get(url, {
+        params: {
+          q: searchQuery,
+          per_page: perPage,
+          page: currentPage,
+        },
+      });
+
+      setBorrowedBooks(response.data.data);
+      setTotalItems(response.data.total);
+      setLastPage(response.data.last_page);
+      applyFilters(response.data.data, searchQuery, statusFilter);
     } catch (error) {
       setError("Failed to fetch borrowed books. Please try again later.");
       toast.error("Failed to load borrowed books data");
@@ -60,6 +79,7 @@ function BorrowedHistory() {
       setLoading(false);
     }
   };
+
   const checkIfOverdue = (borrow) => {
     if (["Returned", "Confirmed", "Rejected"].includes(borrow.status)) {
       return false;
@@ -79,7 +99,6 @@ function BorrowedHistory() {
     const diffTime = Math.max(0, today - dueDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    // Assuming a fixed fine rate of $0.50 per day for overdue books
     const fineRate = 0.5;
     return diffDays * fineRate;
   };
@@ -87,7 +106,6 @@ function BorrowedHistory() {
   const applyFilters = (books, query, status) => {
     let filtered = [...books];
 
-    // Apply search filter
     if (query) {
       filtered = filtered.filter(
         (borrow) =>
@@ -99,7 +117,6 @@ function BorrowedHistory() {
       );
     }
 
-    // Apply status filter
     if (status !== "All") {
       if (status === "Overdue") {
         filtered = filtered.filter((borrow) => borrow.is_overdue);
@@ -125,7 +142,13 @@ function BorrowedHistory() {
 
   useEffect(() => {
     fetchBorrowedBooks();
-  }, []);
+  }, [currentPage, perPage, statusFilter]);
+
+  useEffect(() => {
+    // Reset to first page when search query changes
+    setCurrentPage(1);
+    fetchBorrowedBooks();
+  }, [searchQuery]);
 
   useEffect(() => {
     applyFilters(borrowedBooks, searchQuery, statusFilter);
@@ -137,6 +160,17 @@ function BorrowedHistory() {
 
   const handleStatusFilterChange = (event) => {
     setStatusFilter(event.target.value);
+  };
+
+  const handlePerPageChange = (event) => {
+    setPerPage(Number(event.target.value));
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= lastPage) {
+      setCurrentPage(page);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -158,6 +192,38 @@ function BorrowedHistory() {
       default:
         return "bg-gray-100 text-gray-800";
     }
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+
+    if (lastPage <= maxVisiblePages) {
+      for (let i = 1; i <= lastPage; i++) {
+        pages.push(i);
+      }
+    } else {
+      const half = Math.floor(maxVisiblePages / 2);
+      let start = currentPage - half;
+      let end = currentPage + half;
+
+      if (start < 1) {
+        start = 1;
+        end = maxVisiblePages;
+      }
+
+      if (end > lastPage) {
+        end = lastPage;
+        start = lastPage - maxVisiblePages + 1;
+      }
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+
+    return pages;
   };
 
   return (
@@ -190,7 +256,7 @@ function BorrowedHistory() {
                     Borrowed Book History
                   </h2>
                   <span className="ml-4 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    {filteredBooks.length} records
+                    {totalItems} records
                   </span>
                 </div>
 
@@ -263,141 +329,240 @@ function BorrowedHistory() {
                   )}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center">
-                            <FaBook className="mr-1" /> Book
-                          </div>
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center">
-                            <FaUser className="mr-1" /> User
-                          </div>
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center">
-                            <FaCalendarAlt className="mr-1" /> Issued
-                          </div>
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center">
-                            <FaClock className="mr-1" /> Due
-                          </div>
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center">
-                            <FaExchangeAlt className="mr-1" /> Status
-                          </div>
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredBooks.map((borrow) => (
-                        <tr
-                          key={borrow.id}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-6 py-4">
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <FaBook className="text-blue-600" />
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {borrow.book.name}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  ID: {borrow.book.id} | ISBN:{" "}
-                                  {borrow.book.isbn}
-                                </div>
-                              </div>
+                              <FaBook className="mr-1" /> Book
                             </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {borrow.user.name}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <div className="flex items-center">
+                              <FaUser className="mr-1" /> User
                             </div>
-                            <div className="text-sm text-gray-500">
-                              ID: {borrow.user.id}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <div className="flex items-center">
+                              <FaCalendarAlt className="mr-1" /> Issued
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {borrow.issued_date
-                                ? new Date(
-                                    borrow.issued_date
-                                  ).toLocaleDateString()
-                                : "Not Issued"}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <div className="flex items-center">
+                              <FaClock className="mr-1" /> Due
                             </div>
-                            <div className="text-xs text-gray-500">
-                              {borrow.issued_date
-                                ? new Date(
-                                    borrow.issued_date
-                                  ).toLocaleTimeString()
-                                : ""}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <div className="flex items-center">
+                              <FaExchangeAlt className="mr-1" /> Status
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div
-                              className={`text-sm ${
-                                borrow.due_date &&
-                                new Date(borrow.due_date) < new Date() &&
-                                !["Returned", "Confirmed"].includes(
-                                  borrow.status
-                                )
-                                  ? "text-red-600 font-medium"
-                                  : "text-gray-900"
-                              }`}
-                            >
-                              {borrow.due_date
-                                ? new Date(borrow.due_date).toLocaleDateString()
-                                : "No Due Date"}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {borrow.due_date
-                                ? new Date(borrow.due_date).toLocaleTimeString()
-                                : ""}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                                borrow.is_overdue ? "Overdue" : borrow.status
-                              )}`}
-                            >
-                              {borrow.status === "Confirmed"
-                                ? "Return Confirmed"
-                                : borrow.is_overdue
-                                ? "Overdue"
-                                : borrow.status}
-                            </span>
-                            {(borrow.is_overdue ||
-                              statusFilter === "Overdue") && (
-                              <div className="mt-1 text-xs text-red-600">
-                                Fine: ${borrow.fine?.toFixed(2) || "0.00"}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button
-                              onClick={() => deleteBorrowRecord(borrow.id)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Delete record"
-                            >
-                              <FaTrash />
-                            </button>
-                          </td>
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
                         </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredBooks.map((borrow) => (
+                          <tr
+                            key={borrow.id}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                  <FaBook className="text-blue-600" />
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {borrow.book.name}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    ID: {borrow.book.id} | ISBN:{" "}
+                                    {borrow.book.isbn}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {borrow.user.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                ID: {borrow.user.id}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {borrow.issued_date
+                                  ? new Date(
+                                      borrow.issued_date
+                                    ).toLocaleDateString()
+                                  : "Not Issued"}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {borrow.issued_date
+                                  ? new Date(
+                                      borrow.issued_date
+                                    ).toLocaleTimeString()
+                                  : ""}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div
+                                className={`text-sm ${
+                                  borrow.due_date &&
+                                  new Date(borrow.due_date) < new Date() &&
+                                  !["Returned", "Confirmed"].includes(
+                                    borrow.status
+                                  )
+                                    ? "text-red-600 font-medium"
+                                    : "text-gray-900"
+                                }`}
+                              >
+                                {borrow.due_date
+                                  ? new Date(
+                                      borrow.due_date
+                                    ).toLocaleDateString()
+                                  : "No Due Date"}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {borrow.due_date
+                                  ? new Date(
+                                      borrow.due_date
+                                    ).toLocaleTimeString()
+                                  : ""}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                                  borrow.is_overdue ? "Overdue" : borrow.status
+                                )}`}
+                              >
+                                {borrow.status === "Confirmed"
+                                  ? "Return Confirmed"
+                                  : borrow.is_overdue
+                                  ? "Overdue"
+                                  : borrow.status}
+                              </span>
+                              {(borrow.is_overdue ||
+                                statusFilter === "Overdue") && (
+                                <div className="mt-1 text-xs text-red-600">
+                                  Fine: ${borrow.fine?.toFixed(2) || "0.00"}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <button
+                                onClick={() => deleteBorrowRecord(borrow.id)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Delete record"
+                              >
+                                <FaTrash />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination */}
+                  <div className="px-6 py-4 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-700">
+                        Showing{" "}
+                        <span className="font-medium">
+                          {(currentPage - 1) * perPage + 1}
+                        </span>{" "}
+                        to{" "}
+                        <span className="font-medium">
+                          {Math.min(currentPage * perPage, totalItems)}
+                        </span>{" "}
+                        of <span className="font-medium">{totalItems}</span>{" "}
+                        results
+                      </span>
+
+                      <select
+                        value={perPage}
+                        onChange={handlePerPageChange}
+                        className="block w-20 pl-3 pr-8 py-1 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      >
+                        {[5, 10, 20, 50, 100].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-sm text-gray-700">per page</span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => goToPage(1)}
+                        disabled={currentPage === 1}
+                        className={`px-2 py-1 rounded-md ${
+                          currentPage === 1
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <FaAngleDoubleLeft />
+                      </button>
+                      <button
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`px-2 py-1 rounded-md ${
+                          currentPage === 1
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <FaAngleLeft />
+                      </button>
+
+                      {getPageNumbers().map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => goToPage(page)}
+                          className={`px-3 py-1 rounded-md ${
+                            currentPage === page
+                              ? "bg-blue-600 text-white"
+                              : "text-gray-700 hover:bg-gray-100"
+                          }`}
+                        >
+                          {page}
+                        </button>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+
+                      <button
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === lastPage}
+                        className={`px-2 py-1 rounded-md ${
+                          currentPage === lastPage
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <FaAngleRight />
+                      </button>
+                      <button
+                        onClick={() => goToPage(lastPage)}
+                        disabled={currentPage === lastPage}
+                        className={`px-2 py-1 rounded-md ${
+                          currentPage === lastPage
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <FaAngleDoubleRight />
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>
