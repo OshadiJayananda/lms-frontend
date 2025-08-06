@@ -47,7 +47,7 @@ function Login() {
   const [remainingAttempts, setRemainingAttempts] = useState(null);
   const navigate = useNavigate();
 
-  const login_pg = process.env.PUBLIC_URL + "/images/login_pg.jpg";
+  const login_pg = process.env.REACT_APP_PUBLIC_URL + "/images/login_pg.jpg";
 
   const handleLogin = async (values) => {
     setIsLoading(true);

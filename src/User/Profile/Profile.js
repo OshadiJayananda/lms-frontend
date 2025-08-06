@@ -32,7 +32,8 @@ const Profile = () => {
   const [editingField, setEditingField] = useState(null);
   const [activeTab, setActiveTab] = useState("personal");
 
-  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const heading_pic =
+    process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
 
   useEffect(() => {
     const fetchData = async () => {

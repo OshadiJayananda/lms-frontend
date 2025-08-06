@@ -20,7 +20,7 @@ export default function SignIn() {
     useState(false);
   const navigate = useNavigate();
 
-  const login_pg = process.env.PUBLIC_URL + "/images/login_pg.jpg";
+  const login_pg = process.env.REACT_APP_PUBLIC_URL + "/images/login_pg.jpg";
 
   const formik = useFormik({
     initialValues: {

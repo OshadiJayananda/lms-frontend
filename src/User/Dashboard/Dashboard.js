@@ -148,7 +148,8 @@ function Dashboard() {
   const [overdueBooks, setOverdueBooks] = useState([]);
   const [totalFine, setTotalFine] = useState(0);
 
-  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const heading_pic =
+    process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
   const COLORS = ["#6366F1", "#10B981", "#F59E0B", "#EC4899", "#8B5CF6"];
   const FONT_FAMILY =
     "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";

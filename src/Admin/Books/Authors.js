@@ -34,7 +34,8 @@ function Authors() {
     total: 0,
   });
 
-  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const heading_pic =
+    process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
 
   const fetchAuthors = async (page = 1) => {
     setLoading(true);

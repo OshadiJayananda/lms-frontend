@@ -29,7 +29,8 @@ function Books() {
   const [perPage, setPerPage] = useState(10);
   const [totalBooks, setTotalBooks] = useState(0);
 
-  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const heading_pic =
+    process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
 
   useEffect(() => {
     const fetchCategories = async () => {

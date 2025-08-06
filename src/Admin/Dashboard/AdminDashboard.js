@@ -67,7 +67,8 @@ function AdminDashboard() {
   const [reportDates, setReportDates] = useState({ from: null, to: null });
 
   const navigate = useNavigate();
-  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const heading_pic =
+    process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
 
   // Custom font styling
   const fontStyles = {

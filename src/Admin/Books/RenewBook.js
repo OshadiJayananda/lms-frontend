@@ -25,7 +25,8 @@ function RenewBook() {
   const [newDueDate, setNewDueDate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const heading_pic =
+    process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
   const [statusFilter, setStatusFilter] = useState("all");
   const STATUS_PENDING = "pending";
   const STATUS_PENDING_USER_CONFIRMATION = "pending_user_confirmation";

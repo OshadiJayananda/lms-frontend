@@ -30,7 +30,8 @@ function AdminProfile() {
   const [editingField, setEditingField] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const heading_pic =
+    process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
 
   useEffect(() => {
     const fetchUserData = async () => {

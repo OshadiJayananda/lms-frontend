@@ -29,7 +29,8 @@ function BorrowedBooks() {
   const [totalCount, setTotalCount] = useState(0);
   const [perPage] = useState(10);
 
-  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const heading_pic =
+    process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
   const stripePromise = loadStripe(
     process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
   );

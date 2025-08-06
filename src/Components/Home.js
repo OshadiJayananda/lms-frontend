@@ -1,7 +1,7 @@
 import React from "react";
 
 export default function Home() {
-  const home_pic = process.env.PUBLIC_URL + "/images/home_pic.jpg";
+  const home_pic = process.env.REACT_APP_PUBLIC_URL + "/images/home_pic.jpg";
 
   // Typography configuration - easily change colors and styles here
   const typography = {

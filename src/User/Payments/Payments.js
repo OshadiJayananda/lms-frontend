@@ -30,7 +30,8 @@ function Payments() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalPayments, setTotalPayments] = useState(0);
   const [activeTab, setActiveTab] = useState("overdue");
-  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const heading_pic =
+    process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
 
   const handleToggle = () => {
     setSidebarCollapsed(!isSidebarCollapsed);
