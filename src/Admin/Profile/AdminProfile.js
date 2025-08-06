@@ -26,6 +26,8 @@ function AdminProfile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingField, setEditingField] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
@@ -148,18 +150,73 @@ function AdminProfile() {
       .required("Confirm password is required"),
   });
 
-  const ProfileInfoCard = ({ icon, title, value, editable = false }) => (
+  const handleUpdateUserDetails = async (
+    values,
+    { setSubmitting, setErrors }
+  ) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentication error. Please log in again.");
+        return;
+      }
+
+      const response = await api.put("/user/update-details", values, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      toast.success("User details updated successfully!");
+      setUser((prev) => ({
+        ...prev,
+        ...values,
+        updated_at: response.data.user.updated_at,
+      }));
+      setIsEditModalOpen(false);
+    } catch (error) {
+      if (error.response?.status === 422) {
+        setErrors(error.response.data.errors);
+        toast.error("Please correct the validation errors");
+      } else {
+        toast.error(
+          error.response?.data?.message || "Error updating user details"
+        );
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  const editValidationSchema = Yup.object().shape({
+    name: Yup.string()
+      .max(255, "Name must be less than 255 characters")
+      .required("Name is required"),
+    contact: Yup.string()
+      .matches(/^[0-9]{10}$/, "Contact must be exactly 10 digits")
+      .required("Contact is required"),
+  });
+  const ProfileInfoCard = ({
+    icon,
+    title,
+    value,
+    fieldName,
+    editable = false,
+  }) => (
     <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
       <div className="p-3 bg-blue-100 rounded-full text-blue-600">{icon}</div>
       <div className="flex-1">
         <h3 className="text-sm font-medium text-gray-500">{title}</h3>
         <p className="mt-1 text-gray-900">{value || "Not provided"}</p>
       </div>
-      {/* {editable && (
-        <button className="text-blue-600 hover:text-blue-800">
+      {editable && (
+        <button
+          className="text-blue-600 hover:text-blue-800"
+          onClick={() => {
+            setEditingField(fieldName);
+            setIsEditModalOpen(true);
+          }}
+        >
           <FaEdit />
         </button>
-      )} */}
+      )}
     </div>
   );
 
@@ -261,6 +318,7 @@ function AdminProfile() {
                     icon={<FaUser />}
                     title="Full Name"
                     value={user.name}
+                    fieldName="name"
                     editable
                   />
                   <ProfileInfoCard
@@ -272,6 +330,7 @@ function AdminProfile() {
                     icon={<FaPhone />}
                     title="Phone Number"
                     value={user.contact}
+                    fieldName="contact"
                     editable
                   />
                   <ProfileInfoCard
@@ -450,6 +509,94 @@ function AdminProfile() {
               Remove Picture
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Edit User Details Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onRequestClose={() => setIsEditModalOpen(false)}
+        className="modal"
+        overlayClassName="modal-overlay"
+      >
+        <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 mx-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">
+              Update {editingField === "name" ? "Full Name" : "Phone Number"}
+            </h2>
+            <button
+              onClick={() => setIsEditModalOpen(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <FaTimes />
+            </button>
+          </div>
+
+          <Formik
+            initialValues={{
+              [editingField]: user[editingField] || "",
+            }}
+            validationSchema={
+              editingField === "contact"
+                ? Yup.object().shape({
+                    contact: Yup.string()
+                      .matches(/^[0-9]{10}$/, "Must be exactly 10 digits")
+                      .required("Phone number is required"),
+                  })
+                : Yup.object().shape({
+                    name: Yup.string().required("Name is required"),
+                  })
+            }
+            onSubmit={handleUpdateUserDetails}
+          >
+            {({ isSubmitting, errors, touched }) => (
+              <Form className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {editingField === "name" ? "Full Name" : "Phone Number"}
+                  </label>
+                  <Field
+                    type={editingField === "name" ? "text" : "tel"}
+                    name={editingField}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
+                      errors[editingField] && touched[editingField]
+                        ? "border-red-500 focus:ring-red-200"
+                        : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
+                    }`}
+                  />
+                  <ErrorMessage
+                    name={editingField}
+                    component="div"
+                    className="mt-1 text-sm text-red-600"
+                  />
+                  {editingField === "contact" && (
+                    <div className="mt-1 text-xs text-gray-500">
+                      Must be exactly 10 digits (e.g., 0712345678)
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ${
+                      isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    {isSubmitting ? "Updating..." : "Update"}
+                  </button>
+                </div>
+              </Form>
+            )}
+          </Formik>
         </div>
       </Modal>
     </div>
