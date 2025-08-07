@@ -161,7 +161,6 @@ function BookRequests() {
                     <option value="all">All Statuses</option>
                     <option value="Pending">Pending</option>
                     <option value="Approved">Approved</option>
-                    <option value="Rejected">Rejected</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <FaInfoCircle className="text-gray-400" />
