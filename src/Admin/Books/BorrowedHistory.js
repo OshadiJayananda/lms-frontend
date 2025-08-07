@@ -27,7 +27,7 @@ function BorrowedHistory() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [filteredBooks, setFilteredBooks] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState([]); // Initialize as empty array
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -69,10 +69,12 @@ function BorrowedHistory() {
         },
       });
 
-      setBorrowedBooks(response.data.data);
+      // Ensure we're working with the data array
+      const booksData = response.data.data || [];
+      setBorrowedBooks(booksData);
       setTotalItems(response.data.total);
       setLastPage(response.data.last_page);
-      applyFilters(response.data.data, searchQuery, statusFilter);
+      applyFilters(booksData, searchQuery, statusFilter);
     } catch (error) {
       setError("Failed to fetch borrowed books. Please try again later.");
       toast.error("Failed to load borrowed books data");
@@ -105,22 +107,29 @@ function BorrowedHistory() {
   };
 
   const applyFilters = (books, query, status) => {
-    let filtered = [...books];
+    // Ensure books is always an array
+    let filtered = Array.isArray(books) ? [...books] : [];
 
     if (query) {
       filtered = filtered.filter(
         (borrow) =>
-          borrow.book.id.toString().includes(query) ||
-          borrow.user.id.toString().includes(query) ||
-          borrow.book.name.toLowerCase().includes(query.toLowerCase()) ||
-          borrow.book.isbn.toLowerCase().includes(query.toLowerCase()) ||
-          borrow.user.name.toLowerCase().includes(query.toLowerCase())
+          borrow.book?.id?.toString().includes(query) ||
+          borrow.user?.id?.toString().includes(query) ||
+          borrow.book?.name?.toLowerCase().includes(query.toLowerCase()) ||
+          borrow.book?.isbn?.toLowerCase().includes(query.toLowerCase()) ||
+          borrow.user?.name?.toLowerCase().includes(query.toLowerCase())
       );
     }
 
     if (status !== "All") {
       if (status === "Overdue") {
-        filtered = filtered.filter((borrow) => borrow.is_overdue);
+        filtered = filtered.filter((borrow) => {
+          // Check if book is overdue OR returned but fine not paid
+          const isOverdue = checkIfOverdue(borrow);
+          const isReturnedUnpaid =
+            borrow.status === "Returned" && !borrow.fine_paid;
+          return isOverdue || isReturnedUnpaid;
+        });
       } else {
         filtered = filtered.filter((borrow) => borrow.status === status);
       }
@@ -452,7 +461,7 @@ function BorrowedHistory() {
                               {(borrow.is_overdue ||
                                 statusFilter === "Overdue") && (
                                 <div className="mt-1 text-xs text-red-600">
-                                  Fine: ${borrow.fine?.toFixed(2) || "0.00"}
+                                  Fine: ${calculateFine(borrow).toFixed(2)}
                                 </div>
                               )}
                             </td>
