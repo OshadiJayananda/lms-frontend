@@ -10,10 +10,6 @@ import {
   FaTimes,
   FaBook,
   FaUserTie,
-  FaAngleLeft,
-  FaAngleRight,
-  FaAngleDoubleLeft,
-  FaAngleDoubleRight,
 } from "react-icons/fa";
 import Header from "../../Components/Header";
 import { toast } from "react-toastify";
@@ -27,27 +23,14 @@ function Authors() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedAuthorId, setSelectedAuthorId] = useState(null);
-  const [pagination, setPagination] = useState({
-    current_page: 1,
-    last_page: 1,
-    per_page: 10,
-    total: 0,
-  });
 
-  const heading_pic =
-    process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
+  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
 
-  const fetchAuthors = async (page = 1) => {
+  const fetchAuthors = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/authors?page=${page}`);
-      setAuthors(response.data.data);
-      setPagination({
-        current_page: response.data.current_page,
-        last_page: response.data.last_page,
-        per_page: response.data.per_page,
-        total: response.data.total,
-      });
+      const response = await api.get("/authors");
+      setAuthors(response.data);
     } catch (error) {
       toast.error("Failed to load authors");
     } finally {
@@ -93,7 +76,7 @@ function Authors() {
           toast.success("Author added successfully!");
         }
         handleReset();
-        fetchAuthors(pagination.current_page);
+        fetchAuthors();
       } catch (error) {
         toast.error("Failed to save author");
       }
@@ -121,120 +104,11 @@ function Authors() {
     try {
       await api.delete(`/authors/${selectedAuthorId}`);
       toast.success("Author deleted successfully");
-      fetchAuthors(pagination.current_page);
+      fetchAuthors();
     } catch {
       toast.error("Failed to delete author");
     }
     setShowModal(false);
-  };
-
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= pagination.last_page) {
-      fetchAuthors(page);
-    }
-  };
-
-  const renderPagination = () => {
-    const pages = [];
-    const maxVisiblePages = 5;
-    let startPage, endPage;
-
-    if (pagination.last_page <= maxVisiblePages) {
-      startPage = 1;
-      endPage = pagination.last_page;
-    } else {
-      const maxPagesBeforeCurrent = Math.floor(maxVisiblePages / 2);
-      const maxPagesAfterCurrent = Math.ceil(maxVisiblePages / 2) - 1;
-
-      if (pagination.current_page <= maxPagesBeforeCurrent) {
-        startPage = 1;
-        endPage = maxVisiblePages;
-      } else if (
-        pagination.current_page + maxPagesAfterCurrent >=
-        pagination.last_page
-      ) {
-        startPage = pagination.last_page - maxVisiblePages + 1;
-        endPage = pagination.last_page;
-      } else {
-        startPage = pagination.current_page - maxPagesBeforeCurrent;
-        endPage = pagination.current_page + maxPagesAfterCurrent;
-      }
-    }
-
-    // First page button
-    if (startPage > 1) {
-      pages.push(
-        <button
-          key="first"
-          onClick={() => handlePageChange(1)}
-          className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100"
-        >
-          <FaAngleDoubleLeft />
-        </button>
-      );
-    }
-
-    // Previous page button
-    pages.push(
-      <button
-        key="prev"
-        onClick={() => handlePageChange(pagination.current_page - 1)}
-        disabled={pagination.current_page === 1}
-        className={`px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 ${
-          pagination.current_page === 1 ? "opacity-50 cursor-not-allowed" : ""
-        }`}
-      >
-        <FaAngleLeft />
-      </button>
-    );
-
-    // Page numbers
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(
-        <button
-          key={i}
-          onClick={() => handlePageChange(i)}
-          className={`px-3 py-1 border ${
-            pagination.current_page === i
-              ? "bg-blue-600 text-white border-blue-600"
-              : "border-gray-300 hover:bg-gray-100"
-          } rounded`}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    // Next page button
-    pages.push(
-      <button
-        key="next"
-        onClick={() => handlePageChange(pagination.current_page + 1)}
-        disabled={pagination.current_page === pagination.last_page}
-        className={`px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 ${
-          pagination.current_page === pagination.last_page
-            ? "opacity-50 cursor-not-allowed"
-            : ""
-        }`}
-      >
-        <FaAngleRight />
-      </button>
-    );
-
-    // Last page button
-    if (endPage < pagination.last_page) {
-      pages.push(
-        <button
-          key="last"
-          onClick={() => handlePageChange(pagination.last_page)}
-          className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100"
-        >
-          <FaAngleDoubleRight />
-        </button>
-      );
-    }
-
-    return pages;
   };
 
   return (
@@ -402,23 +276,10 @@ function Authors() {
           {/* Authors Table */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-                  <FaBook className="mr-2 text-blue-600" />
-                  Author Catalog
-                </h2>
-                {pagination.total > 0 && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Showing{" "}
-                    {(pagination.current_page - 1) * pagination.per_page + 1} to{" "}
-                    {Math.min(
-                      pagination.current_page * pagination.per_page,
-                      pagination.total
-                    )}{" "}
-                    of {pagination.total} authors
-                  </p>
-                )}
-              </div>
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                <FaBook className="mr-2 text-blue-600" />
+                Author Catalog
+              </h2>
               <button
                 onClick={() => {
                   setShowForm(!showForm);
@@ -454,101 +315,90 @@ function Authors() {
                 </button>
               </div>
             ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Author
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Nationality
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Bio
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Author
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Nationality
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Bio
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {authors.map((author) => (
+                      <tr key={author.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <FaUserTie className="text-blue-600" />
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {author.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {author.birth_date
+                                  ? new Date(author.birth_date).getFullYear()
+                                  : "?"}
+                                {author.death_date &&
+                                  ` - ${new Date(
+                                    author.death_date
+                                  ).getFullYear()}`}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {author.nationality || (
+                              <span className="text-gray-400">Unknown</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-500 max-w-xs truncate">
+                            {author.bio || (
+                              <span className="text-gray-400">
+                                No bio available
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => handleEdit(author)}
+                              className="text-blue-600 hover:text-blue-900 p-2 rounded-full hover:bg-blue-50"
+                              title="Edit"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedAuthorId(author.id);
+                                setShowModal(true);
+                              }}
+                              className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-50"
+                              title="Delete"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {authors.map((author) => (
-                        <tr key={author.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                <FaUserTie className="text-blue-600" />
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {author.name}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  {author.birth_date
-                                    ? new Date(author.birth_date).getFullYear()
-                                    : "?"}
-                                  {author.death_date &&
-                                    ` - ${new Date(
-                                      author.death_date
-                                    ).getFullYear()}`}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {author.nationality || (
-                                <span className="text-gray-400">Unknown</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-gray-500 max-w-xs truncate">
-                              {author.bio || (
-                                <span className="text-gray-400">
-                                  No bio available
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex justify-end space-x-2">
-                              <button
-                                onClick={() => handleEdit(author)}
-                                className="text-blue-600 hover:text-blue-900 p-2 rounded-full hover:bg-blue-50"
-                                title="Edit"
-                              >
-                                <FaEdit />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedAuthorId(author.id);
-                                  setShowModal(true);
-                                }}
-                                className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-50"
-                                title="Delete"
-                              >
-                                <FaTrash />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {/* Pagination */}
-                {pagination.last_page > 1 && (
-                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                    <div className="text-sm text-gray-700">
-                      Page {pagination.current_page} of {pagination.last_page}
-                    </div>
-                    <div className="flex space-x-1">{renderPagination()}</div>
-                  </div>
-                )}
-              </>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
