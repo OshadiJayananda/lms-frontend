@@ -23,8 +23,11 @@ function Authors() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedAuthorId, setSelectedAuthorId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const authorsPerPage = 5;
 
-  const heading_pic = process.env.PUBLIC_URL + "/images/heading_pic.jpg";
+  const heading_pic =
+    process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
 
   const fetchAuthors = async () => {
     setLoading(true);
@@ -110,6 +113,12 @@ function Authors() {
     }
     setShowModal(false);
   };
+
+  const indexOfLastAuthor = currentPage * authorsPerPage;
+  const indexOfFirstAuthor = indexOfLastAuthor - authorsPerPage;
+  const currentAuthors = authors.slice(indexOfFirstAuthor, indexOfLastAuthor);
+
+  const totalPages = Math.ceil(authors.length / authorsPerPage);
 
   return (
     <div className="min-h-screen bg-gray-50 flex ">
@@ -334,7 +343,7 @@ function Authors() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {authors.map((author) => (
+                    {currentAuthors.map((author) => (
                       <tr key={author.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -398,6 +407,44 @@ function Authors() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {authors.length > 0 && (
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <div className="text-sm text-gray-500">
+                  Showing page {currentPage} of {totalPages}
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      const prevPage = Math.max(currentPage - 1, 1);
+                      setCurrentPage(prevPage);
+                    }}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-1 rounded-md ${
+                      currentPage === 1
+                        ? "bg-gray-100 text-gray-400"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => {
+                      const nextPage = Math.min(currentPage + 1, totalPages);
+                      setCurrentPage(nextPage);
+                    }}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-1 rounded-md ${
+                      currentPage === totalPages
+                        ? "bg-gray-100 text-gray-400"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
           </div>
