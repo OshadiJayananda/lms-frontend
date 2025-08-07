@@ -24,8 +24,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
 } from "recharts";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -34,7 +32,6 @@ function AdminDashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showReportsDropdown, setShowReportsDropdown] = useState(false);
   const [stats, setStats] = useState({
     totalBooks: 0,
     totalMembers: 0,
@@ -44,6 +41,7 @@ function AdminDashboard() {
     topMembers: [],
     topBooks: [],
     recentRequests: [],
+    overdueWithUsers: [],
   });
   const [reportLoading, setReportLoading] = useState({
     books: false,
@@ -166,6 +164,7 @@ function AdminDashboard() {
       setReportDates({ from: null, to: null });
     }
   };
+
   const fetchNotifications = async () => {
     try {
       const response = await api.get("/admin/notifications");
@@ -269,33 +268,6 @@ function AdminDashboard() {
     }
   };
 
-  const fetchPendingReservations = async (bookId) => {
-    try {
-      const response = await api.get(
-        `/admin/book-reservations/pending/${bookId}`
-      );
-      if (response.data.count > 0) {
-        toast.info(
-          `There are ${response.data.count} pending reservations for this book`,
-          { position: "top-right" }
-        );
-        return response.data.count;
-      } else {
-        toast.info("No pending reservations for this book", {
-          position: "top-right",
-        });
-        return 0;
-      }
-    } catch (error) {
-      console.error("Error fetching pending reservations:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to check pending reservations",
-        { position: "top-right" }
-      );
-      throw error;
-    }
-  };
-
   useEffect(() => {
     // Load fonts dynamically
     const loadFonts = () => {
@@ -347,7 +319,7 @@ function AdminDashboard() {
       reportTitle: "Generate Members Report",
     },
     {
-      title: "Borrowed Books",
+      title: "Issued Books",
       value: stats.borrowedBooks,
       icon: <FaBookOpen className="text-purple-500 text-2xl" />,
       bgColor: "bg-purple-50",
@@ -366,33 +338,6 @@ function AdminDashboard() {
     },
   ];
 
-  // const getNotificationIcon = (type) => {
-  //   switch (type) {
-  //     case "reservation_created":
-  //       return <FaBook className="text-blue-500 mr-3 text-lg" />;
-  //     case "reservation_approved":
-  //       return <FaCheck className="text-green-500 mr-3 text-lg" />;
-  //     case "reservation_declined":
-  //       return <FaTimes className="text-red-500 mr-3 text-lg" />;
-  //     case "reservation_confirmed":
-  //       return <FaCheck className="text-green-500 mr-3 text-lg" />;
-  //     default:
-  //       return <FaBell className="text-yellow-500 mr-3 text-lg" />;
-  //   }
-  // };
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showReportsDropdown && !event.target.closest(".relative")) {
-        setShowReportsDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showReportsDropdown]);
   return (
     <div
       className="min-h-screen bg-gray-50 flex"
@@ -632,15 +577,15 @@ function AdminDashboard() {
           )}
 
           {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 gap-6 mb-8">
             {/* Borrowed Books Chart */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="flex justify-between items-center mb-4">
                 <h3 className={`text-lg ${fontStyles.heading} text-gray-800`}>
-                  Borrowed Books Trend
+                  Monthly Book Borrowing Trends
                 </h3>
                 <div className="flex items-center text-sm text-indigo-600">
-                  <FaChartLine className="mr-1" /> Monthly Overview
+                  <FaChartLine className="mr-1" /> Last 12 Months
                 </div>
               </div>
               <div className="h-64">
@@ -671,61 +616,6 @@ function AdminDashboard() {
                       activeDot={{ r: 6, fill: colors.primary }}
                     />
                   </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Top Members/Books Chart */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h3
-                className={`text-lg ${fontStyles.heading} text-gray-800 mb-4`}
-              >
-                Top Members & Books
-              </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={[
-                      ...(stats.topMembers?.slice(0, 3) || []).map((m) => ({
-                        ...m,
-                        type: "member",
-                      })),
-                      ...(stats.topBooks?.slice(0, 3) || []).map((b) => ({
-                        ...b,
-                        type: "book",
-                      })),
-                    ]}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fill: colors.dark, fontSize: 12 }}
-                    />
-                    <YAxis allowDecimals={false} tick={{ fill: colors.dark }} />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: "8px",
-                        border: "none",
-                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                        background: "#ffffff",
-                      }}
-                      formatter={(value, name, props) => {
-                        const label =
-                          props.payload.type === "member"
-                            ? "borrows"
-                            : "times borrowed";
-                        return [
-                          `${value} ${label}`,
-                          props.payload.type === "member" ? "Member" : "Book",
-                        ];
-                      }}
-                    />
-                    <Bar
-                      dataKey={(d) => d.borrowed_books_count || d.borrows_count}
-                      fill={colors.secondary}
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
@@ -781,7 +671,7 @@ function AdminDashboard() {
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="flex justify-between items-center mb-4">
                 <h3 className={`text-lg ${fontStyles.heading} text-gray-800`}>
-                  Most Borrowed Books
+                  Most Popular Books
                 </h3>
                 <FaBook className="text-indigo-500" />
               </div>
@@ -824,98 +714,67 @@ function AdminDashboard() {
             </div>
           </div>
 
-          {/* Recent Requests Section */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          {/* Overdue Fines Section */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
             <div className="flex justify-between items-center mb-4">
               <h3 className={`text-lg ${fontStyles.heading} text-gray-800`}>
-                Recent Book Requests
+                Overdue Fines Summary
               </h3>
-              <span className="text-sm text-indigo-600">
-                Last {stats.recentRequests?.length || 0} requests
-              </span>
+              <FaClock className="text-red-500" />
             </div>
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       User
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Book
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Overdue Books
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Date
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Status
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Fine
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {stats.recentRequests && stats.recentRequests.length > 0 ? (
-                    stats.recentRequests.map((req) => (
-                      <tr key={req.id} className="hover:bg-gray-50">
+                  {stats.overdueWithUsers &&
+                  stats.overdueWithUsers.length > 0 ? (
+                    stats.overdueWithUsers.map((user) => (
+                      <tr key={user.user_id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
-                              {req.user?.name?.charAt(0) || "U"}
+                            <div className="flex-shrink-0 h-10 w-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                              {user.user_name?.charAt(0) || "U"}
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
-                                {req.user?.name || "Unknown"}
+                                {user.user_name}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {req.user?.email || ""}
+                                {user.user_email}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {req.book?.name || "Unknown"}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {req.book?.author || ""}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(req.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              req.status === "approved"
-                                ? "bg-green-100 text-green-800"
-                                : req.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {req.status || "unknown"}
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            {user.overdue_books_count}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
+                          Rs.{user.total_fine.toFixed(2)}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
-                        colSpan="4"
+                        colSpan="3"
                         className="px-6 py-4 text-center text-gray-500"
                       >
-                        No recent requests found
+                        No overdue fines found
                       </td>
                     </tr>
                   )}
