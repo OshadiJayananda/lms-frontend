@@ -16,6 +16,8 @@ import {
   FaEdit,
   FaCalendarAlt,
   FaTimes,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 import HeaderBanner from "../../Components/HeaderBanner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,6 +33,9 @@ const Profile = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingField, setEditingField] = useState(null);
   const [activeTab, setActiveTab] = useState("personal");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const heading_pic =
     process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
@@ -137,7 +142,7 @@ const Profile = () => {
       .min(8, "Password must be at least 8 characters")
       .matches(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Must contain uppercase, lowercase, number and special character"
+        "Must contain at least one uppercase, one lowercase, one number and one special character (@$!%*?&)"
       )
       .required("New password is required"),
     confirmPassword: Yup.string()
@@ -524,7 +529,6 @@ const Profile = () => {
           )}
         </div>
       </div>
-
       {/* Password Change Modal */}
       <Modal
         isOpen={isPasswordModalOpen}
@@ -555,93 +559,159 @@ const Profile = () => {
               newPassword: "",
               confirmPassword: "",
             }}
-            validationSchema={validationSchema}
+            validationSchema={Yup.object().shape({
+              currentPassword: Yup.string().required(
+                "Current password is required"
+              ),
+              newPassword: Yup.string()
+                .min(8, "Password must be at least 8 characters")
+                .matches(
+                  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+                  "Must contain uppercase, lowercase, number and special character"
+                )
+                .required("New password is required"),
+              confirmPassword: Yup.string()
+                .oneOf([Yup.ref("newPassword"), null], "Passwords must match")
+                .required("Confirm password is required"),
+            })}
             onSubmit={handlePasswordChange}
           >
-            {({ isSubmitting, errors, touched }) => (
-              <Form className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Password
-                  </label>
-                  <Field
-                    type="password"
-                    name="currentPassword"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
-                      errors.currentPassword && touched.currentPassword
-                        ? "border-red-500 focus:ring-red-200"
-                        : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
-                    }`}
-                  />
-                  <ErrorMessage
-                    name="currentPassword"
-                    component="div"
-                    className="mt-1 text-sm text-red-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    New Password
-                  </label>
-                  <Field
-                    type="password"
-                    name="newPassword"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
-                      errors.newPassword && touched.newPassword
-                        ? "border-red-500 focus:ring-red-200"
-                        : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
-                    }`}
-                  />
-                  <ErrorMessage
-                    name="newPassword"
-                    component="div"
-                    className="mt-1 text-sm text-red-600"
-                  />
-                  <div className="mt-1 text-xs text-gray-500">
-                    Must be at least 8 characters with uppercase, lowercase,
-                    number and special character
+            {({ isSubmitting, errors, touched }) => {
+              return (
+                <Form className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Current Password
+                    </label>
+                    <div className="relative">
+                      <Field
+                        type={showCurrentPassword ? "text" : "password"}
+                        name="currentPassword"
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
+                          errors.currentPassword && touched.currentPassword
+                            ? "border-red-500 focus:ring-red-200"
+                            : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
+                        } pr-10`}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        onClick={() =>
+                          setShowCurrentPassword(!showCurrentPassword)
+                        }
+                        aria-label={
+                          showCurrentPassword
+                            ? "Hide password"
+                            : "Show password"
+                        }
+                      >
+                        {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                    <ErrorMessage
+                      name="currentPassword"
+                      component="div"
+                      className="mt-1 text-sm text-red-600"
+                    />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm New Password
-                  </label>
-                  <Field
-                    type="password"
-                    name="confirmPassword"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
-                      errors.confirmPassword && touched.confirmPassword
-                        ? "border-red-500 focus:ring-red-200"
-                        : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
-                    }`}
-                  />
-                  <ErrorMessage
-                    name="confirmPassword"
-                    component="div"
-                    className="mt-1 text-sm text-red-600"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <Field
+                        type={showNewPassword ? "text" : "password"}
+                        name="newPassword"
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
+                          errors.newPassword && touched.newPassword
+                            ? "border-red-500 focus:ring-red-200"
+                            : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
+                        } pr-10`}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        aria-label={
+                          showNewPassword ? "Hide password" : "Show password"
+                        }
+                      >
+                        {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                    <ErrorMessage
+                      name="newPassword"
+                      component="div"
+                      className="mt-1 text-sm text-red-600"
+                    />
+                    <div className="mt-1 text-xs text-gray-500">
+                      Password must contain:
+                      <ul className="list-disc pl-5 space-y-1 mt-1">
+                        <li>At least 8 characters</li>
+                        <li>One uppercase letter (A-Z)</li>
+                        <li>One lowercase letter (a-z)</li>
+                        <li>One number (0-9)</li>
+                        <li>One special character (@$!%*?&)</li>
+                      </ul>
+                    </div>
+                  </div>
 
-                <div className="flex justify-end gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setPasswordModalOpen(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                  >
-                    {isSubmitting ? "Updating..." : "Update Password"}
-                  </button>
-                </div>
-              </Form>
-            )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirm New Password
+                    </label>
+                    <div className="relative">
+                      <Field
+                        type={showConfirmPassword ? "text" : "password"}
+                        name="confirmPassword"
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
+                          errors.confirmPassword && touched.confirmPassword
+                            ? "border-red-500 focus:ring-red-200"
+                            : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
+                        } pr-10`}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        aria-label={
+                          showConfirmPassword
+                            ? "Hide password"
+                            : "Show password"
+                        }
+                      >
+                        {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                    <ErrorMessage
+                      name="confirmPassword"
+                      component="div"
+                      className="mt-1 text-sm text-red-600"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setPasswordModalOpen(false)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    >
+                      {isSubmitting ? "Updating..." : "Update Password"}
+                    </button>
+                  </div>
+                </Form>
+              );
+            }}
           </Formik>
         </motion.div>
       </Modal>
