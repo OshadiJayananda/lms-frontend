@@ -88,6 +88,18 @@ function AdminDashboard() {
   const generateReport = async () => {
     if (!reportTypeToGenerate) return;
 
+    // Validate date range if both dates are provided
+    if (
+      reportDates.from &&
+      reportDates.to &&
+      reportDates.from > reportDates.to
+    ) {
+      toast.error("End date cannot be before start date", {
+        position: "top-right",
+      });
+      return;
+    }
+
     try {
       setReportLoading((prev) => ({ ...prev, [reportTypeToGenerate]: true }));
 
@@ -108,17 +120,23 @@ function AdminDashboard() {
       );
 
       // Check if response is a PDF
-      if (response.headers["content-type"] !== "application/pdf") {
-        // Try to parse as JSON error response
-        const text = await response.data.text();
+      if (!response.headers["content-type"].includes("application/pdf")) {
+        // Try to read the response as text to get error details
+        const errorText = await response.data.text();
+        let errorMessage = "Failed to generate report";
+
         try {
-          const errorData = JSON.parse(text);
-          throw new Error(
-            errorData.error || errorData.message || "Unknown error"
-          );
+          // Try to parse as JSON
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
         } catch (e) {
-          throw new Error("Server returned non-PDF response");
+          // If not JSON, use the text directly if it's not too long
+          if (errorText.length < 100) {
+            errorMessage = errorText;
+          }
         }
+
+        throw new Error(errorMessage);
       }
 
       const blob = new Blob([response.data], {
@@ -151,12 +169,31 @@ function AdminDashboard() {
         position: "top-right",
       });
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        `Failed to generate ${reportTypeToGenerate} report`;
-      toast.error(errorMessage, { position: "top-right" });
       console.error("Report generation error:", error);
+
+      let errorMessage = `Failed to generate ${reportTypeToGenerate} report`;
+
+      if (error.response) {
+        // Handle HTTP errors
+        if (error.response.status === 401) {
+          errorMessage = "Session expired. Please login again.";
+          navigate("/login");
+        } else if (error.response.status === 403) {
+          errorMessage = "You don't have permission to generate this report";
+        } else if (error.response.status === 404) {
+          errorMessage = "No data found for the selected period";
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.message) {
+        // Use the error message we constructed earlier
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 5000, // Show for 5 seconds
+      });
     } finally {
       setReportLoading((prev) => ({ ...prev, [reportTypeToGenerate]: false }));
       setIsReportModalOpen(false);
