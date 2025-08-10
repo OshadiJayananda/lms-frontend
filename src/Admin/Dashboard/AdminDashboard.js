@@ -27,6 +27,8 @@ import {
 } from "recharts";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 function AdminDashboard() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -55,6 +57,7 @@ function AdminDashboard() {
     fine_per_day: 0,
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     borrow_limit: 0,
     borrow_duration_days: 0,
@@ -305,6 +308,58 @@ function AdminDashboard() {
     }
   };
 
+  const formik = useFormik({
+    initialValues: { name: "", email: "" },
+    validationSchema: Yup.object({
+      name: Yup.string().required("Name is required"),
+      email: Yup.string()
+        .email("Invalid email address")
+        .required("Email is required"),
+    }),
+    onSubmit: async (values, { setSubmitting, resetForm }) => {
+      setSubmitting(true);
+      const ok = await handleCreateAdmin(values);
+      if (ok) {
+        resetForm();
+        setShowModal(false);
+      }
+      setSubmitting(false);
+    },
+  });
+
+  const handleCreateAdmin = async (values) => {
+    try {
+      const response = await api.post("/admins", values);
+      if (response.status === 201) {
+        toast.success("Admin created successfully!");
+        return true;
+      }
+      toast.error("Failed to create admin");
+      return false;
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+
+        if (status === 422 && data.errors) {
+          const validationErrors = Object.values(data.errors).flat();
+          validationErrors.forEach((err) => toast.error(err));
+        } else if (status === 500) {
+          toast.error("A server error occurred. Please try again later.");
+        } else {
+          toast.error(data.message || "An unexpected error occurred.");
+        }
+      } else if (error.request) {
+        toast.error(
+          "No response from the server. Please check your internet connection."
+        );
+      } else {
+        console.error("Error", error.message);
+        toast.error("An error occurred. Please try again.");
+      }
+      return false;
+    }
+  };
+
   useEffect(() => {
     // Load fonts dynamically
     const loadFonts = () => {
@@ -398,6 +453,13 @@ function AdminDashboard() {
             <div className={`text-2xl ${fontStyles.heading} text-gray-800`}>
               Dashboard Overview
             </div>
+
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-md transition duration-200"
+            >
+              Create Admin
+            </button>
           </div>
 
           {/* Stats Cards */}
@@ -937,6 +999,72 @@ function AdminDashboard() {
                     Generate PDF
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {showModal && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+                <h2 className="text-xl font-semibold mb-4">Create New Admin</h2>
+
+                <p className="text-sm text-gray-600 mb-4">
+                  The email you provide here will be used for the new admin's
+                  account. Please remember or securely share it with them for
+                  the next steps.
+                </p>
+
+                <form onSubmit={formik.handleSubmit} noValidate>
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Name"
+                    value={formik.values.name}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    className="w-full p-2 border rounded mb-2"
+                    autoComplete="off"
+                  />
+                  {formik.touched.name && formik.errors.name && (
+                    <div className="text-red-600 text-sm mb-2">
+                      {formik.errors.name}
+                    </div>
+                  )}
+
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Email"
+                    value={formik.values.email}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    className="w-full p-2 border rounded mb-2"
+                    autoComplete="off"
+                  />
+                  {formik.touched.email && formik.errors.email && (
+                    <div className="text-red-600 text-sm mb-2">
+                      {formik.errors.email}
+                    </div>
+                  )}
+
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowModal(false)}
+                      className="px-4 py-2 bg-gray-300 rounded"
+                      disabled={formik.isSubmitting}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-60"
+                      disabled={formik.isSubmitting}
+                    >
+                      {formik.isSubmitting ? "Creating..." : "Create"}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
