@@ -47,6 +47,10 @@ export default function SignIn() {
         .required("Required"),
       password: Yup.string()
         .min(6, "Password must be at least 6 characters")
+        .matches(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/,
+          "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+        )
         .required("Required"),
       passwordConfirmation: Yup.string()
         .oneOf([Yup.ref("password"), null], "Passwords must match")
