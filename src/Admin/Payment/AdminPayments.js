@@ -324,7 +324,10 @@ function AdminPayments() {
                                   {payment.borrow?.book?.name || "Unknown Book"}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                  {payment.borrow?.book?.isbn || "N/A"}
+                                  Book ID: {payment.borrow?.book?.id || "N/A"}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  ISBN: {payment.borrow?.book?.isbn || "N/A"}
                                 </div>
                               </div>
                             </div>

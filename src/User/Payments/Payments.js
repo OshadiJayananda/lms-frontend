@@ -90,12 +90,12 @@ function Payments() {
       setContentLoading(false);
     }
   };
-
   const filteredPayments = payments.filter(
     (payment) =>
       payment.borrow?.book?.name
         ?.toLowerCase()
         ?.includes(searchQuery.toLowerCase()) ||
+      String(payment.borrow?.book?.id).includes(searchQuery.toLowerCase()) ||
       payment.stripe_payment_id
         ?.toLowerCase()
         ?.includes(searchQuery.toLowerCase())
@@ -378,8 +378,9 @@ function Payments() {
                                           "Unknown Book"}
                                       </div>
                                       <div className="text-2xs sm:text-xs text-gray-500 mt-1 truncate">
-                                        {payment.borrow?.book?.author?.name ||
-                                          "Unknown Author"}
+                                        Book ID:
+                                        {payment.borrow?.book?.id ||
+                                          "Unknown ID"}
                                       </div>
                                     </div>
                                   </div>
