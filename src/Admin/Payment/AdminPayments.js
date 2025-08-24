@@ -36,8 +36,8 @@ function AdminPayments() {
   // backend totals summary
   const [totalsLoading, setTotalsLoading] = useState(false);
   const [totalsError, setTotalsError] = useState(null);
-  const [totalAll, setTotalAll] = useState(0);
-  const [totalCompleted, setTotalCompleted] = useState(0);
+  const [totalOverdue, setTotalOverdue] = useState(0); // NEW: overdue fine
+  const [totalCompleted, setTotalCompleted] = useState(0); // completed payments sum
 
   const heading_pic =
     process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
@@ -57,9 +57,9 @@ function AdminPayments() {
           },
         });
 
-        setPayments(response.data.data);
-        setTotalPages(response.data.last_page);
-        setTotalItems(response.data.total);
+        setPayments(response.data.data || []);
+        setTotalPages(response.data.last_page || 1);
+        setTotalItems(response.data.total || 0);
       } catch (err) {
         const msg = err.response?.data?.message || "Failed to load payments";
         setError(msg);
@@ -80,7 +80,7 @@ function AdminPayments() {
       try {
         setTotalsLoading(true);
         setTotalsError(null);
-        setTotalAll(0);
+        setTotalOverdue(0);
         setTotalCompleted(0);
 
         const { data } = await api.get(`/admin/payments/summary`, {
@@ -88,7 +88,7 @@ function AdminPayments() {
         });
 
         if (!cancelled) {
-          setTotalAll(Number(data?.total_all || 0));
+          setTotalOverdue(Number(data?.total_overdue || 0));
           setTotalCompleted(Number(data?.total_completed || 0));
         }
       } catch (err) {
@@ -315,6 +315,7 @@ function AdminPayments() {
 
             {/* Totals Summary (from backend) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Completed payments total */}
               <div className="p-4 border rounded-lg bg-blue-50 border-blue-100">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-blue-700">
@@ -333,6 +334,23 @@ function AdminPayments() {
                 )}
               </div>
 
+              {/* NEW: Overdue fines total */}
+              <div className="p-4 border rounded-lg bg-rose-50 border-rose-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-rose-700">
+                    Total Overdue Amount (Unpaid)
+                  </span>
+                  <FaMoneyBillWave className="text-rose-600" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-rose-900">
+                  {totalsLoading ? "Loading..." : formatRs(totalOverdue)}
+                </div>
+                <div className="text-xs text-rose-700 mt-1">
+                  Based on overdue borrows matching the filter.
+                </div>
+              </div>
+
+              {/* Current page subtotal */}
               <div className="p-4 border rounded-lg bg-amber-50 border-amber-100">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-amber-700">
