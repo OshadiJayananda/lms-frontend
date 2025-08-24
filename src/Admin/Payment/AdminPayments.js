@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import SideBar from "../../Components/SideBar";
 import HeaderBanner from "../../Components/HeaderBanner";
 import Header from "../../Components/Header";
@@ -20,21 +20,35 @@ import { FiCreditCard } from "react-icons/fi";
 
 function AdminPayments() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // table data
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // query/pagination
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [perPage, setPerPage] = useState(10);
+
+  // backend totals summary
+  const [totalsLoading, setTotalsLoading] = useState(false);
+  const [totalsError, setTotalsError] = useState(null);
+  const [totalAll, setTotalAll] = useState(0);
+  const [totalCompleted, setTotalCompleted] = useState(0);
+
   const heading_pic =
     process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
 
+  // ---------- Fetch paginated table ----------
   useEffect(() => {
     const fetchPayments = async () => {
       try {
         setLoading(true);
+        setError(null);
+
         const response = await api.get(`/admin/payments`, {
           params: {
             page: currentPage,
@@ -42,11 +56,13 @@ function AdminPayments() {
             q: searchQuery,
           },
         });
+
         setPayments(response.data.data);
         setTotalPages(response.data.last_page);
         setTotalItems(response.data.total);
       } catch (err) {
-        setError(err.response?.data?.message || "Failed to load payments");
+        const msg = err.response?.data?.message || "Failed to load payments";
+        setError(msg);
         toast.error("Failed to load payment information");
       } finally {
         setLoading(false);
@@ -55,6 +71,42 @@ function AdminPayments() {
 
     fetchPayments();
   }, [currentPage, perPage, searchQuery]);
+
+  // ---------- Fetch totals from backend summary ----------
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchSummary = async () => {
+      try {
+        setTotalsLoading(true);
+        setTotalsError(null);
+        setTotalAll(0);
+        setTotalCompleted(0);
+
+        const { data } = await api.get(`/admin/payments/summary`, {
+          params: { q: searchQuery },
+        });
+
+        if (!cancelled) {
+          setTotalAll(Number(data?.total_all || 0));
+          setTotalCompleted(Number(data?.total_completed || 0));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setTotalsError(
+            err.response?.data?.message || "Failed to load totals"
+          );
+        }
+      } finally {
+        if (!cancelled) setTotalsLoading(false);
+      }
+    };
+
+    fetchSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchQuery]);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -85,6 +137,12 @@ function AdminPayments() {
       </span>
     );
   };
+
+  // Page subtotal (only visible rows)
+  const pageSubtotal = useMemo(
+    () => payments.reduce((acc, p) => acc + Number(p.amount || 0), 0),
+    [payments]
+  );
 
   const renderPagination = () => {
     const pageNumbers = [];
@@ -206,6 +264,12 @@ function AdminPayments() {
     );
   };
 
+  const formatRs = (n) =>
+    `Rs. ${Number(n || 0).toLocaleString("en-LK", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
       <SideBar
@@ -222,6 +286,7 @@ function AdminPayments() {
 
         <div className="p-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+            {/* Header + Search */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div>
                 <h2 className="text-3xl font-bold text-gray-800 mb-2 font-serif">
@@ -239,12 +304,52 @@ function AdminPayments() {
                   type="text"
                   placeholder="Search payments by book, user, amount..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1); // reset to first page on new search
+                  }}
                   className="block w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>
             </div>
 
+            {/* Totals Summary (from backend) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="p-4 border rounded-lg bg-blue-50 border-blue-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-700">
+                    Total (Completed Only)
+                  </span>
+                  <FaMoneyBillWave className="text-blue-600" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-blue-900">
+                  {totalsLoading ? "Loading..." : formatRs(totalCompleted)}
+                </div>
+                <div className="text-xs text-blue-700 mt-1">
+                  Filter applied: “{searchQuery || "none"}”
+                </div>
+                {totalsError && (
+                  <div className="text-xs text-red-600 mt-1">{totalsError}</div>
+                )}
+              </div>
+
+              <div className="p-4 border rounded-lg bg-amber-50 border-amber-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-amber-700">
+                    Page Subtotal (Visible Rows)
+                  </span>
+                  <FaMoneyBillWave className="text-amber-600" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-amber-900">
+                  {loading ? "Loading..." : formatRs(pageSubtotal)}
+                </div>
+                <div className="text-xs text-amber-700 mt-1">
+                  Page {currentPage} • {payments.length} items
+                </div>
+              </div>
+            </div>
+
+            {/* Table / States */}
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mb-4"></div>
@@ -369,8 +474,7 @@ function AdminPayments() {
                               <FaMoneyBillWave className="text-green-500 mr-2" />
                               <div>
                                 <div className="text-sm font-semibold text-gray-900">
-                                  Rs.{" "}
-                                  {parseFloat(payment.amount || 0).toFixed(2)}
+                                  {formatRs(parseFloat(payment.amount || 0))}
                                 </div>
                                 <div className="text-xs text-gray-500">
                                   {payment.payment_method || "Credit Card"}
