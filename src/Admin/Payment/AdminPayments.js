@@ -21,8 +21,11 @@ import { FiCreditCard } from "react-icons/fi";
 function AdminPayments() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // table data
-  const [payments, setPayments] = useState([]);
+  // view mode: 'overdue' or 'payments'
+  const [view, setView] = useState("overdue");
+
+  // table data (we'll store current view's rows here)
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -33,23 +36,25 @@ function AdminPayments() {
   const [totalItems, setTotalItems] = useState(0);
   const [perPage, setPerPage] = useState(10);
 
-  // backend totals summary
+  // backend totals summary (shared for both tabs)
   const [totalsLoading, setTotalsLoading] = useState(false);
   const [totalsError, setTotalsError] = useState(null);
-  const [totalOverdue, setTotalOverdue] = useState(0); // NEW: overdue fine
-  const [totalCompleted, setTotalCompleted] = useState(0); // completed payments sum
+  const [totalOverdue, setTotalOverdue] = useState(0); // overdue fines (unpaid)
+  const [totalCompleted, setTotalCompleted] = useState(0); // completed payments
 
   const heading_pic =
     process.env.REACT_APP_PUBLIC_URL + "/images/heading_pic.jpg";
 
-  // ---------- Fetch paginated table ----------
+  // ---------- Fetch current table depending on view ----------
   useEffect(() => {
-    const fetchPayments = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const response = await api.get(`/admin/payments`, {
+        const url = view === "overdue" ? `/admin/overdues` : `/admin/payments`;
+
+        const response = await api.get(url, {
           params: {
             page: currentPage,
             per_page: perPage,
@@ -57,22 +62,23 @@ function AdminPayments() {
           },
         });
 
-        setPayments(response.data.data || []);
-        setTotalPages(response.data.last_page || 1);
-        setTotalItems(response.data.total || 0);
+        const data = response.data?.data || [];
+        setRows(data);
+        setTotalPages(response.data?.last_page || 1);
+        setTotalItems(response.data?.total || 0);
       } catch (err) {
-        const msg = err.response?.data?.message || "Failed to load payments";
+        const msg = err.response?.data?.message || "Failed to load data";
         setError(msg);
-        toast.error("Failed to load payment information");
+        toast.error(msg);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPayments();
-  }, [currentPage, perPage, searchQuery]);
+    fetchData();
+  }, [view, currentPage, perPage, searchQuery]);
 
-  // ---------- Fetch totals from backend summary ----------
+  // ---------- Fetch shared totals from backend summary ----------
   useEffect(() => {
     let cancelled = false;
 
@@ -119,12 +125,21 @@ function AdminPayments() {
     setCurrentPage(1);
   };
 
+  const formatRs = (n) =>
+    `Rs. ${Number(n || 0).toLocaleString("en-LK", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
   const getStatusBadge = (status) => {
     const statusClasses = {
       completed: "bg-green-100 text-green-800",
       pending: "bg-yellow-100 text-yellow-800",
       failed: "bg-red-100 text-red-800",
       refunded: "bg-purple-100 text-purple-800",
+      overdue: "bg-rose-100 text-rose-800",
+      unpaid: "bg-rose-100 text-rose-800",
+      paid: "bg-green-100 text-green-700",
     };
 
     return (
@@ -138,11 +153,14 @@ function AdminPayments() {
     );
   };
 
-  // Page subtotal (only visible rows)
-  const pageSubtotal = useMemo(
-    () => payments.reduce((acc, p) => acc + Number(p.amount || 0), 0),
-    [payments]
-  );
+  // Page subtotal depends on view
+  const pageSubtotal = useMemo(() => {
+    if (view === "overdue") {
+      return rows.reduce((acc, b) => acc + Number(b.fine_amount || 0), 0);
+    }
+    // payments view
+    return rows.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+  }, [rows, view]);
 
   const renderPagination = () => {
     const pageNumbers = [];
@@ -171,7 +189,8 @@ function AdminPayments() {
             <span className="font-medium">
               {Math.min(currentPage * perPage, totalItems)}
             </span>{" "}
-            of <span className="font-medium">{totalItems}</span> payments
+            of <span className="font-medium">{totalItems}</span>{" "}
+            {view === "overdue" ? "overdues" : "payments"}
           </span>
 
           <select
@@ -264,12 +283,6 @@ function AdminPayments() {
     );
   };
 
-  const formatRs = (n) =>
-    `Rs. ${Number(n || 0).toLocaleString("en-LK", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
       <SideBar
@@ -287,13 +300,13 @@ function AdminPayments() {
         <div className="p-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
             {/* Header + Search */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
               <div>
                 <h2 className="text-3xl font-bold text-gray-800 mb-2 font-serif">
                   Payment Center
                 </h2>
                 <p className="text-gray-600 text-lg">
-                  Manage and view all payment transactions
+                  View overdue items and payments
                 </p>
               </div>
               <div className="relative w-full md:w-80">
@@ -302,18 +315,52 @@ function AdminPayments() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search payments by book, user, amount..."
+                  placeholder={
+                    view === "overdue"
+                      ? "Search overdue by book/user..."
+                      : "Search payments by book/user/amount..."
+                  }
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    setCurrentPage(1); // reset to first page on new search
+                    setCurrentPage(1);
                   }}
                   className="block w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>
             </div>
 
-            {/* Totals Summary (from backend) */}
+            {/* View Toggle */}
+            <div className="flex items-center gap-2 mb-6">
+              <button
+                onClick={() => {
+                  setView("overdue");
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-2 rounded-lg border ${
+                  view === "overdue"
+                    ? "bg-rose-600 text-white border-rose-700"
+                    : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                Overdue (Unpaid)
+              </button>
+              <button
+                onClick={() => {
+                  setView("payments");
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-2 rounded-lg border ${
+                  view === "payments"
+                    ? "bg-blue-600 text-white border-blue-700"
+                    : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                Payments
+              </button>
+            </div>
+
+            {/* Totals Summary (shared) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {/* Completed payments total */}
               <div className="p-4 border rounded-lg bg-blue-50 border-blue-100">
@@ -327,14 +374,14 @@ function AdminPayments() {
                   {totalsLoading ? "Loading..." : formatRs(totalCompleted)}
                 </div>
                 <div className="text-xs text-blue-700 mt-1">
-                  Filter applied: “{searchQuery || "none"}”
+                  Filter: “{searchQuery || "none"}”
                 </div>
                 {totalsError && (
                   <div className="text-xs text-red-600 mt-1">{totalsError}</div>
                 )}
               </div>
 
-              {/* NEW: Overdue fines total */}
+              {/* Overdue fines total */}
               <div className="p-4 border rounded-lg bg-rose-50 border-rose-100">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-rose-700">
@@ -346,7 +393,7 @@ function AdminPayments() {
                   {totalsLoading ? "Loading..." : formatRs(totalOverdue)}
                 </div>
                 <div className="text-xs text-rose-700 mt-1">
-                  Based on overdue borrows matching the filter.
+                  Based on overdue borrows matching the filter
                 </div>
               </div>
 
@@ -362,7 +409,7 @@ function AdminPayments() {
                   {loading ? "Loading..." : formatRs(pageSubtotal)}
                 </div>
                 <div className="text-xs text-amber-700 mt-1">
-                  Page {currentPage} • {payments.length} items
+                  Page {currentPage} • {rows.length} items
                 </div>
               </div>
             </div>
@@ -371,7 +418,7 @@ function AdminPayments() {
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mb-4"></div>
-                <p className="text-gray-600">Loading payment data...</p>
+                <p className="text-gray-600">Loading {view} data...</p>
               </div>
             ) : error ? (
               <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
@@ -386,17 +433,23 @@ function AdminPayments() {
                   Try again
                 </button>
               </div>
-            ) : payments.length === 0 ? (
+            ) : rows.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <FiCreditCard className="mx-auto text-gray-400 text-4xl mb-3" />
                 <h3 className="text-lg font-medium text-gray-900">
                   {searchQuery
-                    ? "No matching payments found"
-                    : "No payments recorded yet"}
+                    ? `No matching ${
+                        view === "overdue" ? "overdues" : "payments"
+                      } found`
+                    : `No ${
+                        view === "overdue" ? "overdue items" : "payments"
+                      } to show`}
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
                   {searchQuery
                     ? "Try adjusting your search query"
+                    : view === "overdue"
+                    ? "Overdue items will appear here automatically"
                     : "Payments will appear here once processed"}
                 </p>
               </div>
@@ -412,115 +465,223 @@ function AdminPayments() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           User Details
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Transaction
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Amount
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date & Status
-                        </th>
+
+                        {view === "payments" ? (
+                          <>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Transaction
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Amount
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Date & Status
+                            </th>
+                          </>
+                        ) : (
+                          <>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Fine Amount
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Due Date & Status
+                            </th>
+                          </>
+                        )}
                       </tr>
                     </thead>
+
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {payments.map((payment) => (
-                        <tr
-                          key={payment.id}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-14 w-10 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
-                                {payment.borrow?.book?.image ? (
-                                  <img
-                                    className="h-full w-full object-cover"
-                                    src={payment.borrow.book.image}
-                                    alt={payment.borrow.book.name}
-                                  />
-                                ) : (
-                                  <FaBook className="text-gray-400" />
-                                )}
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {payment.borrow?.book?.name || "Unknown Book"}
+                      {rows.map((item) =>
+                        view === "payments" ? (
+                          // -------- PAYMENTS ROW --------
+                          <tr
+                            key={item.id}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-14 w-10 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                                  {item.borrow?.book?.image ? (
+                                    <img
+                                      className="h-full w-full object-cover"
+                                      src={item.borrow.book.image}
+                                      alt={item.borrow.book.name}
+                                    />
+                                  ) : (
+                                    <FaBook className="text-gray-400" />
+                                  )}
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                  Book ID: {payment.borrow?.book?.id || "N/A"}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  ISBN: {payment.borrow?.book?.isbn || "N/A"}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10 bg-blue-50 rounded-full flex items-center justify-center">
-                                <FaUser className="text-blue-500" />
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {payment.borrow?.user?.name || "Unknown User"}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {payment.borrow?.user?.email || "N/A"}
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  ID: {payment.borrow?.user?.id || "N/A"}
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {item.borrow?.book?.name || "Unknown Book"}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    Book ID: {item.borrow?.book?.id || "N/A"}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    ISBN: {item.borrow?.book?.isbn || "N/A"}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <FiCreditCard className="text-blue-500 mr-3" />
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">
-                                  {payment.description ||
-                                    "Overdue fine payment"}
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 bg-blue-50 rounded-full flex items-center justify-center">
+                                  <FaUser className="text-blue-500" />
                                 </div>
-                                <div className="text-xs text-gray-500 font-mono mt-1">
-                                  {payment.stripe_payment_id}
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {item.borrow?.user?.name || "Unknown User"}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {item.borrow?.user?.email || "N/A"}
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    ID: {item.borrow?.user?.id || "N/A"}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <FaMoneyBillWave className="text-green-500 mr-2" />
-                              <div>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <FiCreditCard className="text-blue-500 mr-3" />
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {item.description || "Overdue fine payment"}
+                                  </div>
+                                  <div className="text-xs text-gray-500 font-mono mt-1">
+                                    {item.stripe_payment_id}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <FaMoneyBillWave className="text-green-500 mr-2" />
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-900">
+                                    {formatRs(parseFloat(item.amount || 0))}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {item.payment_method || "Credit Card"}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <FaCalendarAlt className="text-gray-400 mr-2" />
+                                <div>
+                                  <div className="text-sm text-gray-900">
+                                    {new Date(
+                                      item.created_at
+                                    ).toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </div>
+                                  <div className="mt-1">
+                                    {getStatusBadge(item.status)}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          // -------- OVERDUE ROW --------
+                          <tr
+                            key={item.id}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-14 w-10 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                                  {item.book?.image ? (
+                                    <img
+                                      className="h-full w-full object-cover"
+                                      src={item.book.image}
+                                      alt={item.book.name}
+                                    />
+                                  ) : (
+                                    <FaBook className="text-gray-400" />
+                                  )}
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {item.book?.name || "Unknown Book"}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    Book ID: {item.book?.id || "N/A"}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    ISBN: {item.book?.isbn || "N/A"}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 bg-blue-50 rounded-full flex items-center justify-center">
+                                  <FaUser className="text-blue-500" />
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {item.user?.name || "Unknown User"}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {item.user?.email || "N/A"}
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    ID: {item.user?.id || "N/A"}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <FaMoneyBillWave className="text-rose-500 mr-2" />
                                 <div className="text-sm font-semibold text-gray-900">
-                                  {formatRs(parseFloat(payment.amount || 0))}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {payment.payment_method || "Credit Card"}
+                                  {formatRs(parseFloat(item.fine_amount || 0))}
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <FaCalendarAlt className="text-gray-400 mr-2" />
-                              <div>
-                                <div className="text-sm text-gray-900">
-                                  {new Date(
-                                    payment.created_at
-                                  ).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
-                                </div>
-                                <div className="mt-1">
-                                  {getStatusBadge(payment.status)}
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <FaCalendarAlt className="text-gray-400 mr-2" />
+                                <div>
+                                  <div className="text-sm text-gray-900">
+                                    Due:{" "}
+                                    {item.due_date
+                                      ? new Date(
+                                          item.due_date
+                                        ).toLocaleDateString("en-US", {
+                                          year: "numeric",
+                                          month: "short",
+                                          day: "numeric",
+                                        })
+                                      : "N/A"}
+                                  </div>
+                                  <div className="mt-1 flex gap-2">
+                                    {getStatusBadge("overdue")}
+                                    {item.fine_paid
+                                      ? getStatusBadge("paid")
+                                      : getStatusBadge("unpaid")}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                          </tr>
+                        )
+                      )}
                     </tbody>
                   </table>
                 </div>
