@@ -751,7 +751,7 @@ function AdminDashboard() {
                         <p className="font-medium text-gray-800">
                           {member.name}
                         </p>
-                        <p className="text-sm text-gray-500">{member.email}</p>
+                        {/* <p className="text-sm text-gray-500">{member.email}</p> */}
                       </div>
                       <div className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-sm font-medium">
                         {member.borrowed_books_count} borrows
@@ -816,10 +816,20 @@ function AdminDashboard() {
           {/* Overdue Fines Section */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
             <div className="flex justify-between items-center mb-4">
-              <h3 className={`text-lg ${fontStyles.heading} text-gray-800`}>
-                Overdue Fines Summary
-              </h3>
-              <FaClock className="text-red-500" />
+              <div className="flex items-center gap-2">
+                <h3 className={`text-lg ${fontStyles.heading} text-gray-800`}>
+                  Overdue Fines Summary
+                </h3>
+                <FaClock className="text-red-500" />
+              </div>
+
+              {/* Quick Action Button */}
+              <a
+                href="/admin/payments"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition-colors"
+              >
+                Go to Payments
+              </a>
             </div>
 
             <div className="overflow-x-auto">
